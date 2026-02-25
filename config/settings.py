@@ -1,0 +1,38 @@
+"""
+Central configuration — single source of truth for all settings.
+
+Model IDs follow the Nova 2 Developer Guide naming convention:
+  US region:  us.amazon.nova-2-lite-v1:0
+  Global:     global.amazon.nova-2-lite-v1:0
+"""
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# ── AWS ────────────────────────────────────────────────
+AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+
+# ── Models ─────────────────────────────────────────────
+NOVA_MODEL_ID: str = os.getenv("NOVA_MODEL_ID", "us.amazon.nova-2-lite-v1:0")
+NOVA_EMBEDDINGS_MODEL_ID: str = os.getenv(
+    "NOVA_EMBEDDINGS_MODEL_ID",
+    "amazon.nova-2-multimodal-embeddings-v1:0",
+)
+
+# ── Inference defaults ─────────────────────────────────
+DEFAULT_MAX_TOKENS: int = 4096
+DEFAULT_TEMPERATURE: float = 0.7
+DEFAULT_TOP_P: float = 0.9
+
+# ── Extended thinking effort levels ────────────────────
+REASONING_LOW: str = "low"        # Router, Crisis Radar, Compass
+REASONING_MEDIUM: str = "medium"
+REASONING_HIGH: str = "high"      # All domain agents
+
+# ── Session ────────────────────────────────────────────
+SESSION_TIMEOUT_MINUTES: int = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
+
+# ── Bedrock timeout (Nova guide: up to 60 min for extended thinking) ──
+BEDROCK_READ_TIMEOUT: int = 3600

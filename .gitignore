@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+node_modules/
+dist/
+build/
+.pytest_cache/
+*.egg-info/
+.DS_Store
+*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
