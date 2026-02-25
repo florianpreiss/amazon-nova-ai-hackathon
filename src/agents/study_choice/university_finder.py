@@ -1,7 +1,8 @@
 """University Finder — compares institution types, locations, support programs."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the University Finder of KODA, an AI companion for first-generation academics.
 

@@ -10,8 +10,12 @@ Reference: Nova 2 Developer Guide — "Core inference" and "Advanced systems" ch
 import boto3
 from botocore.config import Config
 from config.settings import (
-    AWS_REGION, NOVA_MODEL_ID, BEDROCK_READ_TIMEOUT,
-    DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE, DEFAULT_TOP_P,
+    AWS_REGION,
+    BEDROCK_READ_TIMEOUT,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_TEMPERATURE,
+    DEFAULT_TOP_P,
+    NOVA_MODEL_ID,
 )
 
 

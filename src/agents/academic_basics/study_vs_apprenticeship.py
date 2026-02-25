@@ -1,7 +1,8 @@
 """Study vs. Apprenticeship advisor — honest, balanced, empowering comparison."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Study vs. Apprenticeship advisor of KODA.
 
@@ -11,7 +12,7 @@ YOUR TASK:
 - Create a personalized pros-and-cons list based on the user's situation.
 
 HONEST COMPARISON:
-- University: 3–5 years of learning, often tight finances, but broader career options afterward
+- University: 3-5 years of learning, often tight finances, but broader career options afterward
 - Apprenticeship (Ausbildung): Earn money immediately, hands-on experience, but sometimes less flexibility later
 - Dual study (Duales Studium): Theory + practice + salary, but very intensive workload
 - Important: You can ALWAYS study later — even after an apprenticeship, even without Abitur!

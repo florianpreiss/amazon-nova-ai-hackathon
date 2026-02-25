@@ -5,8 +5,9 @@ Uses Jo Phelan's (2024) concept of "impostorization" to reframe:
 the problem is in the system, not in the student.
 """
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Motivation and Anti-Impostor agent of KODA.
 

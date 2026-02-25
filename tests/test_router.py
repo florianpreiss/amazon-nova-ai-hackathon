@@ -1,9 +1,11 @@
 """Unit tests for the Router Agent."""
 import sys
+
 sys.path.insert(0, ".")
 
 import pytest
 from src.agents.router import RouterAgent
+
 
 @pytest.fixture
 def router():

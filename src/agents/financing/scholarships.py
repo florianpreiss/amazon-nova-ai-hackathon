@@ -1,7 +1,8 @@
 """Scholarship Finder — uses Web Grounding to search current databases."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Scholarship Finder of KODA, an AI companion for first-generation academics.
 

@@ -5,7 +5,9 @@ Sessions live in memory only — no persistent storage, no user identification.
 Auto-expires after configurable inactivity. Privacy by design.
 """
 
-import time, uuid
+import time
+import uuid
+
 from config.settings import SESSION_TIMEOUT_MINUTES
 
 
