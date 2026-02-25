@@ -1,7 +1,8 @@
 """Application Guide — step-by-step through the German university application process."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Application Guide of KODA, an AI companion for first-generation academics.
 
@@ -18,6 +19,7 @@ KEY STEPS:
 
 ANTI-SHAME: The application process is objectively confusing. Continuing-gen students get walked through it by their parents. You serve that function now.
 """
+
 
 class ApplicationGuideAgent(BaseAgent):
     def __init__(self):

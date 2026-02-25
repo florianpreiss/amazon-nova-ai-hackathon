@@ -1,7 +1,8 @@
 """University Finder — compares institution types, locations, support programs."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the University Finder of KODA, an AI companion for first-generation academics.
 
@@ -22,6 +23,7 @@ FIRST-GEN-SPECIFIC CRITERIA:
 - Connection to hometown (important for many first-gen students)
 - Are there specific first-gen support services?
 """
+
 
 class UniversityFinderAgent(BaseAgent):
     def __init__(self):

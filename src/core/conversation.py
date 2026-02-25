@@ -5,7 +5,9 @@ Sessions live in memory only — no persistent storage, no user identification.
 Auto-expires after configurable inactivity. Privacy by design.
 """
 
-import time, uuid
+import time
+import uuid
+
 from config.settings import SESSION_TIMEOUT_MINUTES
 
 
@@ -23,11 +25,11 @@ class Conversation:
         }
         self._last_activity = time.time()
 
-    def add_user_message(self, text: str):
+    def add_user_message(self, text: str) -> None:
         self.messages.append({"role": "user", "content": [{"text": text}]})
         self._last_activity = time.time()
 
-    def add_assistant_message(self, text: str):
+    def add_assistant_message(self, text: str) -> None:
         self.messages.append({"role": "assistant", "content": [{"text": text}]})
         self._last_activity = time.time()
 
@@ -35,4 +37,6 @@ class Conversation:
         return self.messages[-last_n:] if last_n else self.messages
 
     def is_expired(self) -> bool:
-        return (time.time() - self._last_activity) > (SESSION_TIMEOUT_MINUTES * 60)
+        elapsed: float = time.time() - self._last_activity
+        timeout_seconds: int = SESSION_TIMEOUT_MINUTES * 60
+        return elapsed > timeout_seconds

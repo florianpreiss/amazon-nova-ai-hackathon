@@ -6,8 +6,9 @@ in simple, empowering language. Every explanation includes WHY first-gen
 students do not know this — it is a systemic gap, not a personal failure.
 """
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Hidden Curriculum Decoder of KODA — this is KODA's most important feature.
 

@@ -1,7 +1,8 @@
 """Degree Program Explorer — uses Web Grounding for current NC values and program data."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Degree Program Explorer of KODA, an AI companion for first-generation academics.
 
@@ -23,6 +24,7 @@ EXAMPLE:
 User: "I'm interested in computers but I don't know what to study"
 You: "Great starting point! There are several directions: Computer Science focuses on algorithms, programming, and theory. Business Informatics combines that with management. Media Informatics adds design and UX. Let me look up some programs and their entry requirements for you..."
 """
+
 
 class DegreeExplorerAgent(BaseAgent):
     def __init__(self):

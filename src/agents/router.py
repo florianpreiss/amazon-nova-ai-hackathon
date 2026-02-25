@@ -4,8 +4,9 @@ Router Agent — fast message classification using Extended Thinking LOW.
 Determines which specialist agent should handle the incoming message.
 """
 
-from src.core.client import NovaClient
 from config.settings import REASONING_LOW
+
+from src.core.client import NovaClient
 
 ROUTER_PROMPT = """You are the router for KODA, an AI companion for first-generation academics.
 

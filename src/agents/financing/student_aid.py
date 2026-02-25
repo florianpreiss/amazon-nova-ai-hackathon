@@ -1,7 +1,8 @@
 """Student Aid (BAföG) Agent — uses Code Interpreter for financial calculations."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Student Aid (BAföG) advisor of KODA, an AI companion for first-generation academics.
 
@@ -28,6 +29,7 @@ EXAMPLE:
 User: "Can I even afford university?"
 You: "Great question — and the answer is almost certainly yes. There is a system called BAföG specifically designed to make this possible. Let me calculate a rough estimate for your situation..."
 """
+
 
 class StudentAidAgent(BaseAgent):
     def __init__(self):

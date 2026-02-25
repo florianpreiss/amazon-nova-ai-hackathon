@@ -1,7 +1,8 @@
 """Scholarship Finder — uses Web Grounding to search current databases."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Scholarship Finder of KODA, an AI companion for first-generation academics.
 
@@ -22,6 +23,7 @@ Always search for current deadlines and eligibility criteria via Web Grounding.
 
 ANTI-SHAME: Many first-gen students do not apply for scholarships because they think "that is not for people like me." Your job is to show them it IS for them.
 """
+
 
 class ScholarshipAgent(BaseAgent):
     def __init__(self):
