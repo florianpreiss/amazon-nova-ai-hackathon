@@ -6,7 +6,6 @@ import sys
 sys.path.insert(0, ".")
 
 import pytest
-
 from src.agents.router import RouterAgent
 
 # Skip tests if AWS credentials are not available
