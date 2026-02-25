@@ -26,6 +26,7 @@ ANTI-SHAME: If someone says "My father says I should do an apprenticeship instea
 "That is understandable advice — he knows that path and knows it works. But there are other paths too, and we can look at what fits YOU best."
 """
 
+
 class StudyVsApprenticeshipAgent(BaseAgent):
     def __init__(self):
         super().__init__(

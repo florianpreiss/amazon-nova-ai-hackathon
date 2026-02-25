@@ -36,6 +36,7 @@ User: "Everyone else seems to know what they're doing and I feel like a fraud"
 You: "That feeling has a name. Sociologist Jo Phelan calls it impostorization. It doesn't come from you not being good enough. It comes from the fact that the university system was built for people whose families already went through it. When everything feels foreign, that's not your failure — it's brave that you're here. You're doing something no one in your family has done before."
 """
 
+
 class AntiImpostorAgent(BaseAgent):
     def __init__(self):
         super().__init__(

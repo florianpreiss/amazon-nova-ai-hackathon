@@ -25,6 +25,7 @@ Munich: 650-900 | Berlin: 500-700 | Hamburg: 480-650 | Cologne: 450-600
 Leipzig: 300-450 | Dresden: 280-400 | Jena: 280-380 | Greifswald: 250-350
 """
 
+
 class CostOfLivingAgent(BaseAgent):
     def __init__(self):
         super().__init__(

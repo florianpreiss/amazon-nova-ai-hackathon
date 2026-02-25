@@ -44,17 +44,31 @@ class NovaClient:
     ) -> dict:
         """Send a Converse API request to Nova 2 Lite."""
         return self._client.converse(
-            **self._build(messages, system_prompt, tool_config,
-                          reasoning_effort, max_tokens, temperature, top_p)
+            **self._build(
+                messages,
+                system_prompt,
+                tool_config,
+                reasoning_effort,
+                max_tokens,
+                temperature,
+                top_p,
+            )
         )
 
-    def converse_stream(self, messages, system_prompt=None, tool_config=None,
-                        reasoning_effort=None, max_tokens=DEFAULT_MAX_TOKENS,
-                        temperature=DEFAULT_TEMPERATURE):
+    def converse_stream(
+        self,
+        messages,
+        system_prompt=None,
+        tool_config=None,
+        reasoning_effort=None,
+        max_tokens=DEFAULT_MAX_TOKENS,
+        temperature=DEFAULT_TEMPERATURE,
+    ):
         """Streaming variant — returns an event iterator."""
         return self._client.converse_stream(
-            **self._build(messages, system_prompt, tool_config,
-                          reasoning_effort, max_tokens, temperature)
+            **self._build(
+                messages, system_prompt, tool_config, reasoning_effort, max_tokens, temperature
+            )
         )
 
     def with_code_interpreter(self, messages, system_prompt=None, reasoning_effort=None):
@@ -84,8 +98,16 @@ class NovaClient:
                         parts.append(item["text"])
         return "\n".join(parts) if parts else ""
 
-    def _build(self, messages, system_prompt, tool_config,
-               reasoning_effort, max_tokens, temperature, top_p=DEFAULT_TOP_P):
+    def _build(
+        self,
+        messages,
+        system_prompt,
+        tool_config,
+        reasoning_effort,
+        max_tokens,
+        temperature,
+        top_p=DEFAULT_TOP_P,
+    ):
         kw: dict = {
             "modelId": self.model_id,
             "messages": messages,

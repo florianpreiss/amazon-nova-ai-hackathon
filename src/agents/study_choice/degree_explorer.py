@@ -25,6 +25,7 @@ User: "I'm interested in computers but I don't know what to study"
 You: "Great starting point! There are several directions: Computer Science focuses on algorithms, programming, and theory. Business Informatics combines that with management. Media Informatics adds design and UX. Let me look up some programs and their entry requirements for you..."
 """
 
+
 class DegreeExplorerAgent(BaseAgent):
     def __init__(self):
         super().__init__(

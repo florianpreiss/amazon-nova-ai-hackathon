@@ -38,11 +38,11 @@ router_agent = RouterAgent()
 crisis_radar = CrisisRadar()
 
 AGENTS = {
-    "COMPASS":          CompassAgent(),
-    "FINANCING":        StudentAidAgent(),
-    "STUDY_CHOICE":     DegreeExplorerAgent(),
-    "ACADEMIC_BASICS":  HiddenCurriculumAgent(),
-    "ROLE_MODELS":      AntiImpostorAgent(),
+    "COMPASS": CompassAgent(),
+    "FINANCING": StudentAidAgent(),
+    "STUDY_CHOICE": DegreeExplorerAgent(),
+    "ACADEMIC_BASICS": HiddenCurriculumAgent(),
+    "ROLE_MODELS": AntiImpostorAgent(),
 }
 
 # ── Session store (in-memory, ephemeral) ───────────
@@ -51,9 +51,11 @@ sessions: dict[str, Conversation] = {}
 
 # ── Request / Response schemas ─────────────────────
 
+
 class ChatRequest(BaseModel):
     session_id: str | None = None
     message: str
+
 
 class ChatResponse(BaseModel):
     session_id: str
@@ -62,7 +64,9 @@ class ChatResponse(BaseModel):
     crisis_detected: bool
     crisis_resources: dict | None = None
 
+
 # ── Endpoints ──────────────────────────────────────
+
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
@@ -96,17 +100,21 @@ async def chat(request: ChatRequest):
         crisis_resources=crisis.get("resources"),
     )
 
+
 @app.delete("/api/session/{session_id}")
 async def end_session(session_id: str):
     """Destroy a session explicitly."""
     sessions.pop(session_id, None)
     return {"status": "deleted"}
 
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "agents": list(AGENTS.keys())}
 
+
 # ── Helpers ────────────────────────────────────────
+
 
 def _get_or_create_session(session_id: str | None) -> Conversation:
     if session_id and session_id in sessions:
@@ -117,6 +125,7 @@ def _get_or_create_session(session_id: str | None) -> Conversation:
     conv = Conversation()
     sessions[conv.session_id] = conv
     return conv
+
 
 def _format_crisis_prefix(resources: dict) -> str:
     lines = ["⚠️ I notice you may be going through a difficult time. Here are immediate resources:"]

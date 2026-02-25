@@ -24,6 +24,7 @@ Always search for current deadlines and eligibility criteria via Web Grounding.
 ANTI-SHAME: Many first-gen students do not apply for scholarships because they think "that is not for people like me." Your job is to show them it IS for them.
 """
 
+
 class ScholarshipAgent(BaseAgent):
     def __init__(self):
         super().__init__(

@@ -30,6 +30,7 @@ User: "Can I even afford university?"
 You: "Great question — and the answer is almost certainly yes. There is a system called BAföG specifically designed to make this possible. Let me calculate a rough estimate for your situation..."
 """
 
+
 class StudentAidAgent(BaseAgent):
     def __init__(self):
         super().__init__(

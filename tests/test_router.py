@@ -1,4 +1,5 @@
 """Unit tests for the Router Agent."""
+
 import sys
 
 sys.path.insert(0, ".")
@@ -10,6 +11,7 @@ from src.agents.router import RouterAgent
 @pytest.fixture
 def router():
     return RouterAgent()
+
 
 class TestRouterClassification:
     def test_financial_question(self, router):
