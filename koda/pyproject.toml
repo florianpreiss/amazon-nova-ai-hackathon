@@ -3,10 +3,51 @@ name = "koda"
 version = "0.1.0"
 description = "AI Companion for First-Generation Academics"
 requires-python = ">=3.11"
+license = {text = "MIT"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "unit: Unit tests (no AWS calls)",
+    "integration: Integration tests (requires AWS credentials)",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "S",    # bandit security
+    "B",    # bugbear
+    "A",    # builtins shadowing
+    "C4",   # comprehensions
+    "DTZ",  # datetime timezone
+    "SIM",  # simplify
+    "RUF",  # ruff-specific
+]
+ignore = [
+    "S101",  # assert in tests OK
+    "E501",  # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"scripts/**" = ["T201"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "scripts"]
+skips = ["B101"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
