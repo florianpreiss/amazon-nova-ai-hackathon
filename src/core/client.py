@@ -43,16 +43,21 @@ class NovaClient:
         top_p: float = DEFAULT_TOP_P,
     ) -> dict:
         """Send a Converse API request to Nova 2 Lite."""
-        return self._client.converse(
-            **self._build(
-                messages,
-                system_prompt,
-                tool_config,
-                reasoning_effort,
-                max_tokens,
-                temperature,
-                top_p,
-            )
+        from typing import cast
+
+        return cast(
+            dict,
+            self._client.converse(
+                **self._build(
+                    messages,
+                    system_prompt,
+                    tool_config,
+                    reasoning_effort,
+                    max_tokens,
+                    temperature,
+                    top_p,
+                )
+            ),
         )
 
     def converse_stream(
@@ -100,14 +105,14 @@ class NovaClient:
 
     def _build(
         self,
-        messages,
-        system_prompt,
-        tool_config,
-        reasoning_effort,
-        max_tokens,
-        temperature,
-        top_p=DEFAULT_TOP_P,
-    ):
+        messages: list[dict],
+        system_prompt: str | None,
+        tool_config: dict | None,
+        reasoning_effort: str | None,
+        max_tokens: int,
+        temperature: float,
+        top_p: float = DEFAULT_TOP_P,
+    ) -> dict:
         kw: dict = {
             "modelId": self.model_id,
             "messages": messages,

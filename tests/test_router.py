@@ -1,11 +1,19 @@
 """Unit tests for the Router Agent."""
 
+import os
 import sys
 
 sys.path.insert(0, ".")
 
 import pytest
+
 from src.agents.router import RouterAgent
+
+# Skip tests if AWS credentials are not available
+pytestmark = pytest.mark.skipif(
+    not (os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_PROFILE")),
+    reason="AWS credentials required for router tests",
+)
 
 
 @pytest.fixture
