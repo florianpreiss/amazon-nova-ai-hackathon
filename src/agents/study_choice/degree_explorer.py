@@ -1,7 +1,8 @@
 """Degree Program Explorer — uses Web Grounding for current NC values and program data."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Degree Program Explorer of KODA, an AI companion for first-generation academics.
 

@@ -5,8 +5,9 @@ Detects financial emergencies, mental health crises, dropout risk,
 and acute danger using contextual reasoning (not just keywords).
 """
 
-from src.core.client import NovaClient
 from config.settings import REASONING_LOW
+
+from src.core.client import NovaClient
 
 CRISIS_PROMPT = """You are a crisis detector for a student support system.
 

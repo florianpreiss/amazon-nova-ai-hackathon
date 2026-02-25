@@ -5,10 +5,8 @@ Provides the standard interface: system prompt enrichment with intersectionality
 context, tool selection, and anti-shame post-processing.
 """
 
-from abc import ABC
 from src.core.client import NovaClient
 from src.core.safety import apply_anti_shame_filter, build_identity_addendum
-
 
 # Appended to every agent's system prompt to enable multilingual responses
 LANGUAGE_INSTRUCTION = """
@@ -22,8 +20,8 @@ Auto-detect the language from the user's latest message and match it exactly.
 """
 
 
-class BaseAgent(ABC):
-    """Abstract base for all domain agents."""
+class BaseAgent:
+    """Base class for all domain agents."""
 
     def __init__(
         self,

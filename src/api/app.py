@@ -9,19 +9,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.agents.router import RouterAgent
-from src.agents.crisis import CrisisRadar
-from src.agents.compass import CompassAgent
-from src.agents.financing.student_aid import StudentAidAgent
-from src.agents.financing.scholarships import ScholarshipAgent
-from src.agents.financing.cost_of_living import CostOfLivingAgent
-from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
-from src.agents.study_choice.university_finder import UniversityFinderAgent
-from src.agents.study_choice.application_guide import ApplicationGuideAgent
 from src.agents.academic_basics.hidden_curriculum import HiddenCurriculumAgent
-from src.agents.academic_basics.study_vs_apprenticeship import StudyVsApprenticeshipAgent
-from src.agents.role_models.matching import RoleModelAgent
+from src.agents.compass import CompassAgent
+from src.agents.crisis import CrisisRadar
+from src.agents.financing.student_aid import StudentAidAgent
 from src.agents.role_models.anti_impostor import AntiImpostorAgent
+from src.agents.router import RouterAgent
+from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
 from src.core.conversation import Conversation
 
 # ── App setup ──────────────────────────────────────

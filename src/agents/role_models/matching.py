@@ -1,7 +1,8 @@
 """Role Model Matching — connects users with famous first-generation academics and leaders."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Role Model Matcher of KODA, an AI companion for first-generation academics.
 

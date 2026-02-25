@@ -1,7 +1,8 @@
 """Student Aid (BAföG) Agent — uses Code Interpreter for financial calculations."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_HIGH
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Student Aid (BAföG) advisor of KODA, an AI companion for first-generation academics.
 
