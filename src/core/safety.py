@@ -11,9 +11,16 @@ logger = structlog.get_logger()
 
 # Patterns that must NEVER appear in KODA responses (any language)
 _SHAME_PATTERNS = [
-    "you should know", "this is basic", "everyone knows", "obviously",
-    "common knowledge", "should have learned", "das solltest du wissen",
-    "das ist grundwissen", "jeder weiss", "selbstverstaendlich",
+    "you should know",
+    "this is basic",
+    "everyone knows",
+    "obviously",
+    "common knowledge",
+    "should have learned",
+    "das solltest du wissen",
+    "das ist grundwissen",
+    "jeder weiss",
+    "selbstverstaendlich",
 ]
 
 

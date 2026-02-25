@@ -10,8 +10,12 @@ Reference: Nova 2 Developer Guide — "Core inference" and "Advanced systems" ch
 import boto3
 from botocore.config import Config
 from config.settings import (
-    AWS_REGION, NOVA_MODEL_ID, BEDROCK_READ_TIMEOUT,
-    DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE, DEFAULT_TOP_P,
+    AWS_REGION,
+    BEDROCK_READ_TIMEOUT,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_TEMPERATURE,
+    DEFAULT_TOP_P,
+    NOVA_MODEL_ID,
 )
 
 
@@ -39,18 +43,37 @@ class NovaClient:
         top_p: float = DEFAULT_TOP_P,
     ) -> dict:
         """Send a Converse API request to Nova 2 Lite."""
-        return self._client.converse(
-            **self._build(messages, system_prompt, tool_config,
-                          reasoning_effort, max_tokens, temperature, top_p)
+        from typing import cast
+
+        return cast(
+            dict,
+            self._client.converse(
+                **self._build(
+                    messages,
+                    system_prompt,
+                    tool_config,
+                    reasoning_effort,
+                    max_tokens,
+                    temperature,
+                    top_p,
+                )
+            ),
         )
 
-    def converse_stream(self, messages, system_prompt=None, tool_config=None,
-                        reasoning_effort=None, max_tokens=DEFAULT_MAX_TOKENS,
-                        temperature=DEFAULT_TEMPERATURE):
+    def converse_stream(
+        self,
+        messages,
+        system_prompt=None,
+        tool_config=None,
+        reasoning_effort=None,
+        max_tokens=DEFAULT_MAX_TOKENS,
+        temperature=DEFAULT_TEMPERATURE,
+    ):
         """Streaming variant — returns an event iterator."""
         return self._client.converse_stream(
-            **self._build(messages, system_prompt, tool_config,
-                          reasoning_effort, max_tokens, temperature)
+            **self._build(
+                messages, system_prompt, tool_config, reasoning_effort, max_tokens, temperature
+            )
         )
 
     def with_code_interpreter(self, messages, system_prompt=None, reasoning_effort=None):
@@ -80,8 +103,16 @@ class NovaClient:
                         parts.append(item["text"])
         return "\n".join(parts) if parts else ""
 
-    def _build(self, messages, system_prompt, tool_config,
-               reasoning_effort, max_tokens, temperature, top_p=DEFAULT_TOP_P):
+    def _build(
+        self,
+        messages: list[dict],
+        system_prompt: str | None,
+        tool_config: dict | None,
+        reasoning_effort: str | None,
+        max_tokens: int,
+        temperature: float,
+        top_p: float = DEFAULT_TOP_P,
+    ) -> dict:
         kw: dict = {
             "modelId": self.model_id,
             "messages": messages,

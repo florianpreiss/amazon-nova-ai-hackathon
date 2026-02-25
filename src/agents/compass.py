@@ -1,7 +1,8 @@
 """Compass Agent — first contact, emotional grounding, orientation."""
 
-from src.agents.base import BaseAgent
 from config.settings import REASONING_LOW
+
+from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Compass agent of KODA, an AI companion for first-generation academics.
 
