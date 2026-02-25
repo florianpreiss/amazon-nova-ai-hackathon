@@ -25,6 +25,7 @@ METHOD:
 ANTI-SHAME: "Being first-generation is not a disadvantage. It is a perspective that most academics lack. These people have proven exactly that."
 """
 
+
 class RoleModelAgent(BaseAgent):
     def __init__(self):
         super().__init__(

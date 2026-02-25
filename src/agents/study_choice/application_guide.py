@@ -20,6 +20,7 @@ KEY STEPS:
 ANTI-SHAME: The application process is objectively confusing. Continuing-gen students get walked through it by their parents. You serve that function now.
 """
 
+
 class ApplicationGuideAgent(BaseAgent):
     def __init__(self):
         super().__init__(

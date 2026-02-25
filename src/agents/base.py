@@ -28,7 +28,7 @@ class BaseAgent:
         name: str,
         system_prompt: str,
         reasoning_effort: str | None = None,
-        tool_mode: str | None = None,   # "code_interpreter" | "web_grounding" | None
+        tool_mode: str | None = None,  # "code_interpreter" | "web_grounding" | None
     ):
         self.name = name
         self._base_prompt = system_prompt + LANGUAGE_INSTRUCTION
