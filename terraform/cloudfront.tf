@@ -55,7 +55,7 @@ resource "aws_cloudfront_distribution" "koda" {
     minimum_protocol_version       = "TLSv1.2_2021"
   }
 
-  #web_acl_id = aws_wafv2_web_acl.koda.arn
+  web_acl_id = aws_wafv2_web_acl.koda.arn
 
   tags = { Name = "${local.prefix}-cdn" }
 }
