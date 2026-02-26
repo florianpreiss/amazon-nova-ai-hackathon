@@ -116,8 +116,14 @@ class NovaClient:
         kw: dict = {
             "modelId": self.model_id,
             "messages": messages,
-            "inferenceConfig": {"maxTokens": max_tokens, "temperature": temperature, "topP": top_p},
         }
+        # When using high reasoning effort, don't include inference config
+        if reasoning_effort != "high":
+            kw["inferenceConfig"] = {
+                "maxTokens": max_tokens,
+                "temperature": temperature,
+                "topP": top_p,
+            }
         if system_prompt:
             kw["system"] = [{"text": system_prompt}]
         if tool_config:

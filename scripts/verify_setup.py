@@ -1,9 +1,11 @@
 """Verify AWS Bedrock access and all Nova 2 Lite features."""
 
 import sys
+
 sys.path.insert(0, ".")
 
 from src.core.client import NovaClient
+
 
 def main():
     print("=" * 50)
@@ -21,14 +23,20 @@ def main():
     print("\n2. Extended Thinking (LOW)...")
     r = client.converse(
         messages=[{"role": "user", "content": [{"text": "What is BAföG in one sentence?"}]}],
-        reasoning_effort="low", max_tokens=200,
+        reasoning_effort="low",
+        max_tokens=200,
     )
     print(f"   ✓ {client.extract_text(r)[:80]}")
 
     print("\n3. Extended Thinking (HIGH)...")
     r = client.converse(
-        messages=[{"role": "user", "content": [{"text": "Explain the hidden curriculum concept in 2 sentences."}]}],
-        reasoning_effort="high", max_tokens=300,
+        messages=[
+            {
+                "role": "user",
+                "content": [{"text": "Explain the hidden curriculum concept in 2 sentences."}],
+            }
+        ],
+        reasoning_effort="high",
     )
     print(f"   ✓ {client.extract_text(r)[:80]}")
 
@@ -47,6 +55,7 @@ def main():
     print("\n" + "=" * 50)
     print("✅ All 5 tests passed. KODA is ready to build!")
     print("=" * 50)
+
 
 if __name__ == "__main__":
     main()
