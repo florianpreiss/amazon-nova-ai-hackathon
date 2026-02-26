@@ -54,6 +54,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
+          config: .hadolintrc.yaml
           failure-threshold: warning
 
   # ── Docker build + security scan ─────────────────

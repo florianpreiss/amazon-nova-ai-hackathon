@@ -32,7 +32,7 @@ RUN groupadd --system koda \
 # OWASP CSVS-3.1: Minimal packages, no cache
 # Install curl for health check only
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl=7.* \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
