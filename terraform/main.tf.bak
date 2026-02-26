@@ -1,0 +1,20 @@
+# ============================================================
+# main.tf — Root module (kept minimal, resources split to other files)
+# ============================================================
+# This file is kept for backward compatibility.
+# All resources have been organized into purpose-specific files:
+#
+# - terraform.tf       : Provider and version requirements
+# - variables.tf       : Input variables
+# - locals.tf          : Data sources and local values
+# - iam.tf             : IAM roles, policies, users
+# - dynamodb.tf        : DynamoDB tables
+# - s3.tf              : S3 buckets
+# - cloudwatch.tf      : CloudWatch logs
+# - outputs.tf         : Outputs
+#
+# Import-only structure: This module imports all resource files.
+# To add new resources, create a new file and they'll be imported automatically.
+
+# See locals.tf for data sources and local values
+# See terraform.tf for provider and version configuration
