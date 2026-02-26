@@ -74,8 +74,8 @@ jobs:
           image-ref: koda:ci-${{ github.sha }}
           format: table
           exit-code: 1
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+          severity: CRITICAL
+          ignore-unfixed: false
 
   # ── Unit tests ───────────────────────────────────
   test-unit:
