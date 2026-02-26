@@ -8,11 +8,14 @@ on:
 
 permissions:
   contents: read
+  security-events: write  # For Trivy SARIF upload
 
 env:
   PYTHON_VERSION: "3.11"
+  AWS_REGION: us-east-1
 
 jobs:
+  # ── Python lint + type check ─────────────────────
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
@@ -23,12 +26,13 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install ruff mypy types-requests pydantic
       - name: Ruff lint
-        run: ruff check src/ tests/
+        run: ruff check src/ tests/ frontend/
       - name: Ruff format check
-        run: ruff format --check src/ tests/
+        run: ruff format --check src/ tests/ frontend/
       - name: Type check
         run: mypy src/ --ignore-missing-imports
 
+  # ── Python security scan ─────────────────────────
   security:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -38,8 +42,45 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install "bandit[toml]"
-      - run: bandit -c pyproject.toml -r src/
+      - name: Bandit security scan
+        run: bandit -c pyproject.toml -r src/
+      - name: Detect secrets
+        uses: Yelp/detect-secrets-action@v2
+        with:
+          baseline_file: .secrets.baseline
 
+  # ── Dockerfile lint ──────────────────────────────
+  docker-lint:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+
+  # ── Docker build + security scan ─────────────────
+  docker-build:
+    name: Docker Build & Scan
+    runs-on: ubuntu-latest
+    needs: [lint, docker-lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t koda:ci-${{ github.sha }} .
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: koda:ci-${{ github.sha }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+  # ── Unit tests ───────────────────────────────────
   test-unit:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -54,10 +95,11 @@ jobs:
         env:
           AWS_DEFAULT_REGION: us-east-1
 
+  # ── Integration tests (main only) ────────────────
   test-integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [test-unit, security]
+    needs: [test-unit, security, docker-build]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -71,6 +113,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+  # ── Terraform validate ───────────────────────────
   terraform:
     name: Terraform Validate
     runs-on: ubuntu-latest

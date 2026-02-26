@@ -1,0 +1,60 @@
+# ============================================================
+# KODA — Docker build exclusions
+# Only include what the running application needs
+# ============================================================
+
+# Version control
+.git
+.gitignore
+
+# CI/CD and dev tooling
+.github
+.pre-commit-config.yaml
+.secrets.baseline
+
+# Python environments
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+# Secrets (CRITICAL — never include in image)
+.env
+.env.*
+*.pem
+*.key
+
+# Infrastructure (not needed at runtime)
+infra/
+
+# Tests (not needed at runtime)
+tests/
+
+# Documentation (not needed at runtime)
+docs/
+*.md
+
+# Scripts (not needed at runtime)
+scripts/
+
+# Build artifacts
+*.tar.gz
+*.zip
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker (prevent recursive context)
+docker-compose.yml
+Dockerfile
