@@ -1,0 +1,20 @@
+---
+# Hadolint configuration for KODA Dockerfile linting
+# https://github.com/hadolint/hadolint
+
+# Ignore specific warnings
+ignored:
+  # DL3008: Pin versions in apt-get install
+  # We pin pip version but accept latest curl from package repo
+  # Reasoning: curl in slim images is minimal and rarely has breaking changes
+  - DL3008
+  # DL3009: Delete apt-get lists after install (already doing this)
+  - DL3009
+
+# Require specific rules
+required:
+  - DL3006  # Use explicit tags, not latest
+  - DL3013  # Pin versions in pip install
+
+# Dockerfile format rules
+format: sarif

@@ -1,0 +1,38 @@
+# ============================================================
+# KODA — Local development compose file
+# Usage: docker compose up --build
+# ============================================================
+
+services:
+  koda:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8501:8501"
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+      - NOVA_MODEL_ID=${NOVA_MODEL_ID:-us.amazon.nova-2-lite-v1:0}
+      - SESSION_TIMEOUT_MINUTES=${SESSION_TIMEOUT_MINUTES:-30}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+    # OWASP: Read-only root filesystem
+    read_only: true
+    # Writable tmp for Streamlit cache
+    tmpfs:
+      - /tmp
+    # OWASP: Drop all Linux capabilities, add only what's needed
+    cap_drop:
+      - ALL
+    # OWASP: No privilege escalation
+    security_opt:
+      - no-new-privileges:true
