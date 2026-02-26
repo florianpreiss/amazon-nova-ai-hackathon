@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Install only production dependencies (no dev tools in final image)
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
+RUN pip install --no-cache-dir --upgrade pip==24.3.1 \
     && pip install --no-cache-dir -r requirements.txt
 
 # --- Stage 2: Production ---
@@ -32,7 +32,7 @@ RUN groupadd --system koda \
 # OWASP CSVS-3.1: Minimal packages, no cache
 # Install curl for health check only
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl=7.* \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
