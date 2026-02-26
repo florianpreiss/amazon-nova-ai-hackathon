@@ -2,6 +2,7 @@ default_language_version:
   python: python3.13
 
 repos:
+  # ── File hygiene ──────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -14,7 +15,10 @@ repos:
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: detect-private-key
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
 
+  # ── Python linting + formatting (Ruff) ────────────
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.6
     hooks:
@@ -22,9 +26,40 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  # ── Type checking (mypy) ──────────────────────────
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.1
     hooks:
       - id: mypy
         additional_dependencies: [types-requests, pydantic]
         args: [--ignore-missing-imports]
+
+  # ── Security: secret detection ────────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        exclude: '.env.example'
+
+  # ── Security: Python security linter ──────────────
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml']
+        additional_dependencies: ['bandit[toml]']
+
+  # ── Terraform ─────────────────────────────────────
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.98.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+
+  # ── Conventional commits ──────────────────────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, test, chore, ci, perf]
