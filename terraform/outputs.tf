@@ -54,3 +54,15 @@ output "env_file_content" {
     SESSION_TIMEOUT_MINUTES=30
   EOT
 }
+
+# ── Application Access ─────────────────────────────────
+
+output "alb_url" {
+  description = "ALB DNS name (internal, for CloudFront origin)"
+  value       = aws_lb.koda.dns_name
+}
+
+output "cloudfront_url" {
+  description = "CloudFront distribution domain name (public access point)"
+  value       = aws_cloudfront_distribution.koda.domain_name
+}
