@@ -414,8 +414,8 @@ for msg in st.session_state.messages:
         st.markdown(
             f'<div class="chat-msg msg-koda">'
             f'<div class="agent-badge">{label}</div>'
-            f'{_safe(msg["content"])}'
-            f'</div>',
+            f"{_safe(msg['content'])}"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
