@@ -156,12 +156,26 @@ st.markdown(
         border-radius: 24px !important;
     }
     .stChatInput textarea {
-        background: transparent !important;
+        background: #f0ebe4 !important;
+        background-color: #f0ebe4 !important;
         color: #2d3436 !important;
         padding: 0.5rem !important;
+        caret-color: rgba(125, 122, 201, 1) !important;
+        -webkit-text-fill-color: #2d3436 !important;
+    }
+    .stChatInput textarea:focus {
+        background: #f0ebe4 !important;
+        background-color: #f0ebe4 !important;
+        outline: none !important;
+        box-shadow: none !important;
     }
     .stChatInput textarea::selection {
-        background: rgba(125, 122, 201, 0.2) !important;
+        background: rgba(125, 122, 201, 0.25) !important;
+        color: #2d3436 !important;
+    }
+    /* Remove any inner wrapper backgrounds */
+    .stChatInput > div > div {
+        background: transparent !important;
     }
     /* Send button — subtle when empty, purple when ready */
     .stChatInput button {
