@@ -94,7 +94,7 @@ resource "aws_ecs_service" "koda" {
     rollback = true
   }
 
-  depends_on = [aws_lb_listener.https]
+  depends_on = [aws_lb_listener.http]
 
   tags = { Name = "${local.prefix}-service" }
 }

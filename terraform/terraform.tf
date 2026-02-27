@@ -25,13 +25,13 @@ terraform {
 provider "aws" {
   region = var.aws_region
 
-  default_tags {
-    tags = {
-      Project     = var.project_name
-      Environment = var.environment
-      ManagedBy   = "terraform"
-      CreatedBy   = "terraform"
-      CreatedAt   = timestamp()
-    }
+  # Ignore all tags injected by account-level tag policies.
+  # The account policy injects Project, Environment, ManagedBy, CreatedAt, CreatedBy
+  # at resource creation time. If we also set these in default_tags Terraform sees
+  # them as "new elements" during apply and fails with "inconsistent final plan".
+  # Solution: do not use default_tags; rely on the account tag policy instead.
+  ignore_tags {
+    key_prefixes = ["aws:"]
+    keys         = ["CreatedAt", "CreatedBy", "Project", "Environment", "ManagedBy"]
   }
 }
