@@ -368,7 +368,7 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
     st.markdown(
         f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>"
-        f"{t('welcome_body', lang).replace(chr(10)+chr(10), '<br>')}</p>",
+        f"{t('welcome_body', lang).replace(chr(10) + chr(10), '<br>')}</p>",
         unsafe_allow_html=True,
     )
 
@@ -408,10 +408,7 @@ for msg in st.session_state.messages:
     else:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         st.markdown(
-            f'<div class="msg-koda">'
-            f'<div class="badge">{label}</div>'
-            f'{_safe(msg["content"])}'
-            f'</div>',
+            f'<div class="msg-koda"><div class="badge">{label}</div>{_safe(msg["content"])}</div>',
             unsafe_allow_html=True,
         )
 
