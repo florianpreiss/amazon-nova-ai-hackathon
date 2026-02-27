@@ -1,14 +1,16 @@
 """
 KODA — Streamlit Chat Interface.
-
-Warm, approachable design. Uses native Streamlit components and theming.
-No CSS injection hacks — everything uses Streamlit's built-in systems.
 """
 
 import html as html_lib
+import sys
 import uuid
+from pathlib import Path
 
 import streamlit as st
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 
 # ── Page config ────────────────────────────────────────
@@ -33,19 +35,157 @@ if "lang" not in st.session_state:
 
 lang = st.session_state.lang
 
-
-# ── Minimal CSS for chat bubbles only ──────────────────
+# ── CSS ────────────────────────────────────────────────
 
 st.markdown(
     """
 <style>
-    /* Hide default Streamlit chrome */
+    /* Hide Streamlit chrome */
     #MainMenu, footer, header { visibility: hidden; }
     .stDeployButton { display: none; }
 
-    /* Chat bubbles */
+    /* ── Background images on edges ───────────── */
+    .stApp::before, .stApp::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: 280px;
+        background-size: cover;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.7;
+    }
+    .stApp::before {
+        left: 0;
+        background-image: url('app/static/left-bg.jpeg');
+        background-position: right center;
+        -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+    }
+    .stApp::after {
+        right: 0;
+        background-image: url('app/static/right-bg.jpeg');
+        background-position: left center;
+        -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+    }
+    @media (max-width: 1024px) {
+        .stApp::before, .stApp::after { display: none; }
+    }
+
+    .block-container {
+        position: relative;
+        z-index: 1;
+        padding-top: 0.5rem !important;
+    }
+
+    /* ── K · O · D · A title ──────────────────── */
+    .koda-title {
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 4rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-align: center;
+        color: rgba(125, 122, 201, 1);
+        margin: 0.3rem 0 0.15rem 0;
+        line-height: 1;
+    }
+    .koda-tagline {
+        text-align: center;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        color: #636e72;
+        margin: 0 0 0.15rem 0;
+        font-weight: 400;
+        font-style: italic;
+    }
+    .koda-heritage {
+        text-align: center;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.72rem;
+        color: #b2bec3;
+        margin: 0 0 1rem 0;
+        letter-spacing: 0.04em;
+    }
+
+    /* ── Stat boxes ───────────────────────────── */
+    .stat-box {
+        background: rgba(222, 176, 215, 0.25);
+        border: 1px solid rgba(222, 176, 215, 0.5);
+        border-radius: 16px;
+        padding: 1.2rem 1rem;
+        text-align: center;
+        margin: 0.3rem 0;
+    }
+    .stat-label {
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.78rem;
+        color: #636e72;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.3rem;
+    }
+    .stat-value {
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 2.2rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 0.2rem;
+    }
+    .stat-value.low { color: #d63031; }
+    .stat-value.high { color: #00b894; }
+    .stat-delta {
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.8rem;
+        color: #636e72;
+    }
+
+    /* ── Chat input bar ───────────────────────── */
+    .stBottom, .stBottom > div, .stBottom > div > div {
+        background: transparent !important;
+    }
+    .stChatInput {
+        background: transparent !important;
+    }
+    .stChatInput > div {
+        background: #f0ebe4 !important;
+        border: 2px solid rgba(125, 122, 201, 0.25) !important;
+        border-radius: 24px !important;
+    }
+    .stChatInput textarea {
+        background: transparent !important;
+        color: #2d3436 !important;
+    }
+    /* Send button — subtle when empty, purple when ready */
+    .stChatInput button {
+        border-radius: 50% !important;
+        border: none !important;
+        transition: all 0.2s !important;
+    }
+    .stChatInput button[disabled] {
+        background: #ddd !important;
+        opacity: 0.4 !important;
+    }
+    .stChatInput button:not([disabled]) {
+        background: rgba(125, 122, 201, 1) !important;
+        color: white !important;
+        box-shadow: 0 2px 6px rgba(125, 122, 201, 0.4) !important;
+    }
+    .stChatInput button:not([disabled]):hover {
+        background: rgba(105, 102, 181, 1) !important;
+        box-shadow: 0 3px 10px rgba(125, 122, 201, 0.5) !important;
+    }
+    .stChatInput button svg {
+        fill: currentColor !important;
+        stroke: currentColor !important;
+    }
+
+    /* ── Chat bubbles ─────────────────────────── */
     .msg-user {
-        background: #1a8a6e; color: white;
+        background: rgba(125, 122, 201, 1); color: white;
         padding: 0.8rem 1.1rem; border-radius: 16px 16px 4px 16px;
         margin: 0.4rem 0 0.4rem 4rem; line-height: 1.6; font-size: 0.9rem;
     }
@@ -53,15 +193,48 @@ st.markdown(
         background: white; color: #2d3436; border: 1px solid #e8e4df;
         padding: 0.8rem 1.1rem; border-radius: 16px 16px 16px 4px;
         margin: 0.4rem 4rem 0.4rem 0; line-height: 1.6; font-size: 0.9rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
     .msg-koda .badge {
-        font-size: 0.7rem; color: #e8853a; font-weight: 700;
+        font-size: 0.7rem; color: rgba(125, 122, 201, 0.8); font-weight: 700;
         letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem;
+    }
+
+    /* ── Quick action buttons ─────────────────── */
+    .stButton > button {
+        border-color: rgba(125, 122, 201, 0.3) !important;
+    }
+    .stButton > button:hover {
+        border-color: rgba(125, 122, 201, 0.7) !important;
+        background: rgba(125, 122, 201, 0.08) !important;
     }
 </style>
 """,
     unsafe_allow_html=True,
 )
+
+
+# ── Language toggle ───────────
+
+
+def _set_lang(new_lang: str):
+    st.session_state.lang = new_lang
+
+
+st.pills(
+    label="Language",
+    options=["🇩🇪 Deutsch", "🇬🇧 English"],
+    default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
+    on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
+    key="_lang_pills",
+    label_visibility="collapsed",
+)
+# Apply the language if changed via pills
+if "_lang_pills" in st.session_state:
+    new = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
+    if new != lang:
+        st.session_state.lang = new
+        st.rerun()
 
 
 # ── Agent loader ───────────────────────────────────────
@@ -105,95 +278,102 @@ def get_response(user_message: str, history: list) -> dict:
     if crisis["is_crisis"] and crisis["resources"]:
         prefix = t("crisis_banner", lang) + "\n"
         for v in crisis["resources"].values():
-            prefix += f"• {v}\n"
+            prefix += f"\u2022 {v}\n"
         response_text = prefix + "\n" + response_text
 
     return {"response": response_text, "agent": agent_key, "crisis": crisis["is_crisis"]}
 
 
 def _safe(text: str) -> str:
-    """Escape HTML to prevent XSS, convert newlines to <br>."""
     return html_lib.escape(text).replace("\n", "<br>")
 
 
 def _send(msg_key: str):
-    """Queue a quick-action message."""
     st.session_state._pending_msg = t(msg_key, lang)
     st.session_state.show_welcome = False
 
 
-# ── Language toggle — proper segmented control ─────────
+# ── Title: KODA ──────────────────────────────
 
-col_header, col_lang = st.columns([4, 1])
-
-with col_header:
-    st.title("🧭 KODA")
-
-with col_lang:
-    selected_lang = st.segmented_control(
-        label="Language",
-        options=["🇩🇪 DE", "🇬🇧 EN"],
-        default="🇩🇪 DE" if lang == "de" else "🇬🇧 EN",
-        label_visibility="collapsed",
-        key="lang_toggle",
+dot = chr(183)
+if lang == "de":
+    heritage_text = f"Japanisch: \u201ehier, an diesem Punkt\u201c {dot} Dakota Sioux: \u201eFreund, Verb\u00fcndeter\u201c"
+else:
+    heritage_text = (
+        f"Japanese: \u2018here, at this point\u2019 {dot} Dakota Sioux: \u2018friend, ally\u2019"
     )
-    new_lang = "de" if selected_lang == "🇩🇪 DE" else "en"
-    if new_lang != lang:
-        st.session_state.lang = new_lang
-        st.rerun()
 
-# ── Tagline ────────────────────────────────────────────
+st.markdown(
+    """<div class="koda-title">K\u2009\u00b7\u2009O\u2009\u00b7\u2009D\u2009\u00b7\u2009A</div>""",
+    unsafe_allow_html=True,
+)
+st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe_allow_html=True)
+st.markdown(f"""<div class="koda-heritage">{heritage_text}</div>""", unsafe_allow_html=True)
 
-st.caption(t("subtitle", lang))
 
 # ── Welcome screen ─────────────────────────────────────
 
 if st.session_state.show_welcome and not st.session_state.messages:
-    st.divider()
-
-    # Stats — using native st.columns and st.metric
     col_left, col_right = st.columns(2)
 
     with col_left:
         if lang == "de":
-            st.metric(
-                label="Nicht-Akademikerkinder",
-                value="27 von 100",
-                delta="beginnen ein Studium",
-                delta_color="inverse",
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Nicht-Akademikerkinder</div>
+                <div class="stat-value low">27 von 100</div>
+                <div class="stat-delta">beginnen ein Studium</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
             )
         else:
-            st.metric(
-                label="Non-academic families",
-                value="27 of 100",
-                delta="start university",
-                delta_color="inverse",
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Non-academic families</div>
+                <div class="stat-value low">27 of 100</div>
+                <div class="stat-delta">start university</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
             )
 
     with col_right:
         if lang == "de":
-            st.metric(
-                label="Akademikerkinder",
-                value="79 von 100",
-                delta="beginnen ein Studium",
-                delta_color="normal",
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Akademikerkinder</div>
+                <div class="stat-value high">79 von 100</div>
+                <div class="stat-delta">beginnen ein Studium</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
             )
         else:
-            st.metric(
-                label="Academic families",
-                value="79 of 100",
-                delta="start university",
-                delta_color="normal",
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Academic families</div>
+                <div class="stat-value high">79 of 100</div>
+                <div class="stat-delta">start university</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
             )
 
-    st.divider()
+    st.write("")
 
-    # Welcome text
-    st.markdown(f"**{t('welcome_body', lang)}**")
+    st.markdown(
+        f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>"
+        f"{t('welcome_body', lang).replace(chr(10)+chr(10), '<br>')}</p>",
+        unsafe_allow_html=True,
+    )
 
-    st.write("")  # spacing
+    st.write("")
 
-    # Quick actions — 2 rows of 3
     c1, c2, c3 = st.columns(3)
     with c1:
         if st.button(t("quick_bafoeg", lang), use_container_width=True):
@@ -216,7 +396,6 @@ if st.session_state.show_welcome and not st.session_state.messages:
         if st.button(t("quick_rolemodels", lang), use_container_width=True):
             _send("quick_rolemodels_msg")
 
-    st.write("")  # spacing
 
 # ── Chat history ───────────────────────────────────────
 
@@ -235,6 +414,7 @@ for msg in st.session_state.messages:
             f'</div>',
             unsafe_allow_html=True,
         )
+
 
 # ── Input handling ─────────────────────────────────────
 
@@ -267,7 +447,17 @@ if user_input:
     )
     st.rerun()
 
+
 # ── Footer ─────────────────────────────────────────────
 
 st.divider()
-st.caption(t("footer", lang))
+footer_text = t("footer", lang)
+footer_html = footer_text.replace(
+    "\n\n",
+    '</p><p style="text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;">',
+)
+st.markdown(
+    f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
+    f"{footer_html}</p>",
+    unsafe_allow_html=True,
+)

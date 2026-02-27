@@ -1,6 +1,5 @@
 # ============================================================
-# KODA — Streamlit Theme Configuration
-# Warm, approachable design inspired by ArbeiterKind.de
+# KODA — Streamlit Configuration
 # ============================================================
 
 [theme]
@@ -21,6 +20,7 @@ primaryColor = "#e8853a"
 
 [server]
 headless = true
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false
