@@ -46,6 +46,9 @@ COPY config/ config/
 COPY src/ src/
 COPY frontend/ frontend/
 
+# Create symlink for static files so Streamlit can serve them
+RUN ln -s /app/frontend/static /app/app 2>/dev/null || true
+
 # OWASP CSVS-2.2: Read-only filesystem where possible
 RUN chown -R koda:koda /app
 

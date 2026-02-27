@@ -158,6 +158,10 @@ st.markdown(
     .stChatInput textarea {
         background: transparent !important;
         color: #2d3436 !important;
+        padding: 0.5rem !important;
+    }
+    .stChatInput textarea::selection {
+        background: rgba(125, 122, 201, 0.2) !important;
     }
     /* Send button — subtle when empty, purple when ready */
     .stChatInput button {
@@ -181,6 +185,12 @@ st.markdown(
     .stChatInput button svg {
         fill: currentColor !important;
         stroke: currentColor !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
+    .stChatInput button > div {
+        background: none !important;
+        border: none !important;
     }
 
     /* ── Chat bubbles ─────────────────────────── */
@@ -366,9 +376,12 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
     st.write("")
 
+    welcome_text = t("welcome_body", lang).replace(
+        "\n\n",
+        '</p><p style="text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0.5rem 0 0 0;">',
+    )
     st.markdown(
-        f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>"
-        f"{t('welcome_body', lang).replace(chr(10) + chr(10), '<br>')}</p>",
+        f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>{welcome_text}</p>",
         unsafe_allow_html=True,
     )
 
