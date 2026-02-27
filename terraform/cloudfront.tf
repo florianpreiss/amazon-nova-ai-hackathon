@@ -44,6 +44,18 @@ resource "aws_cloudfront_distribution" "koda" {
     origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3"
   }
 
+  # Static assets (images, etc.) served by Streamlit
+  ordered_cache_behavior {
+    path_pattern             = "/app/static/*"
+    allowed_methods          = ["GET", "HEAD"]
+    cached_methods           = ["GET", "HEAD"]
+    target_origin_id         = "alb"
+    viewer_protocol_policy   = "redirect-to-https"
+    cache_policy_id          = "658327ea-f89d-4fab-a63d-7e88639e58f6" # CachingOptimized
+    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3"
+    compress                 = true
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"

@@ -46,8 +46,11 @@ COPY config/ config/
 COPY src/ src/
 COPY frontend/ frontend/
 
-# Create symlink for static files so Streamlit can serve them
-RUN ln -s /app/frontend/static /app/app 2>/dev/null || true
+# Streamlit static file serving: when running `streamlit run frontend/app.py`,
+# Streamlit serves files from <script_dir>/static/ at the URL path app/static/.
+# Since the script is at /app/frontend/app.py, static files must be at
+# /app/frontend/static/ — which they already are after COPY frontend/ frontend/.
+# No symlink needed; the COPY above already puts them in the right place.
 
 # OWASP CSVS-2.2: Read-only filesystem where possible
 RUN chown -R koda:koda /app
@@ -66,6 +69,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
 # Streamlit configuration via CLI flags
+# Run from frontend/ so that Streamlit's static file serving resolves
+# frontend/static/ correctly at the URL path app/static/
 ENTRYPOINT ["streamlit", "run", "frontend/app.py", \
     "--server.port=8501", \
     "--server.address=0.0.0.0", \
@@ -73,4 +78,5 @@ ENTRYPOINT ["streamlit", "run", "frontend/app.py", \
     "--browser.gatherUsageStats=false", \
     "--server.enableCORS=false", \
     "--server.enableXsrfProtection=true", \
-    "--server.maxUploadSize=1"]
+    "--server.maxUploadSize=1", \
+    "--server.enableStaticServing=true"]
