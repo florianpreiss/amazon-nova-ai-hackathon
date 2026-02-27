@@ -42,7 +42,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_security_group" "ecs" {
   name        = "${local.prefix}-ecs-sg"
-  description = "ECS tasks — only ALB inbound, Bedrock outbound"
+  description = "ECS tasks - only ALB inbound, Bedrock outbound"
   vpc_id      = aws_vpc.main.id
 
   ingress {

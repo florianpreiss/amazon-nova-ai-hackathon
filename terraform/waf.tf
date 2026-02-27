@@ -7,7 +7,7 @@
 resource "aws_wafv2_web_acl" "koda" {
   name        = "${local.prefix}-waf"
   scope       = "CLOUDFRONT"
-  description = "KODA WAF — rate limiting, bot control, attack protection"
+  description = "KODA WAF - rate limiting, bot control, attack protection"
 
   default_action {
     allow {}

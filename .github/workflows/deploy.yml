@@ -1,0 +1,136 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Manual trigger button in GitHub UI
+
+# OIDC: GitHub Actions gets temporary AWS credentials via role assumption
+# No static AWS keys stored anywhere
+permissions:
+  id-token: write   # Required for OIDC token
+  contents: read    # Required for checkout
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER: koda-dev-cluster
+  ECS_SERVICE: koda-dev-service
+  ECR_REPOSITORY: koda-dev-app
+  TASK_FAMILY: koda-dev-task
+
+jobs:
+  # ── Build Docker image and push to ECR ───────────
+  build-and-push:
+    name: Build & Push to ECR
+    runs-on: ubuntu-latest
+    outputs:
+      image-uri: ${{ steps.build.outputs.image-uri }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Deploy-${{ github.run_id }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        id: build
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+          echo "Building image: $IMAGE_URI"
+          docker build -t $IMAGE_URI .
+
+          echo "Pushing to ECR..."
+          docker push $IMAGE_URI
+
+          # Also tag as latest
+          docker tag $IMAGE_URI $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          echo "image-uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+          echo "✅ Image pushed: $IMAGE_URI" >> $GITHUB_STEP_SUMMARY
+
+  # ── Deploy to ECS Fargate ────────────────────────
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production  # Optional: add approval gate in GitHub
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Deploy-${{ github.run_id }}
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition $TASK_FAMILY \
+            --query 'taskDefinition' \
+            --output json > task-def.json
+
+          # Remove fields that can't be re-registered
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            task-def.json > clean-task-def.json
+
+      - name: Update image in task definition
+        env:
+          IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
+        run: |
+          jq --arg IMAGE "$IMAGE_URI" \
+            '.containerDefinitions[0].image = $IMAGE' \
+            clean-task-def.json > new-task-def.json
+
+          echo "Updated task definition with image: $IMAGE_URI"
+          cat new-task-def.json | jq '.containerDefinitions[0].image'
+
+      - name: Register new task definition
+        id: register
+        run: |
+          NEW_TASK_DEF=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-def.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "task-def-arn=$NEW_TASK_DEF" >> "$GITHUB_OUTPUT"
+          echo "Registered: $NEW_TASK_DEF"
+
+      - name: Update ECS service
+        env:
+          TASK_DEF_ARN: ${{ steps.register.outputs.task-def-arn }}
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_SERVICE \
+            --task-definition $TASK_DEF_ARN \
+            --force-new-deployment
+
+          echo "✅ Deployment started" >> $GITHUB_STEP_SUMMARY
+          echo "Cluster: $ECS_CLUSTER" >> $GITHUB_STEP_SUMMARY
+          echo "Service: $ECS_SERVICE" >> $GITHUB_STEP_SUMMARY
+          echo "Task Definition: $TASK_DEF_ARN" >> $GITHUB_STEP_SUMMARY
+
+      - name: Wait for deployment to stabilize
+        run: |
+          echo "Waiting for ECS service to stabilize (up to 5 minutes)..."
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $ECS_SERVICE \
+            --region $AWS_REGION || true
+
+          echo "✅ Deployment complete!" >> $GITHUB_STEP_SUMMARY
