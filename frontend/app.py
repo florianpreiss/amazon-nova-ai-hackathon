@@ -3,15 +3,20 @@ KODA — Streamlit Chat Interface.
 """
 
 import html as html_lib
+import sys
 import uuid
+from pathlib import Path
 
 import streamlit as st
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 
 # ── Page config ────────────────────────────────────────
 
 st.set_page_config(
-    page_title="KODA — Your AI Companion for University Orientation",
+    page_title="KODA — Dein Studienbegleiter | Your Study Companion",
     page_icon="🧭",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -30,231 +35,207 @@ if "lang" not in st.session_state:
 
 lang = st.session_state.lang
 
-# ── Custom CSS — warm, approachable, ArbeiterKind-inspired ──
+# ── CSS ────────────────────────────────────────────────
 
 st.markdown(
     """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;1,6..12,400&display=swap');
-
-    :root {
-        --koda-green: #1a8a6e;
-        --koda-green-light: #e8f5f0;
-        --koda-green-dark: #146b55;
-        --koda-orange: #e8853a;
-        --koda-orange-light: #fef3e8;
-        --koda-cream: #faf8f5;
-        --koda-warm-gray: #f5f2ee;
-        --koda-text: #2d3436;
-        --koda-text-light: #636e72;
-        --koda-white: #ffffff;
-        --koda-border: #e8e4df;
-        --font-display: 'Source Serif 4', Georgia, serif;
-        --font-body: 'Nunito Sans', -apple-system, sans-serif;
-    }
-
-    /* Global — warm cream background */
-    .stApp {
-        background: var(--koda-cream) !important;
-    }
-    .block-container {
-        max-width: 760px;
-        padding-top: 1rem !important;
-        padding-bottom: 2rem;
-    }
-
     /* Hide Streamlit chrome */
     #MainMenu, footer, header { visibility: hidden; }
     .stDeployButton { display: none; }
 
-    /* ── Language toggle ──────────────────────── */
-    .lang-toggle {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 0;
-        padding: 0.5rem 0;
+    /* ── Background images on edges ───────────── */
+    .stApp::before, .stApp::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: 280px;
+        background-size: cover;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.7;
     }
-    .lang-btn {
-        font-family: var(--font-body);
-        font-size: 0.8rem;
-        font-weight: 600;
-        padding: 0.4rem 0.8rem;
-        border: 2px solid var(--koda-border);
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-        color: var(--koda-text-light);
-        background: var(--koda-white);
+    .stApp::before {
+        left: 0;
+        background-image: url('app/static/left-bg.jpeg');
+        background-position: right center;
+        -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
     }
-    .lang-btn:first-child { border-radius: 20px 0 0 20px; border-right: 1px solid var(--koda-border); }
-    .lang-btn:last-child { border-radius: 0 20px 20px 0; border-left: 1px solid var(--koda-border); }
-    .lang-btn.active {
-        background: var(--koda-green);
-        color: white;
-        border-color: var(--koda-green);
+    .stApp::after {
+        right: 0;
+        background-image: url('app/static/right-bg.jpeg');
+        background-position: left center;
+        -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+    }
+    @media (max-width: 1024px) {
+        .stApp::before, .stApp::after { display: none; }
     }
 
-    /* ── Header ───────────────────────────────── */
-    .koda-header {
-        text-align: center;
-        padding: 1.5rem 0 0.5rem 0;
+    .block-container {
+        position: relative;
+        z-index: 1;
+        padding-top: 0.5rem !important;
     }
-    .koda-logo {
-        font-family: var(--font-display);
-        font-size: 3rem;
+
+    /* ── K · O · D · A title ──────────────────── */
+    .koda-title {
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 4rem;
         font-weight: 700;
-        color: var(--koda-green);
-        letter-spacing: 0.08em;
-        margin: 0;
+        letter-spacing: 0.22em;
+        text-align: center;
+        color: rgba(125, 122, 201, 1);
+        margin: 0.3rem 0 0.15rem 0;
+        line-height: 1;
     }
     .koda-tagline {
-        font-family: var(--font-body);
+        text-align: center;
+        font-family: 'Nunito', sans-serif;
         font-size: 1rem;
-        color: var(--koda-text-light);
-        margin-top: 0.2rem;
+        color: #636e72;
+        margin: 0 0 0.15rem 0;
         font-weight: 400;
+        font-style: italic;
+    }
+    .koda-heritage {
+        text-align: center;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.72rem;
+        color: #b2bec3;
+        margin: 0 0 1rem 0;
+        letter-spacing: 0.04em;
     }
 
-    /* ── Stats cards ──────────────────────────── */
-    .stats-container {
-        display: flex;
-        gap: 1.2rem;
-        justify-content: center;
-        margin: 1.5rem 0;
-    }
-    .stat-card {
-        flex: 1;
-        max-width: 240px;
-        padding: 1.5rem;
+    /* ── Stat boxes ───────────────────────────── */
+    .stat-box {
+        background: rgba(222, 176, 215, 0.25);
+        border: 1px solid rgba(222, 176, 215, 0.5);
         border-radius: 16px;
+        padding: 1.2rem 1rem;
         text-align: center;
-        transition: transform 0.2s;
+        margin: 0.3rem 0;
     }
-    .stat-card:hover { transform: translateY(-2px); }
-    .stat-card.green {
-        background: var(--koda-green-light);
-        border: 2px solid rgba(26, 138, 110, 0.15);
-    }
-    .stat-card.orange {
-        background: var(--koda-orange-light);
-        border: 2px solid rgba(232, 133, 58, 0.15);
-    }
-    .stat-number {
-        font-family: var(--font-display);
-        font-size: 3rem;
-        font-weight: 700;
-        line-height: 1;
-        margin-bottom: 0.4rem;
-    }
-    .stat-card.green .stat-number { color: var(--koda-green); }
-    .stat-card.orange .stat-number { color: var(--koda-orange); }
     .stat-label {
-        font-family: var(--font-body);
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.78rem;
+        color: #636e72;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.3rem;
+    }
+    .stat-value {
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 2.2rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 0.2rem;
+    }
+    .stat-value.low { color: #d63031; }
+    .stat-value.high { color: #00b894; }
+    .stat-delta {
+        font-family: 'Nunito', sans-serif;
         font-size: 0.8rem;
-        color: var(--koda-text-light);
-        line-height: 1.4;
+        color: #636e72;
     }
 
-    /* ── Welcome card ─────────────────────────── */
-    .welcome-text {
-        text-align: center;
-        font-family: var(--font-body);
-        font-size: 0.95rem;
-        color: var(--koda-text-light);
-        line-height: 1.7;
-        max-width: 520px;
-        margin: 0.5rem auto 1.5rem auto;
+    /* ── Chat input bar ───────────────────────── */
+    .stBottom, .stBottom > div, .stBottom > div > div {
+        background: transparent !important;
+    }
+    .stChatInput {
+        background: transparent !important;
+    }
+    .stChatInput > div {
+        background: #f0ebe4 !important;
+        border: 2px solid rgba(125, 122, 201, 0.25) !important;
+        border-radius: 24px !important;
+    }
+    .stChatInput textarea {
+        background: transparent !important;
+        color: #2d3436 !important;
+    }
+    /* Send button — subtle when empty, purple when ready */
+    .stChatInput button {
+        border-radius: 50% !important;
+        border: none !important;
+        transition: all 0.2s !important;
+    }
+    .stChatInput button[disabled] {
+        background: #ddd !important;
+        opacity: 0.4 !important;
+    }
+    .stChatInput button:not([disabled]) {
+        background: rgba(125, 122, 201, 1) !important;
+        color: white !important;
+        box-shadow: 0 2px 6px rgba(125, 122, 201, 0.4) !important;
+    }
+    .stChatInput button:not([disabled]):hover {
+        background: rgba(105, 102, 181, 1) !important;
+        box-shadow: 0 3px 10px rgba(125, 122, 201, 0.5) !important;
+    }
+    .stChatInput button svg {
+        fill: currentColor !important;
+        stroke: currentColor !important;
+    }
+
+    /* ── Chat bubbles ─────────────────────────── */
+    .msg-user {
+        background: rgba(125, 122, 201, 1); color: white;
+        padding: 0.8rem 1.1rem; border-radius: 16px 16px 4px 16px;
+        margin: 0.4rem 0 0.4rem 4rem; line-height: 1.6; font-size: 0.9rem;
+    }
+    .msg-koda {
+        background: white; color: #2d3436; border: 1px solid #e8e4df;
+        padding: 0.8rem 1.1rem; border-radius: 16px 16px 16px 4px;
+        margin: 0.4rem 4rem 0.4rem 0; line-height: 1.6; font-size: 0.9rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .msg-koda .badge {
+        font-size: 0.7rem; color: rgba(125, 122, 201, 0.8); font-weight: 700;
+        letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem;
     }
 
     /* ── Quick action buttons ─────────────────── */
     .stButton > button {
-        font-family: var(--font-body) !important;
-        font-weight: 600 !important;
-        border-radius: 12px !important;
-        border: 2px solid var(--koda-border) !important;
-        background: var(--koda-white) !important;
-        color: var(--koda-text) !important;
-        padding: 0.6rem 0.5rem !important;
-        transition: all 0.2s !important;
-        font-size: 0.82rem !important;
+        border-color: rgba(125, 122, 201, 0.3) !important;
     }
     .stButton > button:hover {
-        border-color: var(--koda-green) !important;
-        background: var(--koda-green-light) !important;
-        color: var(--koda-green-dark) !important;
-        transform: translateY(-1px);
-    }
-
-    /* ── Chat messages ────────────────────────── */
-    .chat-msg {
-        font-family: var(--font-body);
-        padding: 1rem 1.2rem;
-        border-radius: 16px;
-        margin: 0.6rem 0;
-        line-height: 1.7;
-        font-size: 0.9rem;
-        animation: fadeIn 0.3s ease-out;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .msg-user {
-        background: var(--koda-green);
-        color: white;
-        margin-left: 3rem;
-        border-bottom-right-radius: 4px;
-    }
-    .msg-koda {
-        background: var(--koda-white);
-        color: var(--koda-text);
-        margin-right: 3rem;
-        border: 1px solid var(--koda-border);
-        border-bottom-left-radius: 4px;
-    }
-    .agent-badge {
-        font-size: 0.7rem;
-        color: var(--koda-orange);
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 0.3rem;
-        font-family: var(--font-body);
-    }
-
-    /* ── Footer ───────────────────────────────── */
-    .koda-footer {
-        text-align: center;
-        margin-top: 2rem;
-        padding: 1.5rem;
-        border-top: 1px solid var(--koda-border);
-    }
-    .koda-footer p {
-        font-family: var(--font-body);
-        font-size: 0.75rem;
-        color: var(--koda-text-light);
-        margin: 0;
-    }
-
-    /* ── Chat input styling ───────────────────── */
-    .stChatInput {
-        position: relative;
-    }
-    .stChatInput textarea {
-        font-family: var(--font-body) !important;
-        border-radius: 16px !important;
-        border: 2px solid var(--koda-border) !important;
-        background: var(--koda-white) !important;
-    }
-    .stChatInput textarea:focus {
-        border-color: var(--koda-green) !important;
-        box-shadow: 0 0 0 3px rgba(26, 138, 110, 0.1) !important;
+        border-color: rgba(125, 122, 201, 0.7) !important;
+        background: rgba(125, 122, 201, 0.08) !important;
     }
 </style>
 """,
     unsafe_allow_html=True,
 )
+
+
+# ── Language toggle ───────────
+
+
+def _set_lang(new_lang: str):
+    st.session_state.lang = new_lang
+
+
+st.pills(
+    label="Language",
+    options=["🇩🇪 Deutsch", "🇬🇧 English"],
+    default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
+    on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
+    key="_lang_pills",
+    label_visibility="collapsed",
+)
+# Apply the language if changed via pills
+if "_lang_pills" in st.session_state:
+    new = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
+    if new != lang:
+        st.session_state.lang = new
+        st.rerun()
+
 
 # ── Agent loader ───────────────────────────────────────
 
@@ -297,88 +278,102 @@ def get_response(user_message: str, history: list) -> dict:
     if crisis["is_crisis"] and crisis["resources"]:
         prefix = t("crisis_banner", lang) + "\n"
         for v in crisis["resources"].values():
-            prefix += f"• {v}\n"
+            prefix += f"\u2022 {v}\n"
         response_text = prefix + "\n" + response_text
 
     return {"response": response_text, "agent": agent_key, "crisis": crisis["is_crisis"]}
 
 
-def _send(key: str):
-    st.session_state._pending_msg = t(key, lang)
-    st.session_state.show_welcome = False
-
-
 def _safe(text: str) -> str:
-    """Escape HTML to prevent XSS, then convert newlines to <br>."""
     return html_lib.escape(text).replace("\n", "<br>")
 
 
-# ── Language toggle (flag-based, intuitive) ────────────
+def _send(msg_key: str):
+    st.session_state._pending_msg = t(msg_key, lang)
+    st.session_state.show_welcome = False
+
+
+# ── Title: KODA ──────────────────────────────
+
+dot = chr(183)
+if lang == "de":
+    heritage_text = f"Japanisch: \u201ehier, an diesem Punkt\u201c {dot} Dakota Sioux: \u201eFreund, Verb\u00fcndeter\u201c"
+else:
+    heritage_text = (
+        f"Japanese: \u2018here, at this point\u2019 {dot} Dakota Sioux: \u2018friend, ally\u2019"
+    )
 
 st.markdown(
-    f"""
-<div class="lang-toggle">
-    <span class="lang-btn {"active" if lang == "de" else ""}"
-          id="lang-de">🇩🇪 Deutsch</span>
-    <span class="lang-btn {"active" if lang == "en" else ""}"
-          id="lang-en">🇬🇧 English</span>
-</div>
-""",
+    """<div class="koda-title">K\u2009\u00b7\u2009O\u2009\u00b7\u2009D\u2009\u00b7\u2009A</div>""",
     unsafe_allow_html=True,
 )
+st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe_allow_html=True)
+st.markdown(f"""<div class="koda-heritage">{heritage_text}</div>""", unsafe_allow_html=True)
 
-# Streamlit button workaround for the toggle
-col_spacer, col_de, col_en = st.columns([6, 1, 1])
-with col_de:
-    if st.button("🇩🇪", key="btn_de", help="Deutsch"):
-        st.session_state.lang = "de"
-        st.rerun()
-with col_en:
-    if st.button("🇬🇧", key="btn_en", help="English"):
-        st.session_state.lang = "en"
-        st.rerun()
-
-# ── Header ─────────────────────────────────────────────
-
-st.markdown(
-    f"""
-<div class="koda-header">
-    <h1 class="koda-logo">KODA</h1>
-    <p class="koda-tagline">{t("subtitle", lang)}</p>
-</div>
-""",
-    unsafe_allow_html=True,
-)
 
 # ── Welcome screen ─────────────────────────────────────
 
 if st.session_state.show_welcome and not st.session_state.messages:
-    # Stats cards
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        if lang == "de":
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Nicht-Akademikerkinder</div>
+                <div class="stat-value low">27 von 100</div>
+                <div class="stat-delta">beginnen ein Studium</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Non-academic families</div>
+                <div class="stat-value low">27 of 100</div>
+                <div class="stat-delta">start university</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+    with col_right:
+        if lang == "de":
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Akademikerkinder</div>
+                <div class="stat-value high">79 von 100</div>
+                <div class="stat-delta">beginnen ein Studium</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                """
+            <div class="stat-box">
+                <div class="stat-label">Academic families</div>
+                <div class="stat-value high">79 of 100</div>
+                <div class="stat-delta">start university</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
+    st.write("")
+
     st.markdown(
-        f"""
-    <div class="stats-container">
-        <div class="stat-card orange">
-            <div class="stat-number">27</div>
-            <div class="stat-label">{t("stat_left_label", lang).replace(chr(10), "<br>")}</div>
-        </div>
-        <div class="stat-card green">
-            <div class="stat-number">79</div>
-            <div class="stat-label">{t("stat_right_label", lang).replace(chr(10), "<br>")}</div>
-        </div>
-    </div>
-    """,
+        f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>"
+        f"{t('welcome_body', lang).replace(chr(10) + chr(10), '<br>')}</p>",
         unsafe_allow_html=True,
     )
 
-    # Welcome text
-    st.markdown(
-        f"""
-    <p class="welcome-text">{t("welcome_body", lang).replace(chr(10), "<br>")}</p>
-    """,
-        unsafe_allow_html=True,
-    )
+    st.write("")
 
-    # Quick action buttons
     c1, c2, c3 = st.columns(3)
     with c1:
         if st.button(t("quick_bafoeg", lang), use_container_width=True):
@@ -401,23 +396,22 @@ if st.session_state.show_welcome and not st.session_state.messages:
         if st.button(t("quick_rolemodels", lang), use_container_width=True):
             _send("quick_rolemodels_msg")
 
+
 # ── Chat history ───────────────────────────────────────
 
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(
-            f'<div class="chat-msg msg-user">{_safe(msg["content"])}</div>',
+            f'<div class="msg-user">{_safe(msg["content"])}</div>',
             unsafe_allow_html=True,
         )
     else:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         st.markdown(
-            f'<div class="chat-msg msg-koda">'
-            f'<div class="agent-badge">{label}</div>'
-            f"{_safe(msg['content'])}"
-            f"</div>",
+            f'<div class="msg-koda"><div class="badge">{label}</div>{_safe(msg["content"])}</div>',
             unsafe_allow_html=True,
         )
+
 
 # ── Input handling ─────────────────────────────────────
 
@@ -434,7 +428,7 @@ if chat_input:
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     st.markdown(
-        f'<div class="chat-msg msg-user">{_safe(user_input)}</div>',
+        f'<div class="msg-user">{_safe(user_input)}</div>',
         unsafe_allow_html=True,
     )
 
@@ -450,13 +444,17 @@ if user_input:
     )
     st.rerun()
 
+
 # ── Footer ─────────────────────────────────────────────
 
+st.divider()
+footer_text = t("footer", lang)
+footer_html = footer_text.replace(
+    "\n\n",
+    '</p><p style="text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;">',
+)
 st.markdown(
-    f"""
-<div class="koda-footer">
-    <p>{t("footer", lang)}</p>
-</div>
-""",
+    f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
+    f"{footer_html}</p>",
     unsafe_allow_html=True,
 )

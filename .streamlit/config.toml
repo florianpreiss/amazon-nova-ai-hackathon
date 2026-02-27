@@ -1,0 +1,26 @@
+# ============================================================
+# KODA — Streamlit Configuration
+# ============================================================
+
+[theme]
+base = "light"
+primaryColor = "#1a8a6e"
+backgroundColor = "#faf8f5"
+secondaryBackgroundColor = "#f0ebe4"
+textColor = "#2d3436"
+font = "Nunito:https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..900;1,300..900&display=swap, sans-serif"
+headingFont = "'Source Serif 4':https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600;8..60,700&display=swap, serif"
+baseRadius = "lg"
+buttonRadius = "full"
+
+[theme.sidebar]
+backgroundColor = "#1a8a6e"
+textColor = "#ffffff"
+primaryColor = "#e8853a"
+
+[server]
+headless = true
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
