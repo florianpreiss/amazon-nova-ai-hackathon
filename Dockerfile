@@ -52,6 +52,9 @@ RUN chown -R koda:koda /app
 # OWASP CSVS-2.1: Switch to non-root user
 USER koda
 
+# Ensure src/ and config/ are importable as top-level packages
+ENV PYTHONPATH=/app
+
 # Expose Streamlit default port
 EXPOSE 8501
 
