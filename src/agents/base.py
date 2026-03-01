@@ -5,6 +5,8 @@ Provides: system prompt enrichment, tool selection, anti-shame filtering,
 and graceful error handling (never shows stack traces to users).
 """
 
+from collections.abc import Generator
+
 import structlog
 
 from src.core.client import NovaClient, NovaClientError
@@ -80,6 +82,64 @@ class BaseAgent:
                 "agent_unexpected_error", agent=self.name, error=str(e), type=type(e).__name__
             )
             return self._fallback_message(messages)
+
+    def respond_stream(
+        self, messages: list[dict], metadata: dict | None = None
+    ) -> Generator[str, None, None]:
+        """
+        Stream a response token-by-token via Nova 2 Lite.
+
+        Yields text delta strings suitable for ``st.write_stream()``.
+        Falls back to a single-chunk yield of the non-streaming response on
+        any error so the caller always receives a complete answer.
+
+        Note: tool_mode agents (code_interpreter, web_grounding) do not
+        support streaming — they fall back to ``respond()`` automatically.
+        """
+        # Tool-mode agents don't support streaming; yield the full response.
+        if self.tool_mode in ("code_interpreter", "web_grounding"):
+            yield self.respond(messages, metadata)
+            return
+
+        try:
+            prompt = self._build_prompt(metadata)
+            stream_resp = self.client.converse_stream(
+                messages,
+                system_prompt=prompt,
+                reasoning_effort=self.reasoning_effort,
+            )
+            collected: list[str] = []
+            for chunk in self.client.iter_stream_text(stream_resp):
+                collected.append(chunk)
+                yield chunk
+
+            full_text = "".join(collected)
+            if not full_text.strip():
+                logger.warning("empty_stream_response", agent=self.name)
+                yield self._fallback_message(messages)
+                return
+
+            # Apply anti-shame filter to the final assembled text.
+            # If the filter changes the text, re-yield the corrected version
+            # as a single replacement chunk.
+            filtered = apply_anti_shame_filter(full_text)
+            if filtered != full_text:
+                # Signal to the caller that the streamed text should be
+                # replaced (Streamlit will overwrite the container).
+                yield "\x00REPLACE\x00" + filtered
+
+        except NovaClientError as e:
+            logger.error("agent_stream_error", agent=self.name, error=str(e))
+            yield self._fallback_message(messages)
+
+        except Exception as e:
+            logger.error(
+                "agent_stream_unexpected_error",
+                agent=self.name,
+                error=str(e),
+                type=type(e).__name__,
+            )
+            yield self._fallback_message(messages)
 
     def _build_prompt(self, metadata: dict | None) -> str:
         """Build the system prompt with optional metadata enrichment."""
