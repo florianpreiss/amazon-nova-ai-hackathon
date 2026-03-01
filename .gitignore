@@ -17,3 +17,10 @@ build/
 *.tfstate.backup
 *.tfplan
 .terraform.lock.hcl
+
+# Frontend — this project uses Streamlit (Python), not React.
+# frontend/src, frontend/public were leftover React scaffolding and have
+# been removed. The only relevant frontend subdirectory is frontend/static
+# (background images served by Streamlit).
+frontend/src/
+frontend/public/
