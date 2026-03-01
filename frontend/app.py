@@ -208,11 +208,40 @@ st.markdown(
     }
 
     /* ── Chat bubbles ─────────────────────────── */
+    /* User messages: right-aligned purple bubble (custom HTML) */
     .msg-user {
         background: rgba(125, 122, 201, 1); color: white;
         padding: 0.8rem 1.1rem; border-radius: 16px 16px 4px 16px;
         margin: 0.4rem 0 0.4rem 4rem; line-height: 1.6; font-size: 0.9rem;
     }
+
+    /* KODA messages: use Streamlit native st.chat_message for markdown rendering.
+       Style the assistant bubble to match our warm white theme. */
+    [data-testid="stChatMessage"] {
+        background: white;
+        border: 1px solid #e8e4df;
+        border-radius: 16px 16px 16px 4px;
+        padding: 0.8rem 1.1rem;
+        margin: 0.4rem 4rem 0.4rem 0;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        color: #2d3436;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    /* Agent label (st.caption inside chat_message) */
+    [data-testid="stChatMessage"] small {
+        font-size: 0.7rem !important;
+        color: rgba(125, 122, 201, 0.8) !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.05em !important;
+        text-transform: uppercase !important;
+    }
+    /* Keep avatar subtle */
+    [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
+        display: none;
+    }
+
+    /* Legacy .msg-koda kept for any remaining static references */
     .msg-koda {
         background: white; color: #2d3436; border: 1px solid #e8e4df;
         padding: 0.8rem 1.1rem; border-radius: 16px 16px 16px 4px;
@@ -288,8 +317,19 @@ def load_agents():
     }
 
 
-def get_response(user_message: str, history: list) -> dict:
-    """Call agents directly."""
+def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
+    """
+    Orchestrate agent routing, crisis scanning and response generation.
+
+    Args:
+        user_message: The raw text submitted by the user.
+        history: Previous Bedrock-formatted message turns.
+        ui_lang: The UI language chosen by the user (used for the
+                 crisis banner only; agent responses auto-detect language).
+
+    Returns:
+        dict with keys: ``response`` (str), ``agent`` (str), ``crisis`` (bool).
+    """
     system = load_agents()
     bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
     bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
@@ -300,7 +340,8 @@ def get_response(user_message: str, history: list) -> dict:
     response_text = agent.respond(bedrock_messages)
 
     if crisis["is_crisis"] and crisis["resources"]:
-        prefix = t("crisis_banner", lang) + "\n"
+        # Crisis banner uses the UI language; agent body already auto-detected
+        prefix = t("crisis_banner", ui_lang) + "\n"
         for v in crisis["resources"].values():
             prefix += f"\u2022 {v}\n"
         response_text = prefix + "\n" + response_text
@@ -308,8 +349,9 @@ def get_response(user_message: str, history: list) -> dict:
     return {"response": response_text, "agent": agent_key, "crisis": crisis["is_crisis"]}
 
 
-def _safe(text: str) -> str:
-    return html_lib.escape(text).replace("\n", "<br>")
+def _safe_user(text: str) -> str:
+    """Escape HTML for user-supplied bubble text (plain text, no markdown)."""
+    return html_lib.escape(text)
 
 
 def _send(msg_key: str):
@@ -428,16 +470,19 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
 for msg in st.session_state.messages:
     if msg["role"] == "user":
+        # User text is plain — escape HTML to prevent XSS injection
         st.markdown(
-            f'<div class="msg-user">{_safe(msg["content"])}</div>',
+            f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
             unsafe_allow_html=True,
         )
     else:
+        # Agent response: use Streamlit's native chat_message so that
+        # st.markdown() inside it renders all markdown formatting correctly
+        # (headers, bold, lists, code blocks, etc.)
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
-        st.markdown(
-            f'<div class="msg-koda"><div class="badge">{label}</div>{_safe(msg["content"])}</div>',
-            unsafe_allow_html=True,
-        )
+        with st.chat_message("assistant", avatar="🧭"):
+            st.caption(label)
+            st.markdown(msg["content"])
 
 
 # ── Input handling ─────────────────────────────────────
@@ -455,12 +500,12 @@ if chat_input:
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     st.markdown(
-        f'<div class="msg-user">{_safe(user_input)}</div>',
+        f'<div class="msg-user">{_safe_user(user_input)}</div>',
         unsafe_allow_html=True,
     )
 
     with st.spinner(t("thinking", lang)):
-        result = get_response(user_input, st.session_state.messages[:-1])
+        result = get_response(user_input, st.session_state.messages[:-1], ui_lang=lang)
 
     st.session_state.messages.append(
         {
