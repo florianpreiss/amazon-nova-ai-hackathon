@@ -8,6 +8,7 @@ Reference: Nova 2 Developer Guide — "Core inference" and "Troubleshooting" cha
 """
 
 import time
+from collections.abc import Generator
 from typing import Any
 
 import boto3
@@ -100,6 +101,20 @@ class NovaClient:
             temperature,
         )
         return self._client.converse_stream(**kwargs)
+
+    @staticmethod
+    def iter_stream_text(stream_response) -> Generator[str, None, None]:
+        """
+        Yield text delta chunks from a converse_stream() response.
+
+        Skips reasoning/thinking blocks — only yields the visible assistant text.
+        Suitable for passing directly to ``st.write_stream()``.
+        """
+        stream = stream_response.get("stream", stream_response)
+        for event in stream:
+            delta = event.get("contentBlockDelta", {}).get("delta", {})
+            if "text" in delta:
+                yield delta["text"]
 
     def with_code_interpreter(self, messages, system_prompt=None, reasoning_effort=None):
         """Converse using the built-in Code Interpreter system tool."""
