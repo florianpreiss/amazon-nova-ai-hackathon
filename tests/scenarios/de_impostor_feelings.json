@@ -1,0 +1,13 @@
+{
+  "id": "de_impostor_feelings",
+  "description": "A student expresses classic impostor syndrome — should route to ROLE_MODELS.",
+  "input": "Ich habe das Gefühl, dass alle anderen viel klüger sind als ich und ich nicht dazugehöre.",
+  "language": "de",
+  "expected_agent": "ROLE_MODELS",
+  "must_contain_any": ["gehör", "normal", "viel", "nicht allein", "erst", "generation"],
+  "must_not_contain": [
+    "das solltest du wissen",
+    "das ist grundwissen",
+    "selbstverständlich"
+  ]
+}

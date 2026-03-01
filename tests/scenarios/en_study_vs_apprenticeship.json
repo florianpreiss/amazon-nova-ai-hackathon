@@ -1,0 +1,14 @@
+{
+  "id": "en_study_vs_apprenticeship",
+  "description": "A student is torn between university and vocational training.",
+  "input": "I can't decide whether I should study at university or do a vocational apprenticeship. My parents think I should just start working.",
+  "language": "en",
+  "expected_agent": "ACADEMIC_BASICS",
+  "must_contain_any": ["apprenticeship", "university", "vocational", "study", "career", "degree"],
+  "must_not_contain": [
+    "you should know",
+    "this is basic",
+    "obviously",
+    "everyone knows"
+  ]
+}
