@@ -1,0 +1,14 @@
+{
+  "id": "en_general_orientation",
+  "description": "A brand-new user has no specific question — should route to COMPASS.",
+  "input": "Hi, I just found out I got into university. I have no idea where to start or what to do.",
+  "language": "en",
+  "expected_agent": "COMPASS",
+  "must_contain_any": ["welcome", "start", "help", "together", "step", "guide", "orientation"],
+  "must_not_contain": [
+    "you should know",
+    "this is basic",
+    "obviously",
+    "everyone knows"
+  ]
+}

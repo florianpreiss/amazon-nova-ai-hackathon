@@ -1,0 +1,15 @@
+{
+  "id": "en_ects_terminology",
+  "description": "A first-gen student asks about academic terminology they have never heard.",
+  "input": "What does ECTS mean and how many credit points do I need to graduate?",
+  "language": "en",
+  "expected_agent": "ACADEMIC_BASICS",
+  "must_contain_any": ["credit", "ects", "european", "point", "semester"],
+  "must_not_contain": [
+    "you should know",
+    "this is basic",
+    "obviously",
+    "everyone knows",
+    "common knowledge"
+  ]
+}
