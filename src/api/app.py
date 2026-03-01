@@ -5,7 +5,9 @@ Flow: User message → Router (triage) + Crisis Radar (parallel) → Domain Agen
 Sessions are ephemeral. No persistent user data.
 """
 
-from config.settings import CORS_ALLOWED_ORIGINS
+from contextlib import asynccontextmanager
+
+from config.settings import CORS_ALLOWED_ORIGINS, validate_cors_origins
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -21,10 +23,27 @@ from src.core.conversation import Conversation
 
 # ── App setup ──────────────────────────────────────
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Startup / shutdown lifecycle handler.
+
+    Validates critical configuration at process start so misconfiguration
+    fails loudly before accepting any traffic.
+    """
+    # Raises ValueError immediately if CORS origins are empty or contain '*'.
+    # This prevents a silent wildcard policy from reaching production.
+    validate_cors_origins(CORS_ALLOWED_ORIGINS)
+    yield
+    # (shutdown logic here if needed)
+
+
 app = FastAPI(
     title="KODA API",
     description="AI Companion for First-Generation Academics",
     version="0.1.0",
+    lifespan=lifespan,
 )
 app.add_middleware(
     CORSMiddleware,
