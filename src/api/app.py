@@ -5,6 +5,7 @@ Flow: User message → Router (triage) + Crisis Radar (parallel) → Domain Agen
 Sessions are ephemeral. No persistent user data.
 """
 
+from config.settings import CORS_ALLOWED_ORIGINS
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -27,9 +28,12 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Origins are configured via the CORS_ALLOWED_ORIGINS environment variable.
+    # Default: localhost only. Override in production with the CloudFront domain.
+    # OWASP A05:2021 — a wildcard '*' is intentionally prohibited here.
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_methods=["POST", "DELETE", "GET"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # ── Agent registry ─────────────────────────────────
