@@ -1,0 +1,13 @@
+{
+  "id": "de_scholarships",
+  "description": "A student with migration background asks about scholarship opportunities.",
+  "input": "Ich komme aus einer Migrantenfamilie und frage mich, ob es Stipendien gibt, die speziell für Kinder aus Nicht-Akademikerfamilien gedacht sind.",
+  "language": "de",
+  "expected_agent": "FINANCING",
+  "must_contain_any": ["stipendi", "förder", "stiftung", "bewerbung", "deutschland"],
+  "must_not_contain": [
+    "das solltest du wissen",
+    "selbstverständlich",
+    "jeder weiß"
+  ]
+}

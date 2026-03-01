@@ -1,0 +1,14 @@
+{
+  "id": "de_bafoeg_basic",
+  "description": "A first-gen student asks the most common German-language finance question.",
+  "input": "Was ist BAföG und habe ich als Kind von Nicht-Akademikern Anspruch darauf?",
+  "language": "de",
+  "expected_agent": "FINANCING",
+  "must_contain_any": ["baf", "förder", "einkommens", "antrag", "student"],
+  "must_not_contain": [
+    "das solltest du wissen",
+    "das ist grundwissen",
+    "selbstverständlich",
+    "jeder weiß"
+  ]
+}
