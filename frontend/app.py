@@ -349,6 +349,54 @@ def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
     return {"response": response_text, "agent": agent_key, "crisis": crisis["is_crisis"]}
 
 
+def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
+    """
+    Streaming variant of get_response().
+
+    Yields text chunks from the agent's token stream so the caller can
+    render them progressively (e.g. via ``st.write_stream()``).
+
+    The *last* item yielded is always a sentinel dict::
+
+        {"agent": str, "crisis": bool, "response": str}
+
+    containing the fully assembled response and routing metadata.
+    Callers must pop this final dict before displaying.
+    """
+    system = load_agents()
+    bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
+    bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
+
+    crisis = system["crisis"].scan(user_message)
+    agent_key = system["router"].route(user_message)
+    agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
+
+    # If crisis, prepend the banner as the very first streamed chunk
+    crisis_prefix = ""
+    if crisis["is_crisis"] and crisis["resources"]:
+        crisis_prefix = t("crisis_banner", ui_lang) + "\n"
+        for v in crisis["resources"].values():
+            crisis_prefix += f"\u2022 {v}\n"
+        crisis_prefix += "\n"
+        yield crisis_prefix
+
+    collected: list[str] = [crisis_prefix]
+    replace_text: str | None = None
+
+    for chunk in agent.respond_stream(bedrock_messages):
+        if chunk.startswith("\x00REPLACE\x00"):
+            # Anti-shame filter rewrote the text; store corrected version
+            replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00") :]
+        else:
+            collected.append(chunk)
+            yield chunk
+
+    full_response = replace_text if replace_text is not None else "".join(collected)
+
+    # Final sentinel — caller must consume and not display this
+    yield {"response": full_response, "agent": agent_key, "crisis": crisis["is_crisis"]}
+
+
 def _safe_user(text: str) -> str:
     """Escape HTML for user-supplied bubble text (plain text, no markdown)."""
     return html_lib.escape(text)
@@ -504,17 +552,44 @@ if user_input:
         unsafe_allow_html=True,
     )
 
-    with st.spinner(t("thinking", lang)):
-        result = get_response(user_input, st.session_state.messages[:-1], ui_lang=lang)
+    # ── Streaming response ─────────────────────────────────
+    # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
+    # st.write_stream() renders each yielded chunk as it arrives.
+    # The final yielded item is a metadata dict — we pop it before display.
+    stream = get_response_stream(user_input, st.session_state.messages[:-1], ui_lang=lang)
+
+    label_placeholder = None
+    # Use a single-element list so the nested generator can write to it
+    # without a nonlocal that ruff flags as "assigned but never used".
+    meta_box: list[dict] = [{}]
+
+    def _filtered_stream():
+        """Yield only string chunks to st.write_stream; capture the final dict."""
+        for item in stream:
+            if isinstance(item, dict):
+                meta_box[0] = item
+            else:
+                yield item
+
+    with st.chat_message("assistant", avatar="\U0001f9ed"):
+        label_placeholder = st.empty()
+        full_text = st.write_stream(_filtered_stream())
+
+    metadata = meta_box[0]
+    agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
+    if label_placeholder:
+        label_placeholder.caption(agent_label)
+
+    # Use metadata response if anti-shame filter replaced the streamed text
+    final_text = metadata.get("response", full_text)
 
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": result["response"],
-            "agent": result["agent"],
+            "content": final_text,
+            "agent": metadata.get("agent", "COMPASS"),
         }
     )
-    st.rerun()
 
 
 # ── Footer ─────────────────────────────────────────────
