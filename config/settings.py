@@ -39,6 +39,37 @@ REASONING_HIGH: str = "high"  # All domain agents
 _raw_origins: str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:8501")
 CORS_ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
+
+def validate_cors_origins(origins: list[str]) -> None:
+    """
+    Fail fast if the CORS origin list is misconfigured.
+
+    Raises:
+        ValueError: if ``origins`` is empty or contains the wildcard ``"*"``.
+
+    Call this at process startup (e.g. in a FastAPI lifespan handler) so a
+    misconfiguration is caught immediately rather than silently shipping a
+    permissive CORS policy to production.
+
+    OWASP A05:2021 — Broken Access Control (Security Misconfiguration).
+    """
+    if not origins:
+        raise ValueError(
+            "CORS_ALLOWED_ORIGINS is empty. "
+            "Set it to a comma-separated list of allowed origins "
+            "(e.g. https://koda.example.com). "
+            "An empty list would block all cross-origin requests."
+        )
+    wildcards = [o for o in origins if o == "*"]
+    if wildcards:
+        raise ValueError(
+            "CORS_ALLOWED_ORIGINS must not contain the wildcard '*'. "
+            "Specify explicit origins instead "
+            "(e.g. https://koda.example.com). "
+            "A wildcard allows any origin to call the API — OWASP A05:2021."
+        )
+
+
 # ── Session ────────────────────────────────────────────
 SESSION_TIMEOUT_MINUTES: int = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
 
