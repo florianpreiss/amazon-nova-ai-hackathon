@@ -7,6 +7,7 @@ Model IDs follow the Nova 2 Developer Guide naming convention:
 """
 
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -27,9 +28,16 @@ DEFAULT_TEMPERATURE: float = 0.7
 DEFAULT_TOP_P: float = 0.9
 
 # ── Extended thinking effort levels ────────────────────
-REASONING_LOW: str = "low"        # Router, Crisis Radar, Compass
+REASONING_LOW: str = "low"  # Router, Crisis Radar, Compass
 REASONING_MEDIUM: str = "medium"
-REASONING_HIGH: str = "high"      # All domain agents
+REASONING_HIGH: str = "high"  # All domain agents
+
+# ── API security ──────────────────────────────────────
+# Comma-separated list of origins allowed to call the API.
+# OWASP A05:2021 — never use a wildcard '*' in production.
+# Example: https://koda.example.com,https://koda-staging.example.com
+_raw_origins: str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:8501")
+CORS_ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 # ── Session ────────────────────────────────────────────
 SESSION_TIMEOUT_MINUTES: int = int(os.getenv("SESSION_TIMEOUT_MINUTES", "30"))
