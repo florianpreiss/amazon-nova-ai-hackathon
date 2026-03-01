@@ -82,9 +82,9 @@ class TestStringsCompleteness:
     def test_no_empty_string_values(self, lang_code):
         """No translation value may be an empty string."""
         empty_keys = [k for k, v in STRINGS[lang_code].items() if not v.strip()]
-        assert (
-            not empty_keys
-        ), f"Locale '{lang_code}' has empty string values for keys: {sorted(empty_keys)}"
+        assert not empty_keys, (
+            f"Locale '{lang_code}' has empty string values for keys: {sorted(empty_keys)}"
+        )
 
     @pytest.mark.parametrize("lang_code", SUPPORTED_LANGUAGES)
     def test_no_values_equal_to_key(self, lang_code):
