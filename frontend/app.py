@@ -521,6 +521,50 @@ def _send(msg_key: str):
     st.session_state.show_welcome = False
 
 
+def _render_quick_actions(current_lang: str) -> None:
+    """
+    Render the six quick-action suggestion buttons.
+
+    Extracted into a named function so the buttons can be displayed
+    persistently below the chat history — not only on the welcome screen.
+    Each button pre-fills the chat input with a full question so the user
+    never has to type for common topics.
+
+    Args:
+        current_lang: Active UI language code ("de" or "en").
+    """
+    st.caption(t("quick_actions_label", current_lang))
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button(t("quick_bafoeg", current_lang), use_container_width=True, key="qa_bafoeg"):
+            _send("quick_bafoeg_msg")
+    with c2:
+        if st.button(t("quick_study", current_lang), use_container_width=True, key="qa_study"):
+            _send("quick_study_msg")
+    with c3:
+        if st.button(
+            t("quick_overwhelmed", current_lang), use_container_width=True, key="qa_overwhelmed"
+        ):
+            _send("quick_overwhelmed_msg")
+
+    c4, c5, c6 = st.columns(3)
+    with c4:
+        if st.button(t("quick_ects", current_lang), use_container_width=True, key="qa_ects"):
+            _send("quick_ects_msg")
+    with c5:
+        if st.button(
+            t("quick_scholarships", current_lang),
+            use_container_width=True,
+            key="qa_scholarships",
+        ):
+            _send("quick_scholarships_msg")
+    with c6:
+        if st.button(
+            t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
+        ):
+            _send("quick_rolemodels_msg")
+
+
 # ── Title: KODA ──────────────────────────────
 
 dot = chr(183)
@@ -605,28 +649,6 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
     st.write("")
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button(t("quick_bafoeg", lang), use_container_width=True):
-            _send("quick_bafoeg_msg")
-    with c2:
-        if st.button(t("quick_study", lang), use_container_width=True):
-            _send("quick_study_msg")
-    with c3:
-        if st.button(t("quick_overwhelmed", lang), use_container_width=True):
-            _send("quick_overwhelmed_msg")
-
-    c4, c5, c6 = st.columns(3)
-    with c4:
-        if st.button(t("quick_ects", lang), use_container_width=True):
-            _send("quick_ects_msg")
-    with c5:
-        if st.button(t("quick_scholarships", lang), use_container_width=True):
-            _send("quick_scholarships_msg")
-    with c6:
-        if st.button(t("quick_rolemodels", lang), use_container_width=True):
-            _send("quick_rolemodels_msg")
-
 
 # ── Chat history ───────────────────────────────────────
 
@@ -645,6 +667,13 @@ for msg in st.session_state.messages:
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
             st.markdown(msg["content"])
+
+
+# ── Quick actions (persistent) ─────────────────────────
+# Rendered after every chat turn so users can always select a topic
+# without typing.  Unique widget keys prevent Streamlit duplicate-key
+# errors across re-renders.
+_render_quick_actions(lang)
 
 
 # ── Input handling ─────────────────────────────────────
