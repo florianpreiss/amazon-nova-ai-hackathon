@@ -388,14 +388,50 @@ def _set_lang(new_lang: str):
     st.session_state.lang = new_lang
 
 
-st.pills(
-    label="Language",
-    options=["🇩🇪 Deutsch", "🇬🇧 English"],
-    default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
-    on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
-    key="_lang_pills",
-    label_visibility="collapsed",
-)
+def _reset_chat() -> None:
+    """
+    Clear all conversation state and return to the welcome screen.
+
+    Resets messages, session ID, and welcome flag.  A new session ID is
+    generated so any server-side session store would treat this as a fresh
+    session.  The language preference is intentionally preserved — the user
+    should not have to re-select it after resetting.
+
+    Privacy note: no persistent storage exists, so "reset" is purely
+    in-memory.  Compliant with the ephemeral-session guarantee in the footer.
+    """
+    st.session_state.messages = []
+    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.show_welcome = True
+    # Clear any pending quick-action message
+    st.session_state.pop("_pending_msg", None)
+
+
+# ── Language toggle + Reset button ────────────────────
+# Render in a two-column row: language pills on the left, reset on the right.
+_header_lang_col, _header_reset_col = st.columns([6, 1])
+
+with _header_lang_col:
+    st.pills(
+        label="Language",
+        options=["🇩🇪 Deutsch", "🇬🇧 English"],
+        default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
+        on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
+        key="_lang_pills",
+        label_visibility="collapsed",
+    )
+
+with _header_reset_col:
+    # Show only when there is a conversation to reset — avoids cluttering
+    # the welcome screen.
+    if st.session_state.messages and st.button(
+        t("reset_chat", lang),
+        help=t("reset_chat_tooltip", lang),
+        key="_reset_btn",
+        use_container_width=True,
+    ):
+        _reset_chat()
+        st.rerun()
 # Apply the language if changed via pills
 if "_lang_pills" in st.session_state:
     new = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
