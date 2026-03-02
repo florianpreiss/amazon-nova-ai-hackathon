@@ -143,7 +143,7 @@ st.markdown(
         color: #636e72;
     }
 
-    /* ── Chat input bar ───────────────────────── */
+    /* ── Chat input bar — light mode ─────────── */
     .stBottom, .stBottom > div, .stBottom > div > div {
         background: transparent !important;
     }
@@ -173,7 +173,6 @@ st.markdown(
         background: rgba(125, 122, 201, 0.25) !important;
         color: #2d3436 !important;
     }
-    /* Remove any inner wrapper backgrounds */
     .stChatInput > div > div {
         background: transparent !important;
     }
@@ -207,18 +206,21 @@ st.markdown(
         border: none !important;
     }
 
-    /* ── Chat bubbles ─────────────────────────── */
-    /* User messages: right-aligned purple bubble (custom HTML) */
+    /* ── Chat bubbles — light mode ────────────── */
+    /* User messages: right-aligned purple bubble */
     .msg-user {
-        background: rgba(125, 122, 201, 1); color: white;
-        padding: 0.8rem 1.1rem; border-radius: 16px 16px 4px 16px;
-        margin: 0.4rem 0 0.4rem 4rem; line-height: 1.6; font-size: 0.9rem;
+        background: rgba(125, 122, 201, 1);
+        color: white;
+        padding: 0.8rem 1.1rem;
+        border-radius: 16px 16px 4px 16px;
+        margin: 0.4rem 0 0.4rem 4rem;
+        line-height: 1.6;
+        font-size: 0.9rem;
     }
 
-    /* KODA messages: use Streamlit native st.chat_message for markdown rendering.
-       Style the assistant bubble to match our warm white theme. */
+    /* KODA messages: native st.chat_message styled to warm-white theme */
     [data-testid="stChatMessage"] {
-        background: white;
+        background: #ffffff;
         border: 1px solid #e8e4df;
         border-radius: 16px 16px 16px 4px;
         padding: 0.8rem 1.1rem;
@@ -228,7 +230,7 @@ st.markdown(
         font-size: 0.9rem;
         line-height: 1.6;
     }
-    /* Agent label (st.caption inside chat_message) */
+    /* Agent label badge */
     [data-testid="stChatMessage"] small {
         font-size: 0.7rem !important;
         color: rgba(125, 122, 201, 0.8) !important;
@@ -236,12 +238,12 @@ st.markdown(
         letter-spacing: 0.05em !important;
         text-transform: uppercase !important;
     }
-    /* Keep avatar subtle */
+    /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
         display: none;
     }
 
-    /* Legacy .msg-koda kept for any remaining static references */
+    /* Legacy class kept for backward-compat with any static references */
     .msg-koda {
         background: white; color: #2d3436; border: 1px solid #e8e4df;
         padding: 0.8rem 1.1rem; border-radius: 16px 16px 16px 4px;
@@ -260,6 +262,118 @@ st.markdown(
     .stButton > button:hover {
         border-color: rgba(125, 122, 201, 0.7) !important;
         background: rgba(125, 122, 201, 0.08) !important;
+    }
+
+    /* ════════════════════════════════════════════
+       DARK MODE  (respects OS / browser setting)
+       All hardcoded light-mode colours are
+       overridden here.  Purple accent (#7d7ac9)
+       is kept so the brand identity is consistent.
+       ════════════════════════════════════════════ */
+    @media (prefers-color-scheme: dark) {
+
+        /* ── App background ───────────────────── */
+        .stApp {
+            background-color: #1a1a2e !important;
+        }
+
+        /* ── Text colours ─────────────────────── */
+        .koda-tagline {
+            color: #a0a8b8 !important;
+        }
+        .koda-heritage {
+            color: #5a6070 !important;
+        }
+
+        /* ── Stat boxes ───────────────────────── */
+        .stat-box {
+            background: rgba(125, 122, 201, 0.12) !important;
+            border-color: rgba(125, 122, 201, 0.3) !important;
+        }
+        .stat-label {
+            color: #a0a8b8 !important;
+        }
+        .stat-delta {
+            color: #a0a8b8 !important;
+        }
+
+        /* ── Welcome body & footer text ───────── */
+        p[style*="color:#636e72"] {
+            color: #a0a8b8 !important;
+        }
+
+        /* ── User bubble (stays purple — readable on dark) */
+        .msg-user {
+            background: rgba(125, 122, 201, 0.85) !important;
+            color: #ffffff !important;
+        }
+
+        /* ── KODA assistant bubble ────────────── */
+        [data-testid="stChatMessage"] {
+            background: #252540 !important;
+            border-color: rgba(125, 122, 201, 0.2) !important;
+            color: #e8e4f0 !important;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.3) !important;
+        }
+        /* Ensure all text inside the bubble is light */
+        [data-testid="stChatMessage"] p,
+        [data-testid="stChatMessage"] li,
+        [data-testid="stChatMessage"] span,
+        [data-testid="stChatMessage"] code {
+            color: #e8e4f0 !important;
+        }
+        /* Inline code blocks */
+        [data-testid="stChatMessage"] code {
+            background: rgba(125, 122, 201, 0.15) !important;
+            border-radius: 4px;
+            padding: 0.1em 0.35em;
+        }
+        /* Agent label keeps the purple accent */
+        [data-testid="stChatMessage"] small {
+            color: rgba(160, 155, 220, 0.9) !important;
+        }
+
+        /* Legacy bubble */
+        .msg-koda {
+            background: #252540 !important;
+            color: #e8e4f0 !important;
+            border-color: rgba(125, 122, 201, 0.2) !important;
+        }
+
+        /* ── Chat input ──────────────────────── */
+        .stChatInput > div {
+            background: #252540 !important;
+            border-color: rgba(125, 122, 201, 0.35) !important;
+        }
+        .stChatInput textarea {
+            background: #252540 !important;
+            background-color: #252540 !important;
+            color: #e8e4f0 !important;
+            -webkit-text-fill-color: #e8e4f0 !important;
+            caret-color: rgba(160, 155, 220, 1) !important;
+        }
+        .stChatInput textarea:focus {
+            background: #252540 !important;
+            background-color: #252540 !important;
+        }
+        .stChatInput button[disabled] {
+            background: #3a3a5c !important;
+        }
+
+        /* ── Quick action buttons ────────────── */
+        .stButton > button {
+            border-color: rgba(125, 122, 201, 0.4) !important;
+            color: #c8c4e8 !important;
+        }
+        .stButton > button:hover {
+            border-color: rgba(160, 155, 220, 0.8) !important;
+            background: rgba(125, 122, 201, 0.18) !important;
+        }
+
+        /* ── Divider ─────────────────────────── */
+        hr {
+            border-color: rgba(125, 122, 201, 0.15) !important;
+        }
     }
 </style>
 """,
