@@ -255,13 +255,69 @@ st.markdown(
         letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem;
     }
 
-    /* ── Quick action buttons ─────────────────── */
-    .stButton > button {
-        border-color: rgba(125, 122, 201, 0.3) !important;
+    /* ── Quick-action section header ────────────── */
+    .qa-header {
+        text-align: center;
+        margin: 0.6rem 0 0.9rem 0;
     }
-    .stButton > button:hover {
-        border-color: rgba(125, 122, 201, 0.7) !important;
-        background: rgba(125, 122, 201, 0.08) !important;
+    .qa-header-title {
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: rgba(125, 122, 201, 1);
+        letter-spacing: 0.01em;
+        margin: 0 0 0.2rem 0;
+    }
+    .qa-header-sub {
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.78rem;
+        color: #636e72;
+        margin: 0;
+    }
+
+    /* ── Quick action pill-card buttons ──────────── */
+    [data-testid="baseButton-secondary"] {
+        border-radius: 22px !important;
+        border: 1.5px solid rgba(125, 122, 201, 0.32) !important;
+        background: rgba(125, 122, 201, 0.05) !important;
+        color: #2d3436 !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        padding: 0.42rem 0.75rem !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease,
+                    border-color 0.15s ease, background 0.15s ease !important;
+        letter-spacing: 0.01em !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    [data-testid="baseButton-secondary"]:hover {
+        border-color: rgba(125, 122, 201, 0.72) !important;
+        background: rgba(125, 122, 201, 0.13) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(125, 122, 201, 0.22) !important;
+    }
+    [data-testid="baseButton-secondary"]:active {
+        transform: translateY(0px) !important;
+        box-shadow: none !important;
+    }
+
+    /* ── Reset button — ghost pill, right-of-input ─ */
+    [data-testid="baseButton-primary"] {
+        border-radius: 20px !important;
+        border: 1.5px solid rgba(125, 122, 201, 0.45) !important;
+        background: transparent !important;
+        color: rgba(125, 122, 201, 0.9) !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        padding: 0.3rem 0.85rem !important;
+        transition: all 0.15s ease !important;
+        letter-spacing: 0.01em !important;
+    }
+    [data-testid="baseButton-primary"]:hover {
+        background: rgba(125, 122, 201, 0.1) !important;
+        border-color: rgba(125, 122, 201, 0.8) !important;
+        box-shadow: 0 2px 8px rgba(125, 122, 201, 0.25) !important;
     }
 
     /* ════════════════════════════════════════════
@@ -360,14 +416,34 @@ st.markdown(
             background: #3a3a5c !important;
         }
 
-        /* ── Quick action buttons ────────────── */
-        .stButton > button {
+        /* ── Quick-action section header ───────── */
+        .qa-header-title {
+            color: rgba(160, 155, 220, 1) !important;
+        }
+        .qa-header-sub {
+            color: #6a7280 !important;
+        }
+
+        /* ── Quick action pill-card buttons ──────── */
+        [data-testid="baseButton-secondary"] {
             border-color: rgba(125, 122, 201, 0.4) !important;
+            background: rgba(125, 122, 201, 0.07) !important;
             color: #c8c4e8 !important;
         }
-        .stButton > button:hover {
+        [data-testid="baseButton-secondary"]:hover {
             border-color: rgba(160, 155, 220, 0.8) !important;
+            background: rgba(125, 122, 201, 0.22) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+        }
+
+        /* ── Reset button dark mode ───────────────── */
+        [data-testid="baseButton-primary"] {
+            border-color: rgba(125, 122, 201, 0.5) !important;
+            color: rgba(160, 155, 220, 0.9) !important;
+        }
+        [data-testid="baseButton-primary"]:hover {
             background: rgba(125, 122, 201, 0.18) !important;
+            border-color: rgba(160, 155, 220, 0.85) !important;
         }
 
         /* ── Divider ─────────────────────────── */
@@ -407,31 +483,15 @@ def _reset_chat() -> None:
     st.session_state.pop("_pending_msg", None)
 
 
-# ── Language toggle + Reset button ────────────────────
-# Render in a two-column row: language pills on the left, reset on the right.
-_header_lang_col, _header_reset_col = st.columns([6, 1])
-
-with _header_lang_col:
-    st.pills(
-        label="Language",
-        options=["🇩🇪 Deutsch", "🇬🇧 English"],
-        default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
-        on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
-        key="_lang_pills",
-        label_visibility="collapsed",
-    )
-
-with _header_reset_col:
-    # Show only when there is a conversation to reset — avoids cluttering
-    # the welcome screen.
-    if st.session_state.messages and st.button(
-        t("reset_chat", lang),
-        help=t("reset_chat_tooltip", lang),
-        key="_reset_btn",
-        use_container_width=True,
-    ):
-        _reset_chat()
-        st.rerun()
+# ── Language toggle ─────────────────────────────────────
+st.pills(
+    label="Language",
+    options=["🇩🇪 Deutsch", "🇬🇧 English"],
+    default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
+    on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
+    key="_lang_pills",
+    label_visibility="collapsed",
+)
 # Apply the language if changed via pills
 if "_lang_pills" in st.session_state:
     new = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
@@ -569,7 +629,15 @@ def _render_quick_actions(current_lang: str) -> None:
     Args:
         current_lang: Active UI language code ("de" or "en").
     """
-    st.caption(t("quick_actions_label", current_lang))
+    heading = t("quick_actions_heading", current_lang)
+    sub = t("quick_actions_sub", current_lang)
+    st.markdown(
+        f'<div class="qa-header">'
+        f'<div class="qa-header-title">{heading}</div>'
+        f'<div class="qa-header-sub">{sub}</div>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )
     c1, c2, c3 = st.columns(3)
     with c1:
         if st.button(t("quick_bafoeg", current_lang), use_container_width=True, key="qa_bafoeg"):
@@ -711,6 +779,21 @@ for msg in st.session_state.messages:
 # errors across re-renders.
 _render_quick_actions(lang)
 
+
+# ── Reset button — sits right above the chat input ────────
+# Only shown once the user has started a conversation.
+if st.session_state.messages:
+    _space_col, _reset_col = st.columns([6, 2])
+    with _reset_col:
+        if st.button(
+            t("reset_chat", lang),
+            help=t("reset_chat_tooltip", lang),
+            key="_reset_btn",
+            type="primary",
+            use_container_width=True,
+        ):
+            _reset_chat()
+            st.rerun()
 
 # ── Input handling ─────────────────────────────────────
 
