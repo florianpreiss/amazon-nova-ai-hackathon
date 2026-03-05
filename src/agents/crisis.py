@@ -5,26 +5,10 @@ Detects financial emergencies, mental health crises, dropout risk,
 and acute danger using contextual reasoning (not just keywords).
 """
 
-from config.settings import REASONING_LOW
-
+from config.prompt_loader import load_agent_config
 from src.core.client import NovaClient
 
-CRISIS_PROMPT = """You are a crisis detector for a student support system.
-
-Analyze the user's message for signs of:
-1. FINANCIAL: Cannot pay rent or food, at risk of dropping out due to money.
-2. MENTAL: Hopelessness, self-harm indicators, extreme isolation, despair.
-3. DROPOUT: Wants to quit studies, sees no purpose in continuing.
-4. ACUTE: Homelessness, violence, immediate physical danger.
-
-IMPORTANT: Understand CONTEXT.
-- "I can't pass this exam" → NOT a crisis (academic frustration).
-- "I can't do this anymore, I just want to disappear" → POTENTIAL crisis.
-
-Respond ONLY in this format:
-CRISIS: YES or NO
-TYPE: FINANCIAL | MENTAL | DROPOUT | ACUTE | NONE
-"""
+_cfg = load_agent_config("crisis")
 
 CRISIS_RESOURCES = {
     "emergency": "112 (Emergency) / 110 (Police)",
@@ -46,10 +30,10 @@ class CrisisRadar:
         messages = [{"role": "user", "content": [{"text": message}]}]
         response = self.client.converse(
             messages=messages,
-            system_prompt=CRISIS_PROMPT,
-            reasoning_effort=REASONING_LOW,
-            max_tokens=100,
-            temperature=0.0,
+            system_prompt=_cfg["system_prompt"],
+            reasoning_effort=_cfg["agent"]["reasoning_effort"],
+            max_tokens=_cfg["agent"]["max_tokens"],
+            temperature=_cfg["agent"]["temperature"],
         )
         text = self.client.extract_text(response).upper()
         is_crisis = "CRISIS: YES" in text

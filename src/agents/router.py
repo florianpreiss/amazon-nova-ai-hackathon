@@ -4,26 +4,10 @@ Router Agent — fast message classification using Extended Thinking LOW.
 Determines which specialist agent should handle the incoming message.
 """
 
-from config.settings import REASONING_LOW
-
+from config.prompt_loader import load_agent_config
 from src.core.client import NovaClient
 
-ROUTER_PROMPT = """You are the router for KODA, an AI companion for first-generation academics.
-
-Analyze the user's message and determine which agent should handle it.
-
-Available agents:
-- COMPASS: First contact, emotional support, general orientation. Use when someone is new, unsure, overwhelmed, or does not fit other categories.
-- FINANCING: Student aid (BAföG), scholarships, cost of living, student jobs, loans. Any financial question about studying.
-- STUDY_CHOICE: Degree programs, universities, numerus clausus, applications, types of higher education institutions.
-- ACADEMIC_BASICS: Fundamental questions about how university works, academic terminology, study vs. apprenticeship decisions.
-- ROLE_MODELS: Motivation, role models, career visions, impostor feelings, self-doubt, encouragement.
-
-Respond ONLY with the agent name:
-AGENT: [NAME]
-
-If the message is ambiguous, choose COMPASS.
-"""
+_cfg = load_agent_config("router")
 
 
 class RouterAgent:
@@ -40,10 +24,10 @@ class RouterAgent:
 
         response = self.client.converse(
             messages=messages,
-            system_prompt=ROUTER_PROMPT,
-            reasoning_effort=REASONING_LOW,
-            max_tokens=50,
-            temperature=0.0,
+            system_prompt=_cfg["system_prompt"],
+            reasoning_effort=_cfg["agent"]["reasoning_effort"],
+            max_tokens=_cfg["agent"]["max_tokens"],
+            temperature=_cfg["agent"]["temperature"],
         )
 
         text = self.client.extract_text(response).upper()

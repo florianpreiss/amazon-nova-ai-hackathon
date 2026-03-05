@@ -34,6 +34,13 @@ STRINGS = {
         "reset_chat_tooltip": "Clear the conversation and start fresh",
         "footer": "KODA provides orientation, not legal or financial advice.\n\nNo data is stored. Your session is private and ephemeral.",
         "lang_toggle": "🇩🇪 Deutsch",
+        "onboarding_pending_title": "Before we begin\u2026",
+        "onboarding_pending_body": "KODA would like to understand your situation to give you more tailored guidance.",
+        "onboarding_start_btn": "Let\u2019s get started",
+        "onboarding_skip_btn": "Skip",
+        "onboarding_skip_hint": "Go straight to the AI",
+        "onboarding_input_placeholder": "Your answer\u2026",
+        "profile_card_label": "Your Profile",
     },
     "de": {
         "title": "KODA",
@@ -63,6 +70,13 @@ STRINGS = {
         "reset_chat_tooltip": "Gespräch löschen und neu beginnen",
         "footer": "KODA bietet Orientierung, keine Rechts- oder Finanzberatung.\n\nEs werden keine Daten gespeichert. Deine Sitzung ist privat.",
         "lang_toggle": "🇬🇧 English",
+        "onboarding_pending_title": "Bevor wir beginnen\u2026",
+        "onboarding_pending_body": "KODA m\u00f6chte dich kurz kennenlernen, um dich gezielter begleiten zu k\u00f6nnen.",
+        "onboarding_start_btn": "Kennenlernen starten",
+        "onboarding_skip_btn": "\u00dcberspringen",
+        "onboarding_skip_hint": "Direkt zur KI springen",
+        "onboarding_input_placeholder": "Deine Antwort\u2026",
+        "profile_card_label": "Dein Profil",
     },
 }
 
@@ -79,6 +93,7 @@ AGENT_LABELS = {
         "STUDY_CHOICE": "Study Advisor",
         "ACADEMIC_BASICS": "Academic Coach",
         "ROLE_MODELS": "Role Models",
+        "ONBOARDING": "KODA Onboarding",
     },
     "de": {
         "COMPASS": "KODA Kompass",
@@ -87,6 +102,7 @@ AGENT_LABELS = {
         "STUDY_CHOICE": "Studienberater",
         "ACADEMIC_BASICS": "Akademischer Coach",
         "ROLE_MODELS": "Vorbilder",
+        "ONBOARDING": "KODA Onboarding",
     },
 }
 
