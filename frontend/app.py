@@ -853,6 +853,13 @@ if user_input:
         }
     )
 
+    # Rerun so the script executes top-to-bottom with the fully-updated
+    # message list.  Without this, _render_quick_actions() and the reset
+    # button were already committed to the page before the new messages
+    # were appended — making them invisible until the next user interaction
+    # (e.g. a language switch) happened to trigger its own st.rerun().
+    st.rerun()
+
 
 # ── Footer ─────────────────────────────────────────────
 
