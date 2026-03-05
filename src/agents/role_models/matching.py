@@ -1,6 +1,7 @@
 """Role Model Matching — connects users with famous first-generation academics and leaders."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

@@ -7,6 +7,7 @@ students do not know this — it is a systemic gap, not a personal failure.
 """
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

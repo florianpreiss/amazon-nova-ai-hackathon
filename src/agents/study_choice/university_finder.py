@@ -1,6 +1,7 @@
 """University Finder — compares institution types, locations, support programs."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

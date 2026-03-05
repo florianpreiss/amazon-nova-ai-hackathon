@@ -1,6 +1,7 @@
 """Degree Program Explorer — uses Web Grounding for current NC values and program data."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

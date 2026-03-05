@@ -1,6 +1,7 @@
 """Study vs. Apprenticeship advisor — honest, balanced, empowering comparison."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

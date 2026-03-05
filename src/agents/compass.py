@@ -1,6 +1,7 @@
 """Compass Agent — first contact, emotional grounding, orientation."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

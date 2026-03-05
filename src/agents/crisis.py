@@ -6,6 +6,7 @@ and acute danger using contextual reasoning (not just keywords).
 """
 
 from config.prompt_loader import load_agent_config
+
 from src.core.client import NovaClient
 
 _cfg = load_agent_config("crisis")

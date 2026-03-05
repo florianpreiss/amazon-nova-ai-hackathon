@@ -5,6 +5,7 @@ Determines which specialist agent should handle the incoming message.
 """
 
 from config.prompt_loader import load_agent_config
+
 from src.core.client import NovaClient
 
 _cfg = load_agent_config("router")

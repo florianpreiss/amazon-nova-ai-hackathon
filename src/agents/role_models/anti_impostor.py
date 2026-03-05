@@ -6,6 +6,7 @@ the problem is in the system, not in the student.
 """
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

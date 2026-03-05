@@ -1,6 +1,7 @@
 """Student Aid (BAföG) Agent — uses Code Interpreter for financial calculations."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 

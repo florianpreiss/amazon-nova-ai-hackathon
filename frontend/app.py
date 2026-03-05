@@ -745,7 +745,7 @@ def _render_personalized_quick_actions(current_lang: str) -> None:
     for row_start in range(0, len(prompts), 3):
         row = prompts[row_start : row_start + 3]
         cols = st.columns(len(row))
-        for col, prompt in zip(cols, row):
+        for col, prompt in zip(cols, row, strict=False):
             with col:
                 if st.button(
                     prompt["label"],

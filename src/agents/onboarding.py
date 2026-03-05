@@ -1,7 +1,7 @@
 """
 Onboarding Agent — conversational intake for new KODA users.
 
-Asks 3–5 empathetic questions to understand the user's situation,
+Asks 3-5 empathetic questions to understand the user's situation,
 then outputs a structured profile and personalized prompt suggestions.
 """
 
@@ -9,6 +9,7 @@ import re
 from collections.abc import Generator
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 START_TRIGGER = "[START_ONBOARDING]"

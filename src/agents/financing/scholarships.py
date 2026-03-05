@@ -1,6 +1,7 @@
 """Scholarship Finder — uses Web Grounding to search current databases."""
 
 from config.prompt_loader import load_agent_config
+
 from src.agents.base import BaseAgent
 
 
