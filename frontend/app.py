@@ -942,8 +942,14 @@ elif st.session_state.onboarding_phase == "in_progress":
             unsafe_allow_html=True,
         )
 
-        # Format full history for Bedrock
-        bedrock_msgs = [
+        # Format full history for Bedrock.
+        # The stored history begins with the assistant greeting, but Bedrock requires
+        # conversations to start with a user message. Prepend the original trigger
+        # that caused the greeting so the turn order is correct.
+        from src.agents.onboarding import START_TRIGGER
+
+        bedrock_msgs = [{"role": "user", "content": [{"text": START_TRIGGER}]}]
+        bedrock_msgs += [
             {"role": m["role"], "content": [{"text": m["content"]}]}
             for m in st.session_state.onboarding_messages[:-1]
         ]

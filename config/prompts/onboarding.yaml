@@ -1,6 +1,6 @@
 agent:
   name: onboarding
-  reasoning_effort: low
+  reasoning_effort: null
 
 system_prompt: |
   You are KODA's Onboarding Companion — the very first voice a first-generation

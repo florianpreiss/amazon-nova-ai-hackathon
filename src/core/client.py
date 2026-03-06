@@ -211,14 +211,17 @@ class NovaClient:
         kw: dict = {
             "modelId": self.model_id,
             "messages": messages,
-            "inferenceConfig": {"maxTokens": max_tokens, "temperature": temperature, "topP": top_p},
         }
+        if reasoning_effort:
+            # maxTokens, temperature, and topP must be omitted when reasoningConfig is enabled
+            kw["inferenceConfig"] = {}
+            kw["additionalModelRequestFields"] = {
+                "reasoningConfig": {"type": "enabled", "maxReasoningEffort": reasoning_effort}
+            }
+        else:
+            kw["inferenceConfig"] = {"maxTokens": max_tokens, "temperature": temperature, "topP": top_p}
         if system_prompt:
             kw["system"] = [{"text": system_prompt}]
         if tool_config:
             kw["toolConfig"] = tool_config
-        if reasoning_effort:
-            kw["additionalModelRequestFields"] = {
-                "reasoningConfig": {"type": "enabled", "maxReasoningEffort": reasoning_effort}
-            }
         return kw
