@@ -212,14 +212,17 @@ class NovaClient:
             "modelId": self.model_id,
             "messages": messages,
         }
-        if reasoning_effort:
-            # maxTokens, temperature, and topP must be omitted when reasoningConfig is enabled
-            kw["inferenceConfig"] = {}
+        if reasoning_effort == "high":
+            # temperature, topP, topK cannot be used with high reasoning effort (Nova 2 UG p.20)
             kw["additionalModelRequestFields"] = {
-                "reasoningConfig": {"type": "enabled", "maxReasoningEffort": reasoning_effort}
+                "reasoningConfig": {"type": "enabled", "maxReasoningEffort": "high"}
             }
         else:
             kw["inferenceConfig"] = {"maxTokens": max_tokens, "temperature": temperature, "topP": top_p}
+            if reasoning_effort:
+                kw["additionalModelRequestFields"] = {
+                    "reasoningConfig": {"type": "enabled", "maxReasoningEffort": reasoning_effort}
+                }
         if system_prompt:
             kw["system"] = [{"text": system_prompt}]
         if tool_config:
