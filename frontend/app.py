@@ -33,6 +33,18 @@ if "show_welcome" not in st.session_state:
 if "lang" not in st.session_state:
     st.session_state.lang = DEFAULT_LANGUAGE
 
+# ── Onboarding state ───────────────────────────────────
+if "onboarding_phase" not in st.session_state:
+    st.session_state.onboarding_phase = "pending"   # pending|in_progress|complete|skipped
+if "onboarding_messages" not in st.session_state:
+    st.session_state.onboarding_messages = []
+if "onboarding_greeting_sent" not in st.session_state:
+    st.session_state.onboarding_greeting_sent = False
+if "user_profile" not in st.session_state:
+    st.session_state.user_profile = None
+if "personalized_prompts" not in st.session_state:
+    st.session_state.personalized_prompts = None
+
 lang = st.session_state.lang
 
 # ── CSS ────────────────────────────────────────────────
@@ -320,6 +332,24 @@ st.markdown(
         box-shadow: 0 2px 8px rgba(125, 122, 201, 0.25) !important;
     }
 
+    /* ── Onboarding pending screen ────────────── */
+    .onboarding-title {
+        font-family: 'Nunito', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: rgba(125, 122, 201, 1);
+        text-align: center;
+        margin: 1rem 0 0.4rem 0;
+    }
+    .onboarding-body {
+        text-align: center;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.9rem;
+        color: #636e72;
+        margin: 0 0 1.2rem 0;
+        line-height: 1.6;
+    }
+
     /* ════════════════════════════════════════════
        DARK MODE  (respects OS / browser setting)
        All hardcoded light-mode colours are
@@ -450,6 +480,14 @@ st.markdown(
         hr {
             border-color: rgba(125, 122, 201, 0.15) !important;
         }
+
+        /* ── Onboarding dark mode ─────────────── */
+        .onboarding-title {
+            color: rgba(160, 155, 220, 1) !important;
+        }
+        .onboarding-body {
+            color: #a0a8b8 !important;
+        }
     }
 </style>
 """,
@@ -466,12 +504,10 @@ def _set_lang(new_lang: str):
 
 def _reset_chat() -> None:
     """
-    Clear all conversation state and return to the welcome screen.
+    Clear all conversation state and return to the onboarding screen.
 
-    Resets messages, session ID, and welcome flag.  A new session ID is
-    generated so any server-side session store would treat this as a fresh
-    session.  The language preference is intentionally preserved — the user
-    should not have to re-select it after resetting.
+    Resets messages, session ID, and all onboarding state.  The language
+    preference is intentionally preserved.
 
     Privacy note: no persistent storage exists, so "reset" is purely
     in-memory.  Compliant with the ephemeral-session guarantee in the footer.
@@ -479,6 +515,11 @@ def _reset_chat() -> None:
     st.session_state.messages = []
     st.session_state.session_id = str(uuid.uuid4())
     st.session_state.show_welcome = True
+    st.session_state.onboarding_phase = "pending"
+    st.session_state.onboarding_messages = []
+    st.session_state.onboarding_greeting_sent = False
+    st.session_state.user_profile = None
+    st.session_state.personalized_prompts = None
     # Clear any pending quick-action message
     st.session_state.pop("_pending_msg", None)
 
@@ -510,6 +551,7 @@ def load_agents():
     from src.agents.compass import CompassAgent
     from src.agents.crisis import CrisisRadar
     from src.agents.financing.student_aid import StudentAidAgent
+    from src.agents.onboarding import OnboardingAgent
     from src.agents.role_models.anti_impostor import AntiImpostorAgent
     from src.agents.router import RouterAgent
     from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
@@ -517,6 +559,7 @@ def load_agents():
     return {
         "router": RouterAgent(),
         "crisis": CrisisRadar(),
+        "onboarding": OnboardingAgent(),
         "agents": {
             "COMPASS": CompassAgent(),
             "FINANCING": StudentAidAgent(),
@@ -527,7 +570,12 @@ def load_agents():
     }
 
 
-def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
+def get_response(
+    user_message: str,
+    history: list,
+    ui_lang: str = "de",
+    user_profile: str | None = None,
+) -> dict:
     """
     Orchestrate agent routing, crisis scanning and response generation.
 
@@ -536,6 +584,8 @@ def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
         history: Previous Bedrock-formatted message turns.
         ui_lang: The UI language chosen by the user (used for the
                  crisis banner only; agent responses auto-detect language).
+        user_profile: Optional plain-text user profile from onboarding,
+                      injected into the agent's system prompt via metadata.
 
     Returns:
         dict with keys: ``response`` (str), ``agent`` (str), ``crisis`` (bool).
@@ -544,10 +594,12 @@ def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
     bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
     bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
 
+    metadata = {"identity_context": {"profile": user_profile}} if user_profile else None
+
     crisis = system["crisis"].scan(user_message)
     agent_key = system["router"].route(user_message)
     agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
-    response_text = agent.respond(bedrock_messages)
+    response_text = agent.respond(bedrock_messages, metadata=metadata)
 
     if crisis["is_crisis"] and crisis["resources"]:
         # Crisis banner uses the UI language; agent body already auto-detected
@@ -559,7 +611,12 @@ def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
     return {"response": response_text, "agent": agent_key, "crisis": crisis["is_crisis"]}
 
 
-def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
+def get_response_stream(
+    user_message: str,
+    history: list,
+    ui_lang: str = "de",
+    user_profile: str | None = None,
+):
     """
     Streaming variant of get_response().
 
@@ -577,6 +634,8 @@ def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
     bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
     bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
 
+    metadata = {"identity_context": {"profile": user_profile}} if user_profile else None
+
     crisis = system["crisis"].scan(user_message)
     agent_key = system["router"].route(user_message)
     agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
@@ -593,10 +652,10 @@ def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
     collected: list[str] = [crisis_prefix]
     replace_text: str | None = None
 
-    for chunk in agent.respond_stream(bedrock_messages):
+    for chunk in agent.respond_stream(bedrock_messages, metadata=metadata):
         if chunk.startswith("\x00REPLACE\x00"):
             # Anti-shame filter rewrote the text; store corrected version
-            replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00") :]
+            replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00"):]
         else:
             collected.append(chunk)
             yield chunk
@@ -617,18 +676,14 @@ def _send(msg_key: str):
     st.session_state.show_welcome = False
 
 
-def _render_quick_actions(current_lang: str) -> None:
-    """
-    Render the six quick-action suggestion buttons.
+def _send_custom(message: str):
+    """Queue a custom message string (used by personalized prompt buttons)."""
+    st.session_state._pending_msg = message
+    st.session_state.show_welcome = False
 
-    Extracted into a named function so the buttons can be displayed
-    persistently below the chat history — not only on the welcome screen.
-    Each button pre-fills the chat input with a full question so the user
-    never has to type for common topics.
 
-    Args:
-        current_lang: Active UI language code ("de" or "en").
-    """
+def _render_generic_quick_actions(current_lang: str) -> None:
+    """Render the six generic quick-action suggestion buttons."""
     heading = t("quick_actions_heading", current_lang)
     sub = t("quick_actions_sub", current_lang)
     st.markdown(
@@ -669,6 +724,45 @@ def _render_quick_actions(current_lang: str) -> None:
             _send("quick_rolemodels_msg")
 
 
+def _render_personalized_quick_actions(current_lang: str) -> None:
+    """Render personalized prompt buttons generated during onboarding."""
+    prompts = st.session_state.personalized_prompts or []
+    if not prompts:
+        _render_generic_quick_actions(current_lang)
+        return
+
+    heading = t("quick_actions_heading", current_lang)
+    sub = t("quick_actions_sub", current_lang)
+    st.markdown(
+        f'<div class="qa-header">'
+        f'<div class="qa-header-title">{heading}</div>'
+        f'<div class="qa-header-sub">{sub}</div>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    # Render in rows of 3
+    for row_start in range(0, len(prompts), 3):
+        row = prompts[row_start : row_start + 3]
+        cols = st.columns(len(row))
+        for col, prompt in zip(cols, row, strict=False):
+            with col:
+                if st.button(
+                    prompt["label"],
+                    use_container_width=True,
+                    key=f"qa_p_{row_start}_{prompt['label'][:20]}",
+                ):
+                    _send_custom(prompt["message"])
+
+
+def _render_quick_actions(current_lang: str) -> None:
+    """Route to personalized or generic quick actions based on onboarding state."""
+    if st.session_state.personalized_prompts:
+        _render_personalized_quick_actions(current_lang)
+    else:
+        _render_generic_quick_actions(current_lang)
+
+
 # ── Title: KODA ──────────────────────────────
 
 dot = chr(183)
@@ -687,11 +781,12 @@ st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe
 st.markdown(f"""<div class="koda-heritage">{heritage_text}</div>""", unsafe_allow_html=True)
 
 
-# ── Welcome screen ─────────────────────────────────────
+# ══════════════════════════════════════════════════════
+# PHASE: pending — show stats + onboarding CTA
+# ══════════════════════════════════════════════════════
 
-if st.session_state.show_welcome and not st.session_state.messages:
+if st.session_state.onboarding_phase == "pending":
     col_left, col_right = st.columns(2)
-
     with col_left:
         if lang == "de":
             st.markdown(
@@ -715,7 +810,6 @@ if st.session_state.show_welcome and not st.session_state.messages:
             """,
                 unsafe_allow_html=True,
             )
-
     with col_right:
         if lang == "de":
             st.markdown(
@@ -753,105 +847,315 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
     st.write("")
 
-
-# ── Chat history ───────────────────────────────────────
-
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        # User text is plain — escape HTML to prevent XSS injection
-        st.markdown(
-            f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        # Agent response: use Streamlit's native chat_message so that
-        # st.markdown() inside it renders all markdown formatting correctly
-        # (headers, bold, lists, code blocks, etc.)
-        label = get_agent_label(msg.get("agent", "COMPASS"), lang)
-        with st.chat_message("assistant", avatar="🧭"):
-            st.caption(label)
-            st.markdown(msg["content"])
-
-
-# ── Quick actions (persistent) ─────────────────────────
-# Rendered after every chat turn so users can always select a topic
-# without typing.  Unique widget keys prevent Streamlit duplicate-key
-# errors across re-renders.
-_render_quick_actions(lang)
-
-
-# ── Reset button — sits right above the chat input ────────
-# Only shown once the user has started a conversation.
-if st.session_state.messages:
-    _space_col, _reset_col = st.columns([6, 2])
-    with _reset_col:
-        if st.button(
-            t("reset_chat", lang),
-            help=t("reset_chat_tooltip", lang),
-            key="_reset_btn",
-            type="primary",
-            use_container_width=True,
-        ):
-            _reset_chat()
-            st.rerun()
-
-# ── Input handling ─────────────────────────────────────
-
-user_input = None
-if "_pending_msg" in st.session_state:
-    user_input = st.session_state._pending_msg
-    del st.session_state._pending_msg
-
-chat_input = st.chat_input(t("input_placeholder", lang))
-if chat_input:
-    user_input = chat_input
-    st.session_state.show_welcome = False
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
     st.markdown(
-        f'<div class="msg-user">{_safe_user(user_input)}</div>',
+        f'<div class="onboarding-title">{t("onboarding_pending_title", lang)}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f'<div class="onboarding-body">{t("onboarding_pending_body", lang)}</div>',
         unsafe_allow_html=True,
     )
 
-    # ── Streaming response ─────────────────────────────────
-    # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
-    # st.write_stream() renders each yielded chunk as it arrives.
-    # The final yielded item is a metadata dict — we pop it before display.
-    stream = get_response_stream(user_input, st.session_state.messages[:-1], ui_lang=lang)
+    btn_col, skip_col = st.columns([3, 1])
+    with btn_col:
+        if st.button(
+            t("onboarding_start_btn", lang),
+            use_container_width=True,
+            type="primary",
+            key="onboarding_start",
+        ):
+            st.session_state.onboarding_phase = "in_progress"
+            st.rerun()
+    with skip_col:
+        if st.button(
+            t("onboarding_skip_btn", lang),
+            use_container_width=True,
+            key="onboarding_skip_pending",
+        ):
+            st.session_state.onboarding_phase = "skipped"
+            st.rerun()
 
-    label_placeholder = None
-    # Use a single-element list so the nested generator can write to it
-    # without a nonlocal that ruff flags as "assigned but never used".
-    meta_box: list[dict] = [{}]
 
-    def _filtered_stream():
-        """Yield only string chunks to st.write_stream; capture the final dict."""
-        for item in stream:
-            if isinstance(item, dict):
-                meta_box[0] = item
+# ══════════════════════════════════════════════════════
+# PHASE: in_progress — onboarding chat
+# ══════════════════════════════════════════════════════
+
+elif st.session_state.onboarding_phase == "in_progress":
+    from src.agents.onboarding import OnboardingAgent as _OnboardingAgent
+
+    system = load_agents()
+    onboarding_agent = system["onboarding"]
+
+    if not st.session_state.onboarding_greeting_sent:
+        # Auto-fire the opening greeting — no user input needed
+        collected_greeting: list[str] = []
+
+        def _greeting_stream():
+            for chunk in onboarding_agent.start_greeting():
+                if isinstance(chunk, str):
+                    if chunk.startswith("\x00REPLACE\x00"):
+                        collected_greeting.clear()
+                        collected_greeting.append(chunk[len("\x00REPLACE\x00"):])
+                    else:
+                        collected_greeting.append(chunk)
+                        yield chunk
+
+        with st.chat_message("assistant", avatar="🧭"):
+            st.write_stream(_greeting_stream())
+
+        st.session_state.onboarding_messages.append(
+            {"role": "assistant", "content": "".join(collected_greeting)}
+        )
+        st.session_state.onboarding_greeting_sent = True
+
+    else:
+        # Render existing onboarding history
+        for msg in st.session_state.onboarding_messages:
+            if msg["role"] == "user":
+                st.markdown(
+                    f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
+                    unsafe_allow_html=True,
+                )
             else:
-                yield item
+                with st.chat_message("assistant", avatar="🧭"):
+                    st.markdown(msg["content"])
 
-    with st.chat_message("assistant", avatar="\U0001f9ed"):
-        label_placeholder = st.empty()
-        full_text = st.write_stream(_filtered_stream())
+    # Skip button
+    _, skip_col = st.columns([4, 1])
+    with skip_col:
+        if st.button(
+            t("onboarding_skip_btn", lang),
+            use_container_width=True,
+            key="onboarding_skip_inprogress",
+        ):
+            st.session_state.onboarding_phase = "skipped"
+            st.rerun()
 
-    metadata = meta_box[0]
-    agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
-    if label_placeholder:
-        label_placeholder.caption(agent_label)
+    # Chat input for user answers
+    onboarding_input = st.chat_input(t("onboarding_input_placeholder", lang))
+    if onboarding_input:
+        st.session_state.onboarding_messages.append(
+            {"role": "user", "content": onboarding_input}
+        )
+        st.markdown(
+            f'<div class="msg-user">{_safe_user(onboarding_input)}</div>',
+            unsafe_allow_html=True,
+        )
 
-    # Use metadata response if anti-shame filter replaced the streamed text
-    final_text = metadata.get("response", full_text)
+        # Format full history for Bedrock.
+        # The stored history begins with the assistant greeting, but Bedrock requires
+        # conversations to start with a user message. Prepend the original trigger
+        # that caused the greeting so the turn order is correct.
+        from src.agents.onboarding import START_TRIGGER
 
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": final_text,
-            "agent": metadata.get("agent", "COMPASS"),
-        }
-    )
+        bedrock_msgs = [{"role": "user", "content": [{"text": START_TRIGGER}]}]
+        bedrock_msgs += [
+            {"role": m["role"], "content": [{"text": m["content"]}]}
+            for m in st.session_state.onboarding_messages[:-1]
+        ]
+        bedrock_msgs.append({"role": "user", "content": [{"text": onboarding_input}]})
+
+        collected_ob: list[str] = []
+
+        def _onboarding_stream():
+            for chunk in onboarding_agent.respond_stream(bedrock_msgs):
+                if isinstance(chunk, str):
+                    if chunk.startswith("\x00REPLACE\x00"):
+                        collected_ob.clear()
+                        collected_ob.append(chunk[len("\x00REPLACE\x00"):])
+                    else:
+                        collected_ob.append(chunk)
+                        yield chunk
+
+        with st.chat_message("assistant", avatar="🧭"):
+            st.write_stream(_onboarding_stream())
+
+        full_ob_text = "".join(collected_ob)
+
+        # Check if profile was generated — signals onboarding complete
+        profile = _OnboardingAgent.extract_profile(full_ob_text)
+        if profile:
+            st.session_state.user_profile = profile
+            st.session_state.personalized_prompts = _OnboardingAgent.extract_prompts(full_ob_text)
+            display_text = _OnboardingAgent.clean_for_display(full_ob_text)
+            st.session_state.onboarding_messages.append(
+                {"role": "assistant", "content": display_text}
+            )
+            st.session_state.onboarding_phase = "complete"
+            st.session_state.show_welcome = False
+            st.rerun()
+        else:
+            st.session_state.onboarding_messages.append(
+                {"role": "assistant", "content": full_ob_text}
+            )
+
+
+# ══════════════════════════════════════════════════════
+# PHASE: complete or skipped — main chat
+# ══════════════════════════════════════════════════════
+
+elif st.session_state.onboarding_phase in ("complete", "skipped"):
+
+    # ── Welcome screen (only shown before first message) ──
+    if st.session_state.show_welcome and not st.session_state.messages:
+        col_left, col_right = st.columns(2)
+        with col_left:
+            if lang == "de":
+                st.markdown(
+                    """
+                <div class="stat-box">
+                    <div class="stat-label">Nicht-Akademikerkinder</div>
+                    <div class="stat-value low">27 von 100</div>
+                    <div class="stat-delta">beginnen ein Studium</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    """
+                <div class="stat-box">
+                    <div class="stat-label">Non-academic families</div>
+                    <div class="stat-value low">27 of 100</div>
+                    <div class="stat-delta">start university</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+        with col_right:
+            if lang == "de":
+                st.markdown(
+                    """
+                <div class="stat-box">
+                    <div class="stat-label">Akademikerkinder</div>
+                    <div class="stat-value high">79 von 100</div>
+                    <div class="stat-delta">beginnen ein Studium</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    """
+                <div class="stat-box">
+                    <div class="stat-label">Academic families</div>
+                    <div class="stat-value high">79 of 100</div>
+                    <div class="stat-delta">start university</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+
+        st.write("")
+
+        welcome_text = t("welcome_body", lang).replace(
+            "\n\n",
+            '</p><p style="text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0.5rem 0 0 0;">',
+        )
+        st.markdown(
+            f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>{welcome_text}</p>",
+            unsafe_allow_html=True,
+        )
+
+        st.write("")
+
+    # ── Profile card ──────────────────────────────────
+    if st.session_state.user_profile:
+        with st.expander("\u25c9 " + t("profile_card_label", lang), expanded=False):
+            st.markdown(
+                f"<p style='font-size:0.82rem; color:#636e72; line-height:1.6; margin:0;'>"
+                f"{html_lib.escape(st.session_state.user_profile)}</p>",
+                unsafe_allow_html=True,
+            )
+
+    # ── Chat history ───────────────────────────────────
+
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            st.markdown(
+                f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            label = get_agent_label(msg.get("agent", "COMPASS"), lang)
+            with st.chat_message("assistant", avatar="🧭"):
+                st.caption(label)
+                st.markdown(msg["content"])
+
+    # ── Quick actions (persistent) ─────────────────────
+    _render_quick_actions(lang)
+
+    # ── Reset button ───────────────────────────────────
+    if st.session_state.messages:
+        _space_col, _reset_col = st.columns([6, 2])
+        with _reset_col:
+            if st.button(
+                t("reset_chat", lang),
+                help=t("reset_chat_tooltip", lang),
+                key="_reset_btn",
+                type="primary",
+                use_container_width=True,
+            ):
+                _reset_chat()
+                st.rerun()
+
+    # ── Input handling ─────────────────────────────────
+
+    user_input = None
+    if "_pending_msg" in st.session_state:
+        user_input = st.session_state._pending_msg
+        del st.session_state._pending_msg
+
+    chat_input = st.chat_input(t("input_placeholder", lang))
+    if chat_input:
+        user_input = chat_input
+        st.session_state.show_welcome = False
+
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.markdown(
+            f'<div class="msg-user">{_safe_user(user_input)}</div>',
+            unsafe_allow_html=True,
+        )
+
+        # ── Streaming response ─────────────────────────────────
+        stream = get_response_stream(
+            user_input,
+            st.session_state.messages[:-1],
+            ui_lang=lang,
+            user_profile=st.session_state.user_profile,
+        )
+
+        label_placeholder = None
+        meta_box: list[dict] = [{}]
+
+        def _filtered_stream():
+            """Yield only string chunks to st.write_stream; capture the final dict."""
+            for item in stream:
+                if isinstance(item, dict):
+                    meta_box[0] = item
+                else:
+                    yield item
+
+        with st.chat_message("assistant", avatar="\U0001f9ed"):
+            label_placeholder = st.empty()
+            full_text = st.write_stream(_filtered_stream())
+
+        metadata = meta_box[0]
+        agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
+        if label_placeholder:
+            label_placeholder.caption(agent_label)
+
+        # Use metadata response if anti-shame filter replaced the streamed text
+        final_text = metadata.get("response", full_text)
+
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": final_text,
+                "agent": metadata.get("agent", "COMPASS"),
+            }
+        )
 
     # Rerun so the script executes top-to-bottom with the fully-updated
     # message list.  Without this, _render_quick_actions() and the reset
