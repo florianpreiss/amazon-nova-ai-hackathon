@@ -12,15 +12,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.agents.academic_basics.hidden_curriculum import HiddenCurriculumAgent
-from src.agents.compass import CompassAgent
-from src.agents.crisis import CrisisRadar
-from src.agents.financing.student_aid import StudentAidAgent
-from src.agents.role_models.anti_impostor import AntiImpostorAgent
-from src.agents.router import RouterAgent
-from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
 from src.core.conversation import Conversation
-from src.core.provenance import ResponseProvenance, build_provenance_context
+from src.core.provenance import ResponseProvenance
+from src.orchestration import build_default_chat_service
 
 # ── App setup ──────────────────────────────────────
 
@@ -56,18 +50,9 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# ── Agent registry ─────────────────────────────────
+# ── Shared chat service ────────────────────────────
 
-router_agent = RouterAgent()
-crisis_radar = CrisisRadar()
-
-AGENTS = {
-    "COMPASS": CompassAgent(),
-    "FINANCING": StudentAidAgent(),
-    "STUDY_CHOICE": DegreeExplorerAgent(),
-    "ACADEMIC_BASICS": HiddenCurriculumAgent(),
-    "ROLE_MODELS": AntiImpostorAgent(),
-}
+chat_service = build_default_chat_service()
 
 # ── Session store (in-memory, ephemeral) ───────────
 
@@ -98,41 +83,24 @@ class ChatResponse(BaseModel):
 async def chat(request: ChatRequest):
     """Main chat endpoint."""
     conv = _get_or_create_session(request.session_id)
-    conv.add_user_message(request.message)
-
-    # 1. Crisis Radar (parallel in production)
-    crisis = crisis_radar.scan(request.message)
-
-    # 2. Route to domain agent
-    agent_key = router_agent.route(request.message)
-    agent = AGENTS.get(agent_key, AGENTS["COMPASS"])
-    metadata = build_provenance_context(
-        agent_key=agent_key,
-        user_message=request.message,
+    result = chat_service.respond(
+        request.message,
+        conv.get_messages(),
         ui_language=request.language,
-        tool_mode=agent.tool_mode,
+        conversation_metadata=conv.metadata,
     )
-
-    # 3. Generate response
-    merged_metadata = {**conv.metadata, **metadata}
-    reply = agent.respond_with_details(conv.get_messages(), merged_metadata)
-    text = reply.text
-
-    # 4. Prepend crisis resources if triggered
-    if crisis["is_crisis"] and crisis["resources"]:
-        text = _format_crisis_prefix(crisis["resources"]) + text
-
-    # 5. Store and return
-    conv.add_assistant_message(text)
-    conv.metadata["current_agent"] = agent_key
+    conv.add_user_message(request.message)
+    conv.add_assistant_message(result.response)
+    conv.metadata["current_agent"] = result.agent
+    conv.metadata["crisis_detected"] = result.crisis
 
     return ChatResponse(
         session_id=conv.session_id,
-        response=text,
-        agent_used=agent_key,
-        crisis_detected=crisis["is_crisis"],
-        crisis_resources=crisis.get("resources"),
-        provenance=reply.provenance,
+        response=result.response,
+        agent_used=result.agent,
+        crisis_detected=result.crisis,
+        crisis_resources=result.crisis_resources,
+        provenance=result.provenance,
     )
 
 
@@ -145,10 +113,7 @@ async def end_session(session_id: str):
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "agents": list(AGENTS.keys())}
-
-
-# ── Helpers ────────────────────────────────────────
+    return {"status": "ok", "agents": list(chat_service.agent_keys)}
 
 
 def _get_or_create_session(session_id: str | None) -> Conversation:
@@ -160,11 +125,3 @@ def _get_or_create_session(session_id: str | None) -> Conversation:
     conv = Conversation()
     sessions[conv.session_id] = conv
     return conv
-
-
-def _format_crisis_prefix(resources: dict) -> str:
-    lines = ["⚠️ I notice you may be going through a difficult time. Here are immediate resources:"]
-    for value in resources.values():
-        lines.append(f"• {value}")
-    lines.append("")
-    return "\n".join(lines) + "\n"

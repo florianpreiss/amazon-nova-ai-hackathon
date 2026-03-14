@@ -11,8 +11,9 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.core.provenance import ResponseProvenance, build_provenance_context
+from src.core.provenance import ResponseProvenance
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
+from src.orchestration import ChatTurnResult, build_default_chat_service
 
 # ── Page config ────────────────────────────────────────
 
@@ -123,6 +124,29 @@ st.markdown(
         padding: 0.75rem 0.95rem;
         text-align: center;
     }
+    .welcome-copy,
+    .footer-copy {
+        color: #636e72;
+        font-family: 'Nunito', sans-serif;
+        margin: 0;
+        text-align: center;
+    }
+    .welcome-copy {
+        font-size: 0.93rem;
+        line-height: 1.7;
+    }
+    .footer-copy {
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+    .welcome-copy p,
+    .footer-copy p {
+        margin: 0.5rem 0 0 0;
+    }
+    .welcome-copy p:first-child,
+    .footer-copy p:first-child {
+        margin-top: 0;
+    }
 
     /* ── Stat boxes ───────────────────────────── */
     .stat-box {
@@ -169,6 +193,10 @@ st.markdown(
         border: 2px solid rgba(125, 122, 201, 0.25) !important;
         border-radius: 24px !important;
     }
+    .stChatInput > div:focus-within {
+        border-color: rgba(125, 122, 201, 0.58) !important;
+        box-shadow: 0 0 0 4px rgba(125, 122, 201, 0.12) !important;
+    }
     .stChatInput textarea {
         background: #f0ebe4 !important;
         background-color: #f0ebe4 !important;
@@ -176,6 +204,10 @@ st.markdown(
         padding: 0.5rem !important;
         caret-color: rgba(125, 122, 201, 1) !important;
         -webkit-text-fill-color: #2d3436 !important;
+    }
+    .stChatInput textarea::placeholder {
+        color: #7a8388 !important;
+        opacity: 1 !important;
     }
     .stChatInput textarea:focus {
         background: #f0ebe4 !important;
@@ -241,8 +273,76 @@ st.markdown(
         margin: 0.4rem 4rem 0.4rem 0;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         color: #2d3436;
+        font-family: 'Nunito', sans-serif;
         font-size: 0.9rem;
         line-height: 1.6;
+    }
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] li,
+    [data-testid="stChatMessage"] span,
+    [data-testid="stChatMessage"] a,
+    [data-testid="stChatMessage"] em,
+    [data-testid="stChatMessage"] strong,
+    [data-testid="stChatMessage"] blockquote {
+        font-family: 'Nunito', sans-serif !important;
+    }
+    [data-testid="stChatMessage"] p {
+        margin: 0 0 0.65rem 0;
+    }
+    [data-testid="stChatMessage"] p:last-child,
+    [data-testid="stChatMessage"] ul:last-child,
+    [data-testid="stChatMessage"] ol:last-child,
+    [data-testid="stChatMessage"] pre:last-child,
+    [data-testid="stChatMessage"] blockquote:last-child {
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stChatMessage"] h1,
+    [data-testid="stChatMessage"] h2,
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4,
+    [data-testid="stChatMessage"] h5,
+    [data-testid="stChatMessage"] h6 {
+        color: #2d3436 !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+        margin: 0.35rem 0 0.55rem 0 !important;
+    }
+    [data-testid="stChatMessage"] h1 { font-size: 1.2rem !important; }
+    [data-testid="stChatMessage"] h2 { font-size: 1.08rem !important; }
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4,
+    [data-testid="stChatMessage"] h5,
+    [data-testid="stChatMessage"] h6 { font-size: 0.98rem !important; }
+    [data-testid="stChatMessage"] ul,
+    [data-testid="stChatMessage"] ol {
+        margin: 0.15rem 0 0.8rem 0;
+        padding-left: 1.2rem;
+    }
+    [data-testid="stChatMessage"] strong {
+        color: #1f2527 !important;
+        font-weight: 800 !important;
+    }
+    [data-testid="stChatMessage"] a {
+        color: rgba(96, 88, 185, 1) !important;
+        text-decoration: underline;
+        text-decoration-color: rgba(125, 122, 201, 0.35);
+        text-underline-offset: 0.12em;
+    }
+    [data-testid="stChatMessage"] blockquote {
+        border-left: 3px solid rgba(125, 122, 201, 0.28);
+        color: #5f6470 !important;
+        margin: 0.3rem 0 0.8rem 0;
+        padding-left: 0.85rem;
+    }
+    [data-testid="stChatMessage"] pre {
+        background: #f6f2ec !important;
+        border: 1px solid #ece5de !important;
+        border-radius: 12px;
+        margin: 0.35rem 0 0.85rem 0;
+        overflow-x: auto;
+        padding: 0.8rem 0.9rem !important;
     }
     /* Agent label badge */
     [data-testid="stChatMessage"] small {
@@ -294,13 +394,17 @@ st.markdown(
     }
     .source-list ul {
         margin: 0;
-        padding-left: 1.1rem;
+        padding-left: 0;
+        list-style: none;
     }
     .source-list li {
         color: #2d3436;
+        display: flex;
         font-size: 0.88rem;
+        flex-wrap: wrap;
+        gap: 0.2rem 0.4rem;
         line-height: 1.5;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.35rem;
     }
     .source-tag {
         display: inline-block;
@@ -308,7 +412,7 @@ st.markdown(
         font-family: 'Nunito', sans-serif;
         font-size: 0.66rem;
         font-weight: 700;
-        margin-right: 0.45rem;
+        margin-right: 0.1rem;
         padding: 0.1rem 0.4rem;
     }
     .source-tag.registry {
@@ -321,10 +425,17 @@ st.markdown(
     }
     .source-list a {
         color: rgba(96, 88, 185, 1);
+        overflow-wrap: anywhere;
         text-decoration: none;
     }
     .source-list a:hover {
         text-decoration: underline;
+    }
+    .source-domain {
+        color: #7a8388;
+        font-size: 0.76rem;
+        margin-left: 0.1rem;
+        overflow-wrap: anywhere;
     }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
@@ -369,15 +480,27 @@ st.markdown(
         border: 1.5px solid rgba(125, 122, 201, 0.32) !important;
         background: rgba(125, 122, 201, 0.05) !important;
         color: #2d3436 !important;
+        display: flex !important;
+        align-items: center !important;
         font-size: 0.82rem !important;
         font-weight: 600 !important;
+        justify-content: center !important;
+        line-height: 1.25 !important;
+        min-height: 3.1rem !important;
         padding: 0.42rem 0.75rem !important;
+        text-align: center !important;
         transition: transform 0.15s ease, box-shadow 0.15s ease,
                     border-color 0.15s ease, background 0.15s ease !important;
         letter-spacing: 0.01em !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: initial !important;
+    }
+    [data-testid="baseButton-secondary"] p,
+    [data-testid="baseButton-primary"] p {
+        line-height: 1.25 !important;
+        margin: 0 !important;
+        white-space: normal !important;
     }
     [data-testid="baseButton-secondary"]:hover {
         border-color: rgba(125, 122, 201, 0.72) !important;
@@ -396,16 +519,26 @@ st.markdown(
         border: 1.5px solid rgba(125, 122, 201, 0.45) !important;
         background: transparent !important;
         color: rgba(125, 122, 201, 0.9) !important;
+        display: flex !important;
+        align-items: center !important;
         font-size: 0.8rem !important;
         font-weight: 600 !important;
+        justify-content: center !important;
         padding: 0.3rem 0.85rem !important;
         transition: all 0.15s ease !important;
         letter-spacing: 0.01em !important;
+        text-align: center !important;
     }
     [data-testid="baseButton-primary"]:hover {
         background: rgba(125, 122, 201, 0.1) !important;
         border-color: rgba(125, 122, 201, 0.8) !important;
         box-shadow: 0 2px 8px rgba(125, 122, 201, 0.25) !important;
+    }
+    .stChatInput button:focus-visible,
+    [data-testid="baseButton-secondary"]:focus-visible,
+    [data-testid="baseButton-primary"]:focus-visible {
+        outline: 3px solid rgba(125, 122, 201, 0.22) !important;
+        outline-offset: 2px !important;
     }
 
     /* ════════════════════════════════════════════
@@ -426,12 +559,16 @@ st.markdown(
             color: #a0a8b8 !important;
         }
         .koda-heritage {
-            color: #5a6070 !important;
+            color: #8790a3 !important;
         }
         .ai-disclaimer {
             background: rgba(125, 122, 201, 0.14) !important;
             border-color: rgba(125, 122, 201, 0.25) !important;
             color: #a0a8b8 !important;
+        }
+        .welcome-copy,
+        .footer-copy {
+            color: #aeb6c8 !important;
         }
 
         /* ── Stat boxes ───────────────────────── */
@@ -443,11 +580,6 @@ st.markdown(
             color: #a0a8b8 !important;
         }
         .stat-delta {
-            color: #a0a8b8 !important;
-        }
-
-        /* ── Welcome body & footer text ───────── */
-        p[style*="color:#636e72"] {
             color: #a0a8b8 !important;
         }
 
@@ -468,14 +600,34 @@ st.markdown(
         [data-testid="stChatMessage"] p,
         [data-testid="stChatMessage"] li,
         [data-testid="stChatMessage"] span,
-        [data-testid="stChatMessage"] code {
+        [data-testid="stChatMessage"] code,
+        [data-testid="stChatMessage"] a {
             color: #e8e4f0 !important;
+        }
+        [data-testid="stChatMessage"] h1,
+        [data-testid="stChatMessage"] h2,
+        [data-testid="stChatMessage"] h3,
+        [data-testid="stChatMessage"] h4,
+        [data-testid="stChatMessage"] h5,
+        [data-testid="stChatMessage"] h6 {
+            color: #f4f0fb !important;
         }
         /* Inline code blocks */
         [data-testid="stChatMessage"] code {
             background: rgba(125, 122, 201, 0.15) !important;
             border-radius: 4px;
             padding: 0.1em 0.35em;
+        }
+        [data-testid="stChatMessage"] pre {
+            background: rgba(125, 122, 201, 0.12) !important;
+            border-color: rgba(125, 122, 201, 0.24) !important;
+        }
+        [data-testid="stChatMessage"] strong {
+            color: #ffffff !important;
+        }
+        [data-testid="stChatMessage"] blockquote {
+            border-left-color: rgba(160, 155, 220, 0.45) !important;
+            color: #b9c0cf !important;
         }
         /* Agent label keeps the purple accent */
         [data-testid="stChatMessage"] small {
@@ -494,12 +646,19 @@ st.markdown(
             background: #252540 !important;
             border-color: rgba(125, 122, 201, 0.35) !important;
         }
+        .stChatInput > div:focus-within {
+            border-color: rgba(160, 155, 220, 0.72) !important;
+            box-shadow: 0 0 0 4px rgba(125, 122, 201, 0.2) !important;
+        }
         .stChatInput textarea {
             background: #252540 !important;
             background-color: #252540 !important;
             color: #e8e4f0 !important;
             -webkit-text-fill-color: #e8e4f0 !important;
             caret-color: rgba(160, 155, 220, 1) !important;
+        }
+        .stChatInput textarea::placeholder {
+            color: #9ea8b4 !important;
         }
         .stChatInput textarea:focus {
             background: #252540 !important;
@@ -514,7 +673,7 @@ st.markdown(
             color: rgba(160, 155, 220, 1) !important;
         }
         .qa-header-sub {
-            color: #6a7280 !important;
+            color: #aeb6c8 !important;
         }
 
         /* ── Quick action pill-card buttons ──────── */
@@ -568,12 +727,134 @@ st.markdown(
             color: #88c7ff !important;
         }
         .source-list a {
-            color: #c8c4e8 !important;
+            color: #d8d3ff !important;
+            text-decoration-color: rgba(216, 211, 255, 0.35) !important;
+        }
+        .source-domain {
+            color: #9ea8b4 !important;
         }
 
         /* ── Divider ─────────────────────────── */
         hr {
             border-color: rgba(125, 122, 201, 0.15) !important;
+        }
+    }
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.85rem !important;
+            padding-right: 0.85rem !important;
+            padding-top: 0.35rem !important;
+        }
+        .koda-title {
+            font-size: 3rem;
+            letter-spacing: 0.16em;
+            margin-top: 0.15rem;
+        }
+        .koda-tagline {
+            font-size: 0.93rem;
+            padding: 0 0.25rem;
+        }
+        .koda-heritage {
+            font-size: 0.68rem;
+            margin-bottom: 0.85rem;
+            padding: 0 0.3rem;
+        }
+        .ai-disclaimer {
+            font-size: 0.74rem;
+            margin-bottom: 0.85rem;
+            padding: 0.7rem 0.8rem;
+        }
+        .welcome-copy {
+            font-size: 0.89rem;
+        }
+        .footer-copy {
+            font-size: 0.81rem;
+        }
+        .stat-box {
+            padding: 1rem 0.85rem;
+        }
+        .stat-value {
+            font-size: 1.85rem;
+        }
+        .msg-user {
+            font-size: 0.88rem;
+            margin-left: 1.35rem;
+            padding: 0.74rem 0.95rem;
+        }
+        [data-testid="stChatMessage"],
+        .msg-koda {
+            font-size: 0.88rem;
+            margin-right: 1.35rem;
+            padding: 0.78rem 0.95rem;
+        }
+        [data-testid="stChatMessage"] h1 {
+            font-size: 1.08rem !important;
+        }
+        [data-testid="stChatMessage"] h2 {
+            font-size: 1rem !important;
+        }
+        [data-testid="stChatMessage"] h3,
+        [data-testid="stChatMessage"] h4,
+        [data-testid="stChatMessage"] h5,
+        [data-testid="stChatMessage"] h6 {
+            font-size: 0.92rem !important;
+        }
+        .source-list {
+            margin-top: 0.75rem;
+        }
+        .source-domain {
+            display: block;
+            margin-left: 0;
+            width: 100%;
+        }
+        .stChatInput > div {
+            border-radius: 20px !important;
+        }
+        .stChatInput textarea {
+            font-size: 0.94rem !important;
+            padding: 0.45rem !important;
+        }
+        [data-testid="baseButton-secondary"] {
+            font-size: 0.8rem !important;
+            min-height: 3.35rem !important;
+            padding: 0.48rem 0.7rem !important;
+        }
+        [data-testid="baseButton-primary"] {
+            min-height: 2.65rem !important;
+            padding: 0.36rem 0.8rem !important;
+        }
+    }
+    @media (max-width: 480px) {
+        .block-container {
+            padding-left: 0.65rem !important;
+            padding-right: 0.65rem !important;
+        }
+        .koda-title {
+            font-size: 2.35rem;
+            letter-spacing: 0.11em;
+        }
+        .koda-tagline {
+            font-size: 0.88rem;
+        }
+        .koda-heritage {
+            font-size: 0.64rem;
+        }
+        .msg-user {
+            margin-left: 0.55rem;
+        }
+        [data-testid="stChatMessage"],
+        .msg-koda {
+            margin-right: 0.55rem;
+        }
+        [data-testid="stChatMessage"] pre {
+            padding: 0.7rem 0.75rem !important;
+        }
+        .provenance-pill,
+        .source-tag {
+            font-size: 0.62rem;
+        }
+        .source-list li {
+            font-size: 0.83rem;
         }
     }
 </style>
@@ -625,48 +906,14 @@ if "_lang_pills" in st.session_state:
         st.rerun()
 
 
-# ── Agent loader ───────────────────────────────────────
+# ── Shared chat service ────────────────────────────────
 
 
 @st.cache_resource
-def load_agents():
-    """Initialize agents once and cache them."""
-    from src.agents.academic_basics.hidden_curriculum import HiddenCurriculumAgent
-    from src.agents.compass import CompassAgent
-    from src.agents.crisis import CrisisRadar
-    from src.agents.financing.student_aid import StudentAidAgent
-    from src.agents.role_models.anti_impostor import AntiImpostorAgent
-    from src.agents.router import RouterAgent
-    from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
+def load_chat_service():
+    """Initialize the shared chat service once and cache it."""
 
-    return {
-        "router": RouterAgent(),
-        "crisis": CrisisRadar(),
-        "agents": {
-            "COMPASS": CompassAgent(),
-            "FINANCING": StudentAidAgent(),
-            "STUDY_CHOICE": DegreeExplorerAgent(),
-            "ACADEMIC_BASICS": HiddenCurriculumAgent(),
-            "ROLE_MODELS": AntiImpostorAgent(),
-        },
-    }
-
-
-def _build_chat_metadata(
-    agent_key: str,
-    *,
-    agent_tool_mode: str | None,
-    ui_lang: str,
-    user_message: str,
-) -> dict:
-    """Build per-turn metadata for source-aware prompting and attribution."""
-
-    return build_provenance_context(
-        agent_key=agent_key,
-        user_message=user_message,
-        ui_language=ui_lang,
-        tool_mode=agent_tool_mode,
-    )
+    return build_default_chat_service()
 
 
 def _normalize_provenance(value: dict | ResponseProvenance | None) -> ResponseProvenance | None:
@@ -710,10 +957,22 @@ def _render_provenance_contents(provenance: ResponseProvenance, current_lang: st
 
     items: list[str] = []
     for source in provenance.sources:
+        tag_key = (
+            "source_tag_registry"
+            if source.origin == "source_registry"
+            else "source_tag_web_grounding"
+        )
+        tag_label = html_lib.escape(t(tag_key, current_lang))
+        tag_class = "registry" if source.origin == "source_registry" else "web"
         title = html_lib.escape(source.title)
         url = html_lib.escape(source.url, quote=True)
+        domain = html_lib.escape(source.domain)
         items.append(
-            f"<li><a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a></li>"
+            "<li>"
+            f"<span class='source-tag {tag_class}'>{tag_label}</span>"
+            f"<a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            f"<span class='source-domain'>{domain}</span>"
+            "</li>"
         )
 
     st.markdown(
@@ -744,120 +1003,27 @@ def _render_provenance_block(
         _render_provenance_contents(normalized, current_lang)
 
 
-def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
-    """
-    Orchestrate agent routing, crisis scanning and response generation.
-
-    Args:
-        user_message: The raw text submitted by the user.
-        history: Previous Bedrock-formatted message turns.
-        ui_lang: The UI language chosen by the user (used for the
-                 crisis banner only; agent responses auto-detect language).
-
-    Returns:
-        dict with keys: ``response`` (str), ``agent`` (str), ``crisis`` (bool).
-    """
-    system = load_agents()
-    bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
-    bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
-
-    crisis = system["crisis"].scan(user_message)
-    agent_key = system["router"].route(user_message)
-    agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
-    metadata = _build_chat_metadata(
-        agent_key,
-        agent_tool_mode=agent.tool_mode,
-        ui_lang=ui_lang,
-        user_message=user_message,
-    )
-    reply = agent.respond_with_details(bedrock_messages, metadata)
-    response_text = reply.text
-
-    if crisis["is_crisis"] and crisis["resources"]:
-        # Crisis banner uses the UI language; agent body already auto-detected
-        prefix = t("crisis_banner", ui_lang) + "\n"
-        for v in crisis["resources"].values():
-            prefix += f"\u2022 {v}\n"
-        response_text = prefix + "\n" + response_text
-
-    return {
-        "response": response_text,
-        "agent": agent_key,
-        "crisis": crisis["is_crisis"],
-        "provenance": reply.provenance.model_dump(),
-    }
-
-
 def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
     """
-    Streaming variant of get_response().
+    Streaming wrapper around the shared chat service.
 
-    Yields text chunks from the agent's token stream so the caller can
-    render them progressively (e.g. via ``st.write_stream()``).
-
-    The *last* item yielded is always a sentinel dict::
-
-        {"agent": str, "crisis": bool, "response": str, "provenance": dict}
-
-    containing the fully assembled response and routing metadata.
-    Callers must pop this final dict before displaying.
+    Yields text chunks first and finishes with a ``ChatTurnResult`` so the
+    caller can render progressively and still capture the structured metadata.
     """
-    system = load_agents()
-    bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
-    bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
-
-    crisis = system["crisis"].scan(user_message)
-    agent_key = system["router"].route(user_message)
-    agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
-    metadata = _build_chat_metadata(
-        agent_key,
-        agent_tool_mode=agent.tool_mode,
-        ui_lang=ui_lang,
-        user_message=user_message,
-    )
-
-    # If crisis, prepend the banner as the very first streamed chunk
-    crisis_prefix = ""
-    if crisis["is_crisis"] and crisis["resources"]:
-        crisis_prefix = t("crisis_banner", ui_lang) + "\n"
-        for v in crisis["resources"].values():
-            crisis_prefix += f"\u2022 {v}\n"
-        crisis_prefix += "\n"
-        yield crisis_prefix
-
-    collected: list[str] = [crisis_prefix]
-    replace_text: str | None = None
-
-    provenance = metadata["provenance"]
-
-    if agent.tool_mode in ("code_interpreter", "web_grounding"):
-        reply = agent.respond_with_details(bedrock_messages, metadata)
-        collected.append(reply.text)
-        provenance = reply.provenance
-        yield reply.text
-    else:
-        for chunk in agent.respond_stream(bedrock_messages, metadata):
-            if chunk.startswith("\x00REPLACE\x00"):
-                # Anti-shame filter rewrote the text; store corrected version
-                replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00") :]
-            else:
-                collected.append(chunk)
-                yield chunk
-
-    full_response = replace_text if replace_text is not None else "".join(collected)
-
-    # Final sentinel — caller must consume and not display this
-    yield {
-        "response": full_response,
-        "agent": agent_key,
-        "crisis": crisis["is_crisis"],
-        "provenance": provenance.model_dump(),
-    }
+    yield from load_chat_service().respond_stream(user_message, history, ui_language=ui_lang)
 
 
 def _safe_user(text: str) -> str:
     """Escape HTML for user-supplied bubble text (plain text, no markdown)."""
     return html_lib.escape(text)
+
+
+def _paragraph_block(text: str, css_class: str) -> str:
+    """Render plain text as a paragraph block with consistent styling hooks."""
+
+    paragraphs = [html_lib.escape(part.strip()) for part in text.split("\n\n") if part.strip()]
+    body = "".join(f"<p>{paragraph}</p>" for paragraph in paragraphs)
+    return f"<div class='{css_class}'>{body}</div>"
 
 
 def _send(msg_key: str):
@@ -990,14 +1156,7 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
     st.write("")
 
-    welcome_text = t("welcome_body", lang).replace(
-        "\n\n",
-        '</p><p style="text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0.5rem 0 0 0;">',
-    )
-    st.markdown(
-        f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>{welcome_text}</p>",
-        unsafe_allow_html=True,
-    )
+    st.markdown(_paragraph_block(t("welcome_body", lang), "welcome-copy"), unsafe_allow_html=True)
 
     st.write("")
 
@@ -1066,19 +1225,17 @@ if user_input:
     # ── Streaming response ─────────────────────────────────
     # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
     # st.write_stream() renders each yielded chunk as it arrives.
-    # The final yielded item is a metadata dict — we pop it before display.
+    # The final yielded item is a structured turn result — we pop it before display.
     stream = get_response_stream(user_input, st.session_state.messages[:-1], ui_lang=lang)
 
     label_placeholder = None
-    # Use a single-element list so the nested generator can write to it
-    # without a nonlocal that ruff flags as "assigned but never used".
-    meta_box: list[dict] = [{}]
+    result_box: list[ChatTurnResult | None] = [None]
 
     def _filtered_stream():
-        """Yield only string chunks to st.write_stream; capture the final dict."""
+        """Yield only string chunks to st.write_stream; capture the final result."""
         for item in stream:
-            if isinstance(item, dict):
-                meta_box[0] = item
+            if isinstance(item, ChatTurnResult):
+                result_box[0] = item
             else:
                 yield item
 
@@ -1087,22 +1244,32 @@ if user_input:
         full_text = st.write_stream(_filtered_stream())
         provenance_placeholder = st.empty()
 
-    metadata = meta_box[0]
-    agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
+    result = result_box[0]
+    if result is None:
+        result = ChatTurnResult(
+            response=full_text,
+            agent="COMPASS",
+            crisis=False,
+            provenance=ResponseProvenance(
+                mode="model",
+                source_registry_used=False,
+                web_grounding_used=False,
+                sources=(),
+            ),
+        )
+
+    agent_label = get_agent_label(result.agent, lang)
     if label_placeholder:
         label_placeholder.caption(agent_label)
     if provenance_placeholder:
-        _render_provenance_block(metadata.get("provenance"), lang, provenance_placeholder)
-
-    # Use metadata response if anti-shame filter replaced the streamed text
-    final_text = metadata.get("response", full_text)
+        _render_provenance_block(result.provenance, lang, provenance_placeholder)
 
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": final_text,
-            "agent": metadata.get("agent", "COMPASS"),
-            "provenance": metadata.get("provenance"),
+            "content": result.response,
+            "agent": result.agent,
+            "provenance": result.provenance.model_dump(),
         }
     )
 
@@ -1118,15 +1285,7 @@ if user_input:
 
 st.divider()
 footer_text = t("footer", lang)
-footer_html = footer_text.replace(
-    "\n\n",
-    '</p><p style="text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;">',
-)
-st.markdown(
-    f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
-    f"{footer_html}</p>",
-    unsafe_allow_html=True,
-)
+st.markdown(_paragraph_block(footer_text, "footer-copy"), unsafe_allow_html=True)
 
 st.write("")
 st.write("")
