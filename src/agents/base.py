@@ -10,6 +10,14 @@ from collections.abc import Generator
 import structlog
 
 from src.core.client import NovaClient, NovaClientError
+from src.core.provenance import (
+    AgentReply,
+    ResponseProvenance,
+    SourceAttribution,
+    build_default_provenance,
+    build_sourcing_addendum,
+    merge_provenance,
+)
 from src.core.safety import apply_anti_shame_filter, build_identity_addendum
 
 logger = structlog.get_logger()
@@ -22,6 +30,11 @@ If the user writes in German, reply in German.
 If the user writes in English, reply in English.
 If the user writes in any other language, reply in that language.
 Auto-detect the language from the user's latest message and match it exactly.
+
+LENGTH AND TONE:
+Keep answers focused and digestible — aim for 150-250 words unless the user explicitly asks for more detail.
+Use plain language. Avoid jargon. When a technical term is unavoidable, explain it in one sentence.
+Structure with short paragraphs or a brief bullet list. Never use more than 5 bullet points.
 """
 
 FALLBACK_MESSAGES = {
@@ -53,6 +66,17 @@ class BaseAgent:
         Never raises exceptions to the caller. Returns a friendly fallback
         message if anything goes wrong.
         """
+        return self.respond_with_details(messages, metadata).text
+
+    def respond_with_details(
+        self, messages: list[dict], metadata: dict | None = None
+    ) -> AgentReply:
+        """
+        Generate a response and retain provenance metadata for the caller.
+
+        This is the source of truth for response generation. ``respond()``
+        remains as a backwards-compatible string-only wrapper.
+        """
         try:
             prompt = self._build_prompt(metadata)
 
@@ -69,19 +93,26 @@ class BaseAgent:
 
             if not text.strip():
                 logger.warning("empty_response", agent=self.name)
-                return self._fallback_message(messages)
+                return self._fallback_reply(messages)
 
-            return apply_anti_shame_filter(text)
+            web_sources: tuple[SourceAttribution, ...] = ()
+            if self.tool_mode == "web_grounding":
+                web_sources = self.client.extract_web_citations(resp)
+
+            return AgentReply(
+                text=apply_anti_shame_filter(text),
+                provenance=self._resolve_provenance(metadata, web_sources),
+            )
 
         except NovaClientError as e:
             logger.error("agent_error", agent=self.name, error=str(e))
-            return self._fallback_message(messages)
+            return self._fallback_reply(messages)
 
         except Exception as e:
             logger.error(
                 "agent_unexpected_error", agent=self.name, error=str(e), type=type(e).__name__
             )
-            return self._fallback_message(messages)
+            return self._fallback_reply(messages)
 
     def respond_stream(
         self, messages: list[dict], metadata: dict | None = None
@@ -98,15 +129,18 @@ class BaseAgent:
         """
         # Tool-mode agents don't support streaming; yield the full response.
         if self.tool_mode in ("code_interpreter", "web_grounding"):
-            yield self.respond(messages, metadata)
+            yield self.respond_with_details(messages, metadata).text
             return
 
         try:
             prompt = self._build_prompt(metadata)
+            # Never pass reasoning_effort to converse_stream: the model
+            # emits a long thinking block before any text deltas, during
+            # which the UI receives zero chunks and appears frozen.
+            # Reasoning is retained for non-streaming respond_with_details().
             stream_resp = self.client.converse_stream(
                 messages,
                 system_prompt=prompt,
-                reasoning_effort=self.reasoning_effort,
             )
             collected: list[str] = []
             for chunk in self.client.iter_stream_text(stream_resp):
@@ -146,7 +180,35 @@ class BaseAgent:
         prompt = self._base_prompt
         if metadata and metadata.get("identity_context"):
             prompt += build_identity_addendum(metadata["identity_context"])
+        trusted_sources = ()
+        if metadata and metadata.get("trusted_sources"):
+            trusted_sources = tuple(metadata["trusted_sources"])
+        if trusted_sources or self.tool_mode == "web_grounding":
+            prompt += build_sourcing_addendum(trusted_sources, tool_mode=self.tool_mode)
         return prompt
+
+    def _fallback_reply(self, messages: list[dict]) -> AgentReply:
+        """Return a friendly fallback with neutral provenance metadata."""
+        return AgentReply(
+            text=self._fallback_message(messages),
+            provenance=build_default_provenance(),
+        )
+
+    def _resolve_provenance(
+        self,
+        metadata: dict | None,
+        web_sources: tuple[SourceAttribution, ...] = (),
+    ) -> ResponseProvenance:
+        """Merge request-scoped provenance with response-scoped citations."""
+        base = None
+        if metadata and metadata.get("provenance"):
+            raw = metadata["provenance"]
+            if isinstance(raw, ResponseProvenance):
+                base = raw
+            elif isinstance(raw, dict):
+                base = ResponseProvenance.model_validate(raw)
+
+        return merge_provenance(base, tool_mode=self.tool_mode, web_sources=web_sources)
 
     @staticmethod
     def _fallback_message(messages: list[dict]) -> str:

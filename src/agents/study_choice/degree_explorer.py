@@ -1,7 +1,5 @@
 """Degree Program Explorer — uses Web Grounding for current NC values and program data."""
 
-from config.settings import REASONING_HIGH
-
 from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Degree Program Explorer of KODA, an AI companion for first-generation academics.
@@ -31,6 +29,5 @@ class DegreeExplorerAgent(BaseAgent):
         super().__init__(
             name="degree_explorer",
             system_prompt=SYSTEM_PROMPT,
-            reasoning_effort=REASONING_HIGH,
             tool_mode="web_grounding",
         )

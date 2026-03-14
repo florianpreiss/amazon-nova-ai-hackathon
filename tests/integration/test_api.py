@@ -112,6 +112,7 @@ class TestChatEndpoint:
         assert "response" in body
         assert "agent_used" in body
         assert "crisis_detected" in body
+        assert "provenance" in body
 
     def test_chat_german_message(self, client: "TestClient") -> None:
         """A German message must be accepted and return a response."""
