@@ -11,8 +11,9 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.core.provenance import ResponseProvenance, build_provenance_context
+from src.core.provenance import ResponseProvenance
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
+from src.orchestration import ChatTurnResult, build_default_chat_service
 
 # ── Page config ────────────────────────────────────────
 
@@ -625,48 +626,14 @@ if "_lang_pills" in st.session_state:
         st.rerun()
 
 
-# ── Agent loader ───────────────────────────────────────
+# ── Shared chat service ────────────────────────────────
 
 
 @st.cache_resource
-def load_agents():
-    """Initialize agents once and cache them."""
-    from src.agents.academic_basics.hidden_curriculum import HiddenCurriculumAgent
-    from src.agents.compass import CompassAgent
-    from src.agents.crisis import CrisisRadar
-    from src.agents.financing.student_aid import StudentAidAgent
-    from src.agents.role_models.anti_impostor import AntiImpostorAgent
-    from src.agents.router import RouterAgent
-    from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
+def load_chat_service():
+    """Initialize the shared chat service once and cache it."""
 
-    return {
-        "router": RouterAgent(),
-        "crisis": CrisisRadar(),
-        "agents": {
-            "COMPASS": CompassAgent(),
-            "FINANCING": StudentAidAgent(),
-            "STUDY_CHOICE": DegreeExplorerAgent(),
-            "ACADEMIC_BASICS": HiddenCurriculumAgent(),
-            "ROLE_MODELS": AntiImpostorAgent(),
-        },
-    }
-
-
-def _build_chat_metadata(
-    agent_key: str,
-    *,
-    agent_tool_mode: str | None,
-    ui_lang: str,
-    user_message: str,
-) -> dict:
-    """Build per-turn metadata for source-aware prompting and attribution."""
-
-    return build_provenance_context(
-        agent_key=agent_key,
-        user_message=user_message,
-        ui_language=ui_lang,
-        tool_mode=agent_tool_mode,
-    )
+    return build_default_chat_service()
 
 
 def _normalize_provenance(value: dict | ResponseProvenance | None) -> ResponseProvenance | None:
@@ -744,115 +711,14 @@ def _render_provenance_block(
         _render_provenance_contents(normalized, current_lang)
 
 
-def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
-    """
-    Orchestrate agent routing, crisis scanning and response generation.
-
-    Args:
-        user_message: The raw text submitted by the user.
-        history: Previous Bedrock-formatted message turns.
-        ui_lang: The UI language chosen by the user (used for the
-                 crisis banner only; agent responses auto-detect language).
-
-    Returns:
-        dict with keys: ``response`` (str), ``agent`` (str), ``crisis`` (bool).
-    """
-    system = load_agents()
-    bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
-    bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
-
-    crisis = system["crisis"].scan(user_message)
-    agent_key = system["router"].route(user_message)
-    agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
-    metadata = _build_chat_metadata(
-        agent_key,
-        agent_tool_mode=agent.tool_mode,
-        ui_lang=ui_lang,
-        user_message=user_message,
-    )
-    reply = agent.respond_with_details(bedrock_messages, metadata)
-    response_text = reply.text
-
-    if crisis["is_crisis"] and crisis["resources"]:
-        # Crisis banner uses the UI language; agent body already auto-detected
-        prefix = t("crisis_banner", ui_lang) + "\n"
-        for v in crisis["resources"].values():
-            prefix += f"\u2022 {v}\n"
-        response_text = prefix + "\n" + response_text
-
-    return {
-        "response": response_text,
-        "agent": agent_key,
-        "crisis": crisis["is_crisis"],
-        "provenance": reply.provenance.model_dump(),
-    }
-
-
 def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
     """
-    Streaming variant of get_response().
+    Streaming wrapper around the shared chat service.
 
-    Yields text chunks from the agent's token stream so the caller can
-    render them progressively (e.g. via ``st.write_stream()``).
-
-    The *last* item yielded is always a sentinel dict::
-
-        {"agent": str, "crisis": bool, "response": str, "provenance": dict}
-
-    containing the fully assembled response and routing metadata.
-    Callers must pop this final dict before displaying.
+    Yields text chunks first and finishes with a ``ChatTurnResult`` so the
+    caller can render progressively and still capture the structured metadata.
     """
-    system = load_agents()
-    bedrock_messages = [{"role": m["role"], "content": [{"text": m["content"]}]} for m in history]
-    bedrock_messages.append({"role": "user", "content": [{"text": user_message}]})
-
-    crisis = system["crisis"].scan(user_message)
-    agent_key = system["router"].route(user_message)
-    agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
-    metadata = _build_chat_metadata(
-        agent_key,
-        agent_tool_mode=agent.tool_mode,
-        ui_lang=ui_lang,
-        user_message=user_message,
-    )
-
-    # If crisis, prepend the banner as the very first streamed chunk
-    crisis_prefix = ""
-    if crisis["is_crisis"] and crisis["resources"]:
-        crisis_prefix = t("crisis_banner", ui_lang) + "\n"
-        for v in crisis["resources"].values():
-            crisis_prefix += f"\u2022 {v}\n"
-        crisis_prefix += "\n"
-        yield crisis_prefix
-
-    collected: list[str] = [crisis_prefix]
-    replace_text: str | None = None
-
-    provenance = metadata["provenance"]
-
-    if agent.tool_mode in ("code_interpreter", "web_grounding"):
-        reply = agent.respond_with_details(bedrock_messages, metadata)
-        collected.append(reply.text)
-        provenance = reply.provenance
-        yield reply.text
-    else:
-        for chunk in agent.respond_stream(bedrock_messages, metadata):
-            if chunk.startswith("\x00REPLACE\x00"):
-                # Anti-shame filter rewrote the text; store corrected version
-                replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00") :]
-            else:
-                collected.append(chunk)
-                yield chunk
-
-    full_response = replace_text if replace_text is not None else "".join(collected)
-
-    # Final sentinel — caller must consume and not display this
-    yield {
-        "response": full_response,
-        "agent": agent_key,
-        "crisis": crisis["is_crisis"],
-        "provenance": provenance.model_dump(),
-    }
+    yield from load_chat_service().respond_stream(user_message, history, ui_language=ui_lang)
 
 
 def _safe_user(text: str) -> str:
@@ -1018,8 +884,8 @@ for msg in st.session_state.messages:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
-            st.markdown(msg["content"])
             _render_provenance_block(msg.get("provenance"), lang)
+            st.markdown(msg["content"])
 
 
 # ── Quick actions (persistent) ─────────────────────────
@@ -1066,19 +932,17 @@ if user_input:
     # ── Streaming response ─────────────────────────────────
     # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
     # st.write_stream() renders each yielded chunk as it arrives.
-    # The final yielded item is a metadata dict — we pop it before display.
+    # The final yielded item is a structured turn result — we pop it before display.
     stream = get_response_stream(user_input, st.session_state.messages[:-1], ui_lang=lang)
 
     label_placeholder = None
-    # Use a single-element list so the nested generator can write to it
-    # without a nonlocal that ruff flags as "assigned but never used".
-    meta_box: list[dict] = [{}]
+    result_box: list[ChatTurnResult | None] = [None]
 
     def _filtered_stream():
-        """Yield only string chunks to st.write_stream; capture the final dict."""
+        """Yield only string chunks to st.write_stream; capture the final result."""
         for item in stream:
-            if isinstance(item, dict):
-                meta_box[0] = item
+            if isinstance(item, ChatTurnResult):
+                result_box[0] = item
             else:
                 yield item
 
@@ -1087,22 +951,32 @@ if user_input:
         full_text = st.write_stream(_filtered_stream())
         provenance_placeholder = st.empty()
 
-    metadata = meta_box[0]
-    agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
+    result = result_box[0]
+    if result is None:
+        result = ChatTurnResult(
+            response=full_text,
+            agent="COMPASS",
+            crisis=False,
+            provenance=ResponseProvenance(
+                mode="model",
+                source_registry_used=False,
+                web_grounding_used=False,
+                sources=(),
+            ),
+        )
+
+    agent_label = get_agent_label(result.agent, lang)
     if label_placeholder:
         label_placeholder.caption(agent_label)
     if provenance_placeholder:
-        _render_provenance_block(metadata.get("provenance"), lang, provenance_placeholder)
-
-    # Use metadata response if anti-shame filter replaced the streamed text
-    final_text = metadata.get("response", full_text)
+        _render_provenance_block(result.provenance, lang, provenance_placeholder)
 
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": final_text,
-            "agent": metadata.get("agent", "COMPASS"),
-            "provenance": metadata.get("provenance"),
+            "content": result.response,
+            "agent": result.agent,
+            "provenance": result.provenance.model_dump(),
         }
     )
 
@@ -1125,13 +999,5 @@ footer_html = footer_text.replace(
 st.markdown(
     f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
     f"{footer_html}</p>",
-    unsafe_allow_html=True,
-)
-
-st.write("")
-st.write("")
-
-st.markdown(
-    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
     unsafe_allow_html=True,
 )
