@@ -148,6 +148,11 @@ class NovaClient:
         # Strip stray reasoning markers that leak into the visible text.
         if text.startswith("[HIDDEN]"):
             text = text[len("[HIDDEN]") :].lstrip()
+        # Web-grounding tool responses sometimes contain literal two-character
+        # sequences "\n" instead of real newline characters.  Unescape them so
+        # Streamlit (and st.markdown) render line breaks correctly.
+        if "\\n" in text:
+            text = text.replace("\\n", "\n")
         return text
 
     @classmethod
