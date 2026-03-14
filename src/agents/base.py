@@ -30,6 +30,11 @@ If the user writes in German, reply in German.
 If the user writes in English, reply in English.
 If the user writes in any other language, reply in that language.
 Auto-detect the language from the user's latest message and match it exactly.
+
+LENGTH AND TONE:
+Keep answers focused and digestible — aim for 150-250 words unless the user explicitly asks for more detail.
+Use plain language. Avoid jargon. When a technical term is unavoidable, explain it in one sentence.
+Structure with short paragraphs or a brief bullet list. Never use more than 5 bullet points.
 """
 
 FALLBACK_MESSAGES = {

@@ -218,7 +218,7 @@ def build_sourcing_addendum(
         "FACTUAL SOURCING POLICY (CRITICAL):",
         "- Prefer source-backed information over unsupported recall.",
         "- If a factual detail is uncertain or not covered by your sources, say that clearly instead of guessing.",
-        "- End source-backed answers with a short 'Sources' section listing the source title and URL.",
+        "- Do NOT add a 'Sources' or 'Quellen' section to your reply — source links are shown separately in the UI.",
     ]
 
     if tool_mode == "web_grounding":

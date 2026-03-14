@@ -710,20 +710,10 @@ def _render_provenance_contents(provenance: ResponseProvenance, current_lang: st
 
     items: list[str] = []
     for source in provenance.sources:
-        tag_key = (
-            "source_tag_registry"
-            if source.origin == "source_registry"
-            else "source_tag_web_grounding"
-        )
-        tag_label = html_lib.escape(t(tag_key, current_lang))
-        tag_class = "registry" if source.origin == "source_registry" else "web"
         title = html_lib.escape(source.title)
         url = html_lib.escape(source.url, quote=True)
         items.append(
-            "<li>"
-            f"<span class='source-tag {tag_class}'>{tag_label}</span>"
-            f"<a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
-            "</li>"
+            f"<li><a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a></li>"
         )
 
     st.markdown(
@@ -1137,6 +1127,10 @@ st.markdown(
     f"{footer_html}</p>",
     unsafe_allow_html=True,
 )
+
+st.write("")
+st.write("")
+
 st.markdown(
     f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
     unsafe_allow_html=True,

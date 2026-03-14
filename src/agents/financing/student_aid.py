@@ -37,5 +37,4 @@ class StudentAidAgent(BaseAgent):
             name="student_aid",
             system_prompt=SYSTEM_PROMPT,
             reasoning_effort=REASONING_HIGH,
-            tool_mode="code_interpreter",
         )
