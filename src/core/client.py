@@ -248,6 +248,8 @@ class NovaClient:
             kw["additionalModelRequestFields"] = {
                 "reasoningConfig": {"type": "enabled", "maxReasoningEffort": reasoning_effort}
             }
+            # Bedrock rejects maxTokens, temperature, and topP when reasoning is enabled.
+            kw["inferenceConfig"] = {}
         return kw
 
     @classmethod
