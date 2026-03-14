@@ -1,7 +1,5 @@
 """Cost of Living Calculator — uses Code Interpreter for city comparisons."""
 
-from config.settings import REASONING_HIGH
-
 from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Cost of Living Calculator of KODA, an AI companion for first-generation academics.
@@ -31,6 +29,5 @@ class CostOfLivingAgent(BaseAgent):
         super().__init__(
             name="cost_of_living",
             system_prompt=SYSTEM_PROMPT,
-            reasoning_effort=REASONING_HIGH,
             tool_mode="code_interpreter",
         )

@@ -1,7 +1,5 @@
 """University Finder — compares institution types, locations, support programs."""
 
-from config.settings import REASONING_HIGH
-
 from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the University Finder of KODA, an AI companion for first-generation academics.
@@ -30,6 +28,5 @@ class UniversityFinderAgent(BaseAgent):
         super().__init__(
             name="university_finder",
             system_prompt=SYSTEM_PROMPT,
-            reasoning_effort=REASONING_HIGH,
             tool_mode="web_grounding",
         )

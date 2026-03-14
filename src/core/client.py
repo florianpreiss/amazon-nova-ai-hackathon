@@ -144,7 +144,11 @@ class NovaClient:
                         parts.append(item["json"]["stdOut"])
                     elif "text" in item:
                         parts.append(item["text"])
-        return "\n".join(parts) if parts else ""
+        text = "\n".join(parts) if parts else ""
+        # Strip stray reasoning markers that leak into the visible text.
+        if text.startswith("[HIDDEN]"):
+            text = text[len("[HIDDEN]") :].lstrip()
+        return text
 
     @classmethod
     def extract_web_citations(cls, response: dict) -> tuple[SourceAttribution, ...]:

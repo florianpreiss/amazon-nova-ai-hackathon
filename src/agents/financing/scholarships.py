@@ -1,7 +1,5 @@
 """Scholarship Finder — uses Web Grounding to search current databases."""
 
-from config.settings import REASONING_HIGH
-
 from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Scholarship Finder of KODA, an AI companion for first-generation academics.
@@ -30,6 +28,5 @@ class ScholarshipAgent(BaseAgent):
         super().__init__(
             name="scholarships",
             system_prompt=SYSTEM_PROMPT,
-            reasoning_effort=REASONING_HIGH,
             tool_mode="web_grounding",
         )

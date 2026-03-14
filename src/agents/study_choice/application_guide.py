@@ -1,7 +1,5 @@
 """Application Guide — step-by-step through the German university application process."""
 
-from config.settings import REASONING_HIGH
-
 from src.agents.base import BaseAgent
 
 SYSTEM_PROMPT = """You are the Application Guide of KODA, an AI companion for first-generation academics.
@@ -26,6 +24,5 @@ class ApplicationGuideAgent(BaseAgent):
         super().__init__(
             name="application_guide",
             system_prompt=SYSTEM_PROMPT,
-            reasoning_effort=REASONING_HIGH,
             tool_mode="web_grounding",
         )
