@@ -124,6 +124,29 @@ st.markdown(
         padding: 0.75rem 0.95rem;
         text-align: center;
     }
+    .welcome-copy,
+    .footer-copy {
+        color: #636e72;
+        font-family: 'Nunito', sans-serif;
+        margin: 0;
+        text-align: center;
+    }
+    .welcome-copy {
+        font-size: 0.93rem;
+        line-height: 1.7;
+    }
+    .footer-copy {
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+    .welcome-copy p,
+    .footer-copy p {
+        margin: 0.5rem 0 0 0;
+    }
+    .welcome-copy p:first-child,
+    .footer-copy p:first-child {
+        margin-top: 0;
+    }
 
     /* ── Stat boxes ───────────────────────────── */
     .stat-box {
@@ -170,6 +193,10 @@ st.markdown(
         border: 2px solid rgba(125, 122, 201, 0.25) !important;
         border-radius: 24px !important;
     }
+    .stChatInput > div:focus-within {
+        border-color: rgba(125, 122, 201, 0.58) !important;
+        box-shadow: 0 0 0 4px rgba(125, 122, 201, 0.12) !important;
+    }
     .stChatInput textarea {
         background: #f0ebe4 !important;
         background-color: #f0ebe4 !important;
@@ -177,6 +204,10 @@ st.markdown(
         padding: 0.5rem !important;
         caret-color: rgba(125, 122, 201, 1) !important;
         -webkit-text-fill-color: #2d3436 !important;
+    }
+    .stChatInput textarea::placeholder {
+        color: #7a8388 !important;
+        opacity: 1 !important;
     }
     .stChatInput textarea:focus {
         background: #f0ebe4 !important;
@@ -363,13 +394,17 @@ st.markdown(
     }
     .source-list ul {
         margin: 0;
-        padding-left: 1.1rem;
+        padding-left: 0;
+        list-style: none;
     }
     .source-list li {
         color: #2d3436;
+        display: flex;
         font-size: 0.88rem;
+        flex-wrap: wrap;
+        gap: 0.2rem 0.4rem;
         line-height: 1.5;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.35rem;
     }
     .source-tag {
         display: inline-block;
@@ -377,7 +412,7 @@ st.markdown(
         font-family: 'Nunito', sans-serif;
         font-size: 0.66rem;
         font-weight: 700;
-        margin-right: 0.45rem;
+        margin-right: 0.1rem;
         padding: 0.1rem 0.4rem;
     }
     .source-tag.registry {
@@ -390,6 +425,7 @@ st.markdown(
     }
     .source-list a {
         color: rgba(96, 88, 185, 1);
+        overflow-wrap: anywhere;
         text-decoration: none;
     }
     .source-list a:hover {
@@ -398,7 +434,8 @@ st.markdown(
     .source-domain {
         color: #7a8388;
         font-size: 0.76rem;
-        margin-left: 0.35rem;
+        margin-left: 0.1rem;
+        overflow-wrap: anywhere;
     }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
@@ -443,15 +480,27 @@ st.markdown(
         border: 1.5px solid rgba(125, 122, 201, 0.32) !important;
         background: rgba(125, 122, 201, 0.05) !important;
         color: #2d3436 !important;
+        display: flex !important;
+        align-items: center !important;
         font-size: 0.82rem !important;
         font-weight: 600 !important;
+        justify-content: center !important;
+        line-height: 1.25 !important;
+        min-height: 3.1rem !important;
         padding: 0.42rem 0.75rem !important;
+        text-align: center !important;
         transition: transform 0.15s ease, box-shadow 0.15s ease,
                     border-color 0.15s ease, background 0.15s ease !important;
         letter-spacing: 0.01em !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: initial !important;
+    }
+    [data-testid="baseButton-secondary"] p,
+    [data-testid="baseButton-primary"] p {
+        line-height: 1.25 !important;
+        margin: 0 !important;
+        white-space: normal !important;
     }
     [data-testid="baseButton-secondary"]:hover {
         border-color: rgba(125, 122, 201, 0.72) !important;
@@ -470,16 +519,26 @@ st.markdown(
         border: 1.5px solid rgba(125, 122, 201, 0.45) !important;
         background: transparent !important;
         color: rgba(125, 122, 201, 0.9) !important;
+        display: flex !important;
+        align-items: center !important;
         font-size: 0.8rem !important;
         font-weight: 600 !important;
+        justify-content: center !important;
         padding: 0.3rem 0.85rem !important;
         transition: all 0.15s ease !important;
         letter-spacing: 0.01em !important;
+        text-align: center !important;
     }
     [data-testid="baseButton-primary"]:hover {
         background: rgba(125, 122, 201, 0.1) !important;
         border-color: rgba(125, 122, 201, 0.8) !important;
         box-shadow: 0 2px 8px rgba(125, 122, 201, 0.25) !important;
+    }
+    .stChatInput button:focus-visible,
+    [data-testid="baseButton-secondary"]:focus-visible,
+    [data-testid="baseButton-primary"]:focus-visible {
+        outline: 3px solid rgba(125, 122, 201, 0.22) !important;
+        outline-offset: 2px !important;
     }
 
     /* ════════════════════════════════════════════
@@ -500,12 +559,16 @@ st.markdown(
             color: #a0a8b8 !important;
         }
         .koda-heritage {
-            color: #5a6070 !important;
+            color: #8790a3 !important;
         }
         .ai-disclaimer {
             background: rgba(125, 122, 201, 0.14) !important;
             border-color: rgba(125, 122, 201, 0.25) !important;
             color: #a0a8b8 !important;
+        }
+        .welcome-copy,
+        .footer-copy {
+            color: #aeb6c8 !important;
         }
 
         /* ── Stat boxes ───────────────────────── */
@@ -517,11 +580,6 @@ st.markdown(
             color: #a0a8b8 !important;
         }
         .stat-delta {
-            color: #a0a8b8 !important;
-        }
-
-        /* ── Welcome body & footer text ───────── */
-        p[style*="color:#636e72"] {
             color: #a0a8b8 !important;
         }
 
@@ -588,12 +646,19 @@ st.markdown(
             background: #252540 !important;
             border-color: rgba(125, 122, 201, 0.35) !important;
         }
+        .stChatInput > div:focus-within {
+            border-color: rgba(160, 155, 220, 0.72) !important;
+            box-shadow: 0 0 0 4px rgba(125, 122, 201, 0.2) !important;
+        }
         .stChatInput textarea {
             background: #252540 !important;
             background-color: #252540 !important;
             color: #e8e4f0 !important;
             -webkit-text-fill-color: #e8e4f0 !important;
             caret-color: rgba(160, 155, 220, 1) !important;
+        }
+        .stChatInput textarea::placeholder {
+            color: #9ea8b4 !important;
         }
         .stChatInput textarea:focus {
             background: #252540 !important;
@@ -608,7 +673,7 @@ st.markdown(
             color: rgba(160, 155, 220, 1) !important;
         }
         .qa-header-sub {
-            color: #6a7280 !important;
+            color: #aeb6c8 !important;
         }
 
         /* ── Quick action pill-card buttons ──────── */
@@ -662,7 +727,8 @@ st.markdown(
             color: #88c7ff !important;
         }
         .source-list a {
-            color: #c8c4e8 !important;
+            color: #d8d3ff !important;
+            text-decoration-color: rgba(216, 211, 255, 0.35) !important;
         }
         .source-domain {
             color: #9ea8b4 !important;
@@ -671,6 +737,124 @@ st.markdown(
         /* ── Divider ─────────────────────────── */
         hr {
             border-color: rgba(125, 122, 201, 0.15) !important;
+        }
+    }
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.85rem !important;
+            padding-right: 0.85rem !important;
+            padding-top: 0.35rem !important;
+        }
+        .koda-title {
+            font-size: 3rem;
+            letter-spacing: 0.16em;
+            margin-top: 0.15rem;
+        }
+        .koda-tagline {
+            font-size: 0.93rem;
+            padding: 0 0.25rem;
+        }
+        .koda-heritage {
+            font-size: 0.68rem;
+            margin-bottom: 0.85rem;
+            padding: 0 0.3rem;
+        }
+        .ai-disclaimer {
+            font-size: 0.74rem;
+            margin-bottom: 0.85rem;
+            padding: 0.7rem 0.8rem;
+        }
+        .welcome-copy {
+            font-size: 0.89rem;
+        }
+        .footer-copy {
+            font-size: 0.81rem;
+        }
+        .stat-box {
+            padding: 1rem 0.85rem;
+        }
+        .stat-value {
+            font-size: 1.85rem;
+        }
+        .msg-user {
+            font-size: 0.88rem;
+            margin-left: 1.35rem;
+            padding: 0.74rem 0.95rem;
+        }
+        [data-testid="stChatMessage"],
+        .msg-koda {
+            font-size: 0.88rem;
+            margin-right: 1.35rem;
+            padding: 0.78rem 0.95rem;
+        }
+        [data-testid="stChatMessage"] h1 {
+            font-size: 1.08rem !important;
+        }
+        [data-testid="stChatMessage"] h2 {
+            font-size: 1rem !important;
+        }
+        [data-testid="stChatMessage"] h3,
+        [data-testid="stChatMessage"] h4,
+        [data-testid="stChatMessage"] h5,
+        [data-testid="stChatMessage"] h6 {
+            font-size: 0.92rem !important;
+        }
+        .source-list {
+            margin-top: 0.75rem;
+        }
+        .source-domain {
+            display: block;
+            margin-left: 0;
+            width: 100%;
+        }
+        .stChatInput > div {
+            border-radius: 20px !important;
+        }
+        .stChatInput textarea {
+            font-size: 0.94rem !important;
+            padding: 0.45rem !important;
+        }
+        [data-testid="baseButton-secondary"] {
+            font-size: 0.8rem !important;
+            min-height: 3.35rem !important;
+            padding: 0.48rem 0.7rem !important;
+        }
+        [data-testid="baseButton-primary"] {
+            min-height: 2.65rem !important;
+            padding: 0.36rem 0.8rem !important;
+        }
+    }
+    @media (max-width: 480px) {
+        .block-container {
+            padding-left: 0.65rem !important;
+            padding-right: 0.65rem !important;
+        }
+        .koda-title {
+            font-size: 2.35rem;
+            letter-spacing: 0.11em;
+        }
+        .koda-tagline {
+            font-size: 0.88rem;
+        }
+        .koda-heritage {
+            font-size: 0.64rem;
+        }
+        .msg-user {
+            margin-left: 0.55rem;
+        }
+        [data-testid="stChatMessage"],
+        .msg-koda {
+            margin-right: 0.55rem;
+        }
+        [data-testid="stChatMessage"] pre {
+            padding: 0.7rem 0.75rem !important;
+        }
+        .provenance-pill,
+        .source-tag {
+            font-size: 0.62rem;
+        }
+        .source-list li {
+            font-size: 0.83rem;
         }
     }
 </style>
@@ -834,6 +1018,14 @@ def _safe_user(text: str) -> str:
     return html_lib.escape(text)
 
 
+def _paragraph_block(text: str, css_class: str) -> str:
+    """Render plain text as a paragraph block with consistent styling hooks."""
+
+    paragraphs = [html_lib.escape(part.strip()) for part in text.split("\n\n") if part.strip()]
+    body = "".join(f"<p>{paragraph}</p>" for paragraph in paragraphs)
+    return f"<div class='{css_class}'>{body}</div>"
+
+
 def _send(msg_key: str):
     st.session_state._pending_msg = t(msg_key, lang)
     st.session_state.show_welcome = False
@@ -964,14 +1156,7 @@ if st.session_state.show_welcome and not st.session_state.messages:
 
     st.write("")
 
-    welcome_text = t("welcome_body", lang).replace(
-        "\n\n",
-        '</p><p style="text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0.5rem 0 0 0;">',
-    )
-    st.markdown(
-        f"<p style='text-align:center; color:#636e72; font-size:0.93rem; line-height:1.7; margin:0;'>{welcome_text}</p>",
-        unsafe_allow_html=True,
-    )
+    st.markdown(_paragraph_block(t("welcome_body", lang), "welcome-copy"), unsafe_allow_html=True)
 
     st.write("")
 
@@ -1100,15 +1285,7 @@ if user_input:
 
 st.divider()
 footer_text = t("footer", lang)
-footer_html = footer_text.replace(
-    "\n\n",
-    '</p><p style="text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;">',
-)
-st.markdown(
-    f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
-    f"{footer_html}</p>",
-    unsafe_allow_html=True,
-)
+st.markdown(_paragraph_block(footer_text, "footer-copy"), unsafe_allow_html=True)
 
 st.write("")
 st.write("")
