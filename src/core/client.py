@@ -10,6 +10,7 @@ Reference: Nova 2 Developer Guide — "Core inference" and "Troubleshooting" cha
 import time
 from collections.abc import Generator
 from typing import Any
+from urllib.parse import urlparse
 
 import boto3
 import botocore.exceptions
@@ -23,6 +24,8 @@ from config.settings import (
     DEFAULT_TOP_P,
     NOVA_MODEL_ID,
 )
+
+from src.core.provenance import SourceAttribution, build_web_source
 
 logger = structlog.get_logger()
 
@@ -143,6 +146,30 @@ class NovaClient:
                         parts.append(item["text"])
         return "\n".join(parts) if parts else ""
 
+    @classmethod
+    def extract_web_citations(cls, response: dict) -> tuple[SourceAttribution, ...]:
+        """Pull citation metadata from a Bedrock response when available."""
+
+        candidates: list[SourceAttribution] = []
+        content_blocks = response.get("output", {}).get("message", {}).get("content", [])
+
+        for block in content_blocks:
+            if "citationsContent" in block:
+                candidates.extend(cls._collect_citations(block["citationsContent"]))
+
+            if "toolResult" in block:
+                for item in block["toolResult"].get("content", []):
+                    if "json" in item:
+                        candidates.extend(cls._collect_citations(item["json"]))
+
+        if not candidates:
+            candidates.extend(cls._collect_citations(response))
+
+        deduped: dict[str, SourceAttribution] = {}
+        for source in candidates:
+            deduped.setdefault(source.url.casefold(), source)
+        return tuple(deduped.values())
+
     # ── Internal ───────────────────────────────────
 
     def _call_with_retry(self, kwargs: dict) -> dict[str, Any]:
@@ -222,3 +249,49 @@ class NovaClient:
                 "reasoningConfig": {"type": "enabled", "maxReasoningEffort": reasoning_effort}
             }
         return kw
+
+    @classmethod
+    def _collect_citations(cls, payload: Any) -> list[SourceAttribution]:
+        """Recursively collect URL-bearing citation objects from nested payloads."""
+
+        results: list[SourceAttribution] = []
+
+        if isinstance(payload, dict):
+            citation = cls._maybe_build_citation(payload)
+            if citation is not None:
+                results.append(citation)
+
+            for value in payload.values():
+                results.extend(cls._collect_citations(value))
+            return results
+
+        if isinstance(payload, list):
+            for item in payload:
+                results.extend(cls._collect_citations(item))
+
+        return results
+
+    @staticmethod
+    def _maybe_build_citation(payload: dict[str, Any]) -> SourceAttribution | None:
+        url = None
+        for key in ("url", "uri", "sourceUrl", "link"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.startswith(("http://", "https://")):
+                url = value.strip()
+                break
+
+        if url is None:
+            return None
+
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return None
+
+        title = ""
+        for key in ("title", "label", "websiteTitle", "siteName", "sourceTitle", "name"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                title = value.strip()
+                break
+
+        return build_web_source(title or parsed.netloc.removeprefix("www."), url)

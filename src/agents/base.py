@@ -10,6 +10,14 @@ from collections.abc import Generator
 import structlog
 
 from src.core.client import NovaClient, NovaClientError
+from src.core.provenance import (
+    AgentReply,
+    ResponseProvenance,
+    SourceAttribution,
+    build_default_provenance,
+    build_sourcing_addendum,
+    merge_provenance,
+)
 from src.core.safety import apply_anti_shame_filter, build_identity_addendum
 
 logger = structlog.get_logger()
@@ -53,6 +61,17 @@ class BaseAgent:
         Never raises exceptions to the caller. Returns a friendly fallback
         message if anything goes wrong.
         """
+        return self.respond_with_details(messages, metadata).text
+
+    def respond_with_details(
+        self, messages: list[dict], metadata: dict | None = None
+    ) -> AgentReply:
+        """
+        Generate a response and retain provenance metadata for the caller.
+
+        This is the source of truth for response generation. ``respond()``
+        remains as a backwards-compatible string-only wrapper.
+        """
         try:
             prompt = self._build_prompt(metadata)
 
@@ -69,19 +88,26 @@ class BaseAgent:
 
             if not text.strip():
                 logger.warning("empty_response", agent=self.name)
-                return self._fallback_message(messages)
+                return self._fallback_reply(messages)
 
-            return apply_anti_shame_filter(text)
+            web_sources: tuple[SourceAttribution, ...] = ()
+            if self.tool_mode == "web_grounding":
+                web_sources = self.client.extract_web_citations(resp)
+
+            return AgentReply(
+                text=apply_anti_shame_filter(text),
+                provenance=self._resolve_provenance(metadata, web_sources),
+            )
 
         except NovaClientError as e:
             logger.error("agent_error", agent=self.name, error=str(e))
-            return self._fallback_message(messages)
+            return self._fallback_reply(messages)
 
         except Exception as e:
             logger.error(
                 "agent_unexpected_error", agent=self.name, error=str(e), type=type(e).__name__
             )
-            return self._fallback_message(messages)
+            return self._fallback_reply(messages)
 
     def respond_stream(
         self, messages: list[dict], metadata: dict | None = None
@@ -98,7 +124,7 @@ class BaseAgent:
         """
         # Tool-mode agents don't support streaming; yield the full response.
         if self.tool_mode in ("code_interpreter", "web_grounding"):
-            yield self.respond(messages, metadata)
+            yield self.respond_with_details(messages, metadata).text
             return
 
         try:
@@ -146,7 +172,34 @@ class BaseAgent:
         prompt = self._base_prompt
         if metadata and metadata.get("identity_context"):
             prompt += build_identity_addendum(metadata["identity_context"])
+        trusted_sources = ()
+        if metadata and metadata.get("trusted_sources"):
+            trusted_sources = tuple(metadata["trusted_sources"])
+        prompt += build_sourcing_addendum(trusted_sources, tool_mode=self.tool_mode)
         return prompt
+
+    def _fallback_reply(self, messages: list[dict]) -> AgentReply:
+        """Return a friendly fallback with neutral provenance metadata."""
+        return AgentReply(
+            text=self._fallback_message(messages),
+            provenance=build_default_provenance(),
+        )
+
+    def _resolve_provenance(
+        self,
+        metadata: dict | None,
+        web_sources: tuple[SourceAttribution, ...] = (),
+    ) -> ResponseProvenance:
+        """Merge request-scoped provenance with response-scoped citations."""
+        base = None
+        if metadata and metadata.get("provenance"):
+            raw = metadata["provenance"]
+            if isinstance(raw, ResponseProvenance):
+                base = raw
+            elif isinstance(raw, dict):
+                base = ResponseProvenance.model_validate(raw)
+
+        return merge_provenance(base, tool_mode=self.tool_mode, web_sources=web_sources)
 
     @staticmethod
     def _fallback_message(messages: list[dict]) -> str:

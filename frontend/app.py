@@ -11,6 +11,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.core.provenance import ResponseProvenance, build_provenance_context
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 
 # ── Page config ────────────────────────────────────────
@@ -108,6 +109,19 @@ st.markdown(
         color: #b2bec3;
         margin: 0 0 1rem 0;
         letter-spacing: 0.04em;
+    }
+    .ai-disclaimer {
+        background: rgba(125, 122, 201, 0.08);
+        border: 1px solid rgba(125, 122, 201, 0.18);
+        border-radius: 14px;
+        color: #5f6470;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        margin: 0 auto 1rem auto;
+        max-width: 760px;
+        padding: 0.75rem 0.95rem;
+        text-align: center;
     }
 
     /* ── Stat boxes ───────────────────────────── */
@@ -238,6 +252,80 @@ st.markdown(
         letter-spacing: 0.05em !important;
         text-transform: uppercase !important;
     }
+    .provenance-row {
+        margin: 0.1rem 0 0.65rem 0;
+    }
+    .provenance-pill {
+        display: inline-block;
+        border-radius: 999px;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        padding: 0.25rem 0.6rem;
+    }
+    .provenance-pill.registry {
+        background: rgba(0, 184, 148, 0.12);
+        color: #0b7d68;
+    }
+    .provenance-pill.registry-web {
+        background: rgba(125, 122, 201, 0.12);
+        color: rgba(96, 88, 185, 1);
+    }
+    .provenance-pill.web {
+        background: rgba(9, 132, 227, 0.12);
+        color: #0c6fbe;
+    }
+    .provenance-pill.model {
+        background: rgba(99, 110, 114, 0.12);
+        color: #5f6470;
+    }
+    .source-list {
+        margin-top: 0.85rem;
+    }
+    .source-list-label {
+        color: #636e72;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+    .source-list ul {
+        margin: 0;
+        padding-left: 1.1rem;
+    }
+    .source-list li {
+        color: #2d3436;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin-bottom: 0.2rem;
+    }
+    .source-tag {
+        display: inline-block;
+        border-radius: 999px;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.66rem;
+        font-weight: 700;
+        margin-right: 0.45rem;
+        padding: 0.1rem 0.4rem;
+    }
+    .source-tag.registry {
+        background: rgba(0, 184, 148, 0.12);
+        color: #0b7d68;
+    }
+    .source-tag.web {
+        background: rgba(9, 132, 227, 0.12);
+        color: #0c6fbe;
+    }
+    .source-list a {
+        color: rgba(96, 88, 185, 1);
+        text-decoration: none;
+    }
+    .source-list a:hover {
+        text-decoration: underline;
+    }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
         display: none;
@@ -339,6 +427,11 @@ st.markdown(
         }
         .koda-heritage {
             color: #5a6070 !important;
+        }
+        .ai-disclaimer {
+            background: rgba(125, 122, 201, 0.14) !important;
+            border-color: rgba(125, 122, 201, 0.25) !important;
+            color: #a0a8b8 !important;
         }
 
         /* ── Stat boxes ───────────────────────── */
@@ -446,6 +539,38 @@ st.markdown(
             border-color: rgba(160, 155, 220, 0.85) !important;
         }
 
+        .provenance-pill.registry {
+            background: rgba(0, 184, 148, 0.2) !important;
+            color: #7ce3cb !important;
+        }
+        .provenance-pill.registry-web {
+            background: rgba(125, 122, 201, 0.22) !important;
+            color: #c8c4e8 !important;
+        }
+        .provenance-pill.web {
+            background: rgba(9, 132, 227, 0.2) !important;
+            color: #88c7ff !important;
+        }
+        .provenance-pill.model {
+            background: rgba(99, 110, 114, 0.2) !important;
+            color: #b7bec8 !important;
+        }
+        .source-list-label,
+        .source-list li {
+            color: #c8c4e8 !important;
+        }
+        .source-tag.registry {
+            background: rgba(0, 184, 148, 0.2) !important;
+            color: #7ce3cb !important;
+        }
+        .source-tag.web {
+            background: rgba(9, 132, 227, 0.2) !important;
+            color: #88c7ff !important;
+        }
+        .source-list a {
+            color: #c8c4e8 !important;
+        }
+
         /* ── Divider ─────────────────────────── */
         hr {
             border-color: rgba(125, 122, 201, 0.15) !important;
@@ -527,6 +652,108 @@ def load_agents():
     }
 
 
+def _build_chat_metadata(
+    agent_key: str,
+    *,
+    agent_tool_mode: str | None,
+    ui_lang: str,
+    user_message: str,
+) -> dict:
+    """Build per-turn metadata for source-aware prompting and attribution."""
+
+    return build_provenance_context(
+        agent_key=agent_key,
+        user_message=user_message,
+        ui_language=ui_lang,
+        tool_mode=agent_tool_mode,
+    )
+
+
+def _normalize_provenance(value: dict | ResponseProvenance | None) -> ResponseProvenance | None:
+    """Convert stored provenance payloads back into a typed object."""
+
+    if value is None:
+        return None
+    if isinstance(value, ResponseProvenance):
+        return value
+    if isinstance(value, dict):
+        return ResponseProvenance.model_validate(value)
+    return None
+
+
+def _provenance_css_class(provenance: ResponseProvenance) -> str:
+    mapping = {
+        "source_registry": "registry",
+        "source_registry_and_web": "registry-web",
+        "web_grounding": "web",
+        "model": "model",
+    }
+    return mapping[provenance.mode]
+
+
+def _get_provenance_label(provenance: ResponseProvenance, current_lang: str) -> str:
+    return t(f"provenance_{provenance.mode}", current_lang)
+
+
+def _render_provenance_contents(provenance: ResponseProvenance, current_lang: str) -> None:
+    """Render provenance badge and source links inside the active container."""
+
+    label = html_lib.escape(_get_provenance_label(provenance, current_lang))
+    pill_class = _provenance_css_class(provenance)
+    st.markdown(
+        f"<div class='provenance-row'><span class='provenance-pill {pill_class}'>{label}</span></div>",
+        unsafe_allow_html=True,
+    )
+
+    if not provenance.sources:
+        return
+
+    items: list[str] = []
+    for source in provenance.sources:
+        tag_key = (
+            "source_tag_registry"
+            if source.origin == "source_registry"
+            else "source_tag_web_grounding"
+        )
+        tag_label = html_lib.escape(t(tag_key, current_lang))
+        tag_class = "registry" if source.origin == "source_registry" else "web"
+        title = html_lib.escape(source.title)
+        url = html_lib.escape(source.url, quote=True)
+        items.append(
+            "<li>"
+            f"<span class='source-tag {tag_class}'>{tag_label}</span>"
+            f"<a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            "</li>"
+        )
+
+    st.markdown(
+        f"<div class='source-list'>"
+        f"<div class='source-list-label'>{html_lib.escape(t('sources_label', current_lang))}</div>"
+        f"<ul>{''.join(items)}</ul>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_provenance_block(
+    provenance: dict | ResponseProvenance | None,
+    current_lang: str,
+    placeholder=None,
+) -> None:
+    """Render provenance either inline or into a placeholder container."""
+
+    normalized = _normalize_provenance(provenance)
+    if normalized is None:
+        return
+
+    if placeholder is None:
+        _render_provenance_contents(normalized, current_lang)
+        return
+
+    with placeholder.container():
+        _render_provenance_contents(normalized, current_lang)
+
+
 def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
     """
     Orchestrate agent routing, crisis scanning and response generation.
@@ -547,7 +774,14 @@ def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
     crisis = system["crisis"].scan(user_message)
     agent_key = system["router"].route(user_message)
     agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
-    response_text = agent.respond(bedrock_messages)
+    metadata = _build_chat_metadata(
+        agent_key,
+        agent_tool_mode=agent.tool_mode,
+        ui_lang=ui_lang,
+        user_message=user_message,
+    )
+    reply = agent.respond_with_details(bedrock_messages, metadata)
+    response_text = reply.text
 
     if crisis["is_crisis"] and crisis["resources"]:
         # Crisis banner uses the UI language; agent body already auto-detected
@@ -556,7 +790,12 @@ def get_response(user_message: str, history: list, ui_lang: str = "de") -> dict:
             prefix += f"\u2022 {v}\n"
         response_text = prefix + "\n" + response_text
 
-    return {"response": response_text, "agent": agent_key, "crisis": crisis["is_crisis"]}
+    return {
+        "response": response_text,
+        "agent": agent_key,
+        "crisis": crisis["is_crisis"],
+        "provenance": reply.provenance.model_dump(),
+    }
 
 
 def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
@@ -568,7 +807,7 @@ def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
 
     The *last* item yielded is always a sentinel dict::
 
-        {"agent": str, "crisis": bool, "response": str}
+        {"agent": str, "crisis": bool, "response": str, "provenance": dict}
 
     containing the fully assembled response and routing metadata.
     Callers must pop this final dict before displaying.
@@ -580,6 +819,12 @@ def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
     crisis = system["crisis"].scan(user_message)
     agent_key = system["router"].route(user_message)
     agent = system["agents"].get(agent_key, system["agents"]["COMPASS"])
+    metadata = _build_chat_metadata(
+        agent_key,
+        agent_tool_mode=agent.tool_mode,
+        ui_lang=ui_lang,
+        user_message=user_message,
+    )
 
     # If crisis, prepend the banner as the very first streamed chunk
     crisis_prefix = ""
@@ -593,18 +838,31 @@ def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
     collected: list[str] = [crisis_prefix]
     replace_text: str | None = None
 
-    for chunk in agent.respond_stream(bedrock_messages):
-        if chunk.startswith("\x00REPLACE\x00"):
-            # Anti-shame filter rewrote the text; store corrected version
-            replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00") :]
-        else:
-            collected.append(chunk)
-            yield chunk
+    provenance = metadata["provenance"]
+
+    if agent.tool_mode in ("code_interpreter", "web_grounding"):
+        reply = agent.respond_with_details(bedrock_messages, metadata)
+        collected.append(reply.text)
+        provenance = reply.provenance
+        yield reply.text
+    else:
+        for chunk in agent.respond_stream(bedrock_messages, metadata):
+            if chunk.startswith("\x00REPLACE\x00"):
+                # Anti-shame filter rewrote the text; store corrected version
+                replace_text = crisis_prefix + chunk[len("\x00REPLACE\x00") :]
+            else:
+                collected.append(chunk)
+                yield chunk
 
     full_response = replace_text if replace_text is not None else "".join(collected)
 
     # Final sentinel — caller must consume and not display this
-    yield {"response": full_response, "agent": agent_key, "crisis": crisis["is_crisis"]}
+    yield {
+        "response": full_response,
+        "agent": agent_key,
+        "crisis": crisis["is_crisis"],
+        "provenance": provenance.model_dump(),
+    }
 
 
 def _safe_user(text: str) -> str:
@@ -685,6 +943,10 @@ st.markdown(
 )
 st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe_allow_html=True)
 st.markdown(f"""<div class="koda-heritage">{heritage_text}</div>""", unsafe_allow_html=True)
+st.markdown(
+    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
+    unsafe_allow_html=True,
+)
 
 
 # ── Welcome screen ─────────────────────────────────────
@@ -770,6 +1032,7 @@ for msg in st.session_state.messages:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
+            _render_provenance_block(msg.get("provenance"), lang)
             st.markdown(msg["content"])
 
 
@@ -835,12 +1098,15 @@ if user_input:
 
     with st.chat_message("assistant", avatar="\U0001f9ed"):
         label_placeholder = st.empty()
+        provenance_placeholder = st.empty()
         full_text = st.write_stream(_filtered_stream())
 
     metadata = meta_box[0]
     agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
     if label_placeholder:
         label_placeholder.caption(agent_label)
+    if provenance_placeholder:
+        _render_provenance_block(metadata.get("provenance"), lang, provenance_placeholder)
 
     # Use metadata response if anti-shame filter replaced the streamed text
     final_text = metadata.get("response", full_text)
@@ -850,6 +1116,7 @@ if user_input:
             "role": "assistant",
             "content": final_text,
             "agent": metadata.get("agent", "COMPASS"),
+            "provenance": metadata.get("provenance"),
         }
     )
 

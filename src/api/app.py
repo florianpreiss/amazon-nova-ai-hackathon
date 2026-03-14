@@ -20,6 +20,7 @@ from src.agents.role_models.anti_impostor import AntiImpostorAgent
 from src.agents.router import RouterAgent
 from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
 from src.core.conversation import Conversation
+from src.core.provenance import ResponseProvenance, build_provenance_context
 
 # ── App setup ──────────────────────────────────────
 
@@ -86,6 +87,7 @@ class ChatResponse(BaseModel):
     agent_used: str
     crisis_detected: bool
     crisis_resources: dict | None = None
+    provenance: ResponseProvenance
 
 
 # ── Endpoints ──────────────────────────────────────
@@ -103,9 +105,17 @@ async def chat(request: ChatRequest):
     # 2. Route to domain agent
     agent_key = router_agent.route(request.message)
     agent = AGENTS.get(agent_key, AGENTS["COMPASS"])
+    metadata = build_provenance_context(
+        agent_key=agent_key,
+        user_message=request.message,
+        ui_language="en",
+        tool_mode=agent.tool_mode,
+    )
 
     # 3. Generate response
-    text = agent.respond(conv.get_messages(), conv.metadata)
+    merged_metadata = {**conv.metadata, **metadata}
+    reply = agent.respond_with_details(conv.get_messages(), merged_metadata)
+    text = reply.text
 
     # 4. Prepend crisis resources if triggered
     if crisis["is_crisis"] and crisis["resources"]:
@@ -121,6 +131,7 @@ async def chat(request: ChatRequest):
         agent_used=agent_key,
         crisis_detected=crisis["is_crisis"],
         crisis_resources=crisis.get("resources"),
+        provenance=reply.provenance,
     )
 
 
