@@ -134,10 +134,13 @@ class BaseAgent:
 
         try:
             prompt = self._build_prompt(metadata)
+            # Never pass reasoning_effort to converse_stream: the model
+            # emits a long thinking block before any text deltas, during
+            # which the UI receives zero chunks and appears frozen.
+            # Reasoning is retained for non-streaming respond_with_details().
             stream_resp = self.client.converse_stream(
                 messages,
                 system_prompt=prompt,
-                reasoning_effort=self.reasoning_effort,
             )
             collected: list[str] = []
             for chunk in self.client.iter_stream_text(stream_resp):
