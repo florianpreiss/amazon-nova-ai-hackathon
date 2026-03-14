@@ -1126,10 +1126,6 @@ if user_input:
 
 # ── Footer ─────────────────────────────────────────────
 
-st.markdown(
-    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
-    unsafe_allow_html=True,
-)
 st.divider()
 footer_text = t("footer", lang)
 footer_html = footer_text.replace(
@@ -1139,5 +1135,9 @@ footer_html = footer_text.replace(
 st.markdown(
     f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
     f"{footer_html}</p>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
     unsafe_allow_html=True,
 )
