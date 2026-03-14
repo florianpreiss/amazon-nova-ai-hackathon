@@ -19,11 +19,25 @@ Available agents:
 - ACADEMIC_BASICS: Fundamental questions about how university works, academic terminology, study vs. apprenticeship decisions.
 - ROLE_MODELS: Motivation, role models, career visions, impostor feelings, self-doubt, encouragement.
 
+IMPORTANT: Always respond in English regardless of the language of the user's message.
 Respond ONLY with the agent name:
 AGENT: [NAME]
 
 If the message is ambiguous, choose COMPASS.
 """
+
+# Fallback map for non-English model output (e.g. when the model mirrors
+# the user's language despite instructions).  Keys are casefold substrings.
+_GERMAN_FALLBACK: dict[str, str] = {
+    "finanzierung": "FINANCING",
+    "studiumswahl": "STUDY_CHOICE",
+    "studienwahl": "STUDY_CHOICE",
+    "hochschulwahl": "STUDY_CHOICE",
+    "grundlagen": "ACADEMIC_BASICS",
+    "studiengrundlagen": "ACADEMIC_BASICS",
+    "vorbilder": "ROLE_MODELS",
+    "kompass": "COMPASS",
+}
 
 
 class RouterAgent:
@@ -46,8 +60,17 @@ class RouterAgent:
             temperature=0.0,
         )
 
-        text = self.client.extract_text(response).upper()
+        text = self.client.extract_text(response)
+        upper = text.upper()
+
         for name in self.VALID_AGENTS:
-            if name in text:
+            if name in upper:
                 return name
+
+        # Second-chance: model may have translated agent names despite instructions
+        lower = text.casefold()
+        for fragment, agent in _GERMAN_FALLBACK.items():
+            if fragment in lower:
+                return agent
+
         return "COMPASS"
