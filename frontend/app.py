@@ -884,8 +884,8 @@ for msg in st.session_state.messages:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
-            _render_provenance_block(msg.get("provenance"), lang)
             st.markdown(msg["content"])
+            _render_provenance_block(msg.get("provenance"), lang)
 
 
 # ── Quick actions (persistent) ─────────────────────────
@@ -999,5 +999,13 @@ footer_html = footer_text.replace(
 st.markdown(
     f"<p style='text-align:center; color:#636e72; font-size:0.85rem; line-height:1.6; margin:0;'>"
     f"{footer_html}</p>",
+    unsafe_allow_html=True,
+)
+
+st.write("")
+st.write("")
+
+st.markdown(
+    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
     unsafe_allow_html=True,
 )
