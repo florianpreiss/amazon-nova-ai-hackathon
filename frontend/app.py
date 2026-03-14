@@ -943,10 +943,6 @@ st.markdown(
 )
 st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe_allow_html=True)
 st.markdown(f"""<div class="koda-heritage">{heritage_text}</div>""", unsafe_allow_html=True)
-st.markdown(
-    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
-    unsafe_allow_html=True,
-)
 
 
 # ── Welcome screen ─────────────────────────────────────
@@ -1032,8 +1028,8 @@ for msg in st.session_state.messages:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
-            _render_provenance_block(msg.get("provenance"), lang)
             st.markdown(msg["content"])
+            _render_provenance_block(msg.get("provenance"), lang)
 
 
 # ── Quick actions (persistent) ─────────────────────────
@@ -1098,8 +1094,8 @@ if user_input:
 
     with st.chat_message("assistant", avatar="\U0001f9ed"):
         label_placeholder = st.empty()
-        provenance_placeholder = st.empty()
         full_text = st.write_stream(_filtered_stream())
+        provenance_placeholder = st.empty()
 
     metadata = meta_box[0]
     agent_label = get_agent_label(metadata.get("agent", "COMPASS"), lang)
@@ -1130,6 +1126,10 @@ if user_input:
 
 # ── Footer ─────────────────────────────────────────────
 
+st.markdown(
+    f"""<div class="ai-disclaimer">{html_lib.escape(t("ai_disclaimer", lang))}</div>""",
+    unsafe_allow_html=True,
+)
 st.divider()
 footer_text = t("footer", lang)
 footer_html = footer_text.replace(
