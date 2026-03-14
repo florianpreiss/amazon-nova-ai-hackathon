@@ -1,0 +1,1213 @@
+{
+  "registry_id": "de-germany-curated-v1",
+  "version": 1,
+  "description": "Curated German-language sources for first-generation students and Germany-specific study guidance.",
+  "default_languages": [
+    "de"
+  ],
+  "country_codes": [
+    "DE"
+  ],
+  "sources": [
+    {
+      "id": "financing-finanzierungsmoeglichkeiten-studienfinanzierung",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Finanzierungsmöglichkeiten",
+      "summary": "Erklärung von Finanzierungsmöglichkeiten: Bafög, Stipendien, Jobben, Kredite",
+      "url": "https://arbeiterkind.de/als-erste-studieren/studienfinanzierung",
+      "domain": "arbeiterkind.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "community",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-bafoeg-so-funktioniert-bafoeg",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Bafög",
+      "summary": "Erklärung von Bafög: Höhe, Ablauf, Beantragung",
+      "url": "https://arbeiterkind.de/aktuelles/so-funktioniert-bafoeg",
+      "domain": "arbeiterkind.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "community",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-bafoeg-bafoeg",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Bafög",
+      "summary": "Genauere Erklärung von Bafög: Voraussetzungen, Höhe, Ablauf, Beantragung, Ausland",
+      "url": "https://studienwahl.de/finanzielles/finanzierungsmoeglichkeiten/bafoeg",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-jobben-jobben",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Jobben",
+      "summary": "Überblick über Minijob und Werkstudenten (und Arbeiten in Semesterferien)",
+      "url": "https://studienwahl.de/finanzielles/finanzierungsmoeglichkeiten/jobben",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-studienkredite-studienkredite",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Studienkredite",
+      "summary": "Grober Überblick über Konzept von Studienkrediten",
+      "url": "https://studienwahl.de/finanzielles/finanzierungsmoeglichkeiten/studienkredite",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-finanzierungsmoeglichkeiten-finanzcheck-studium-faq-0-html",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Finanzierungsmöglichkeiten",
+      "summary": "Überblick: Bafög, Studienkredit, Bildungsfond, Bildungskredit, Stipendium, Jobben, duales Studium",
+      "url": "https://studieren.de/finanzcheck-studium-faq.0.html",
+      "domain": "studieren.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-bafoeg-finanzielle-unterstuetzung-studium",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Bafög",
+      "summary": "Bafög Erklärung von Arbeitsagentur inkl. Sonderfälle",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/finanzielle-unterstuetzung-studium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-kosten-finanzierung-finanzierung-studium",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Kosten & Finanzierung",
+      "summary": "Kosten im Studium (Wohnung, Lebensmittel, etc.) und kurzer Überblick über Finanzierungsmöglichkeiten",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/finanzierung-studium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-bafoeg-rechner-rechner",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Bafög Rechner",
+      "summary": "",
+      "url": "https://www.bafoeg-rechner.de/Rechner/",
+      "domain": "bafoeg-rechner.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "tool",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-studienkredite-studium-mit-studienkredit-82766",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Studienkredite",
+      "summary": "Informationen zu Studienkrediten: Arten, Anbieter, Rückzahleung, etc.",
+      "url": "https://www.verbraucherzentrale.de/wissen/geld-versicherungen/kredit-schulden-insolvenz/studium-mit-studienkredit-82766",
+      "domain": "verbraucherzentrale.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-stipendienratgeber-applicaid-stipendienratgeber-webversion-pdf",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Stipendienratgeber",
+      "summary": "PDF mit Tipps zu Stipendien (Suche, Bewerbung, etc.) von ApplicAid",
+      "url": "https://www.eah-jena.de/fileadmin/user_upload/eah-jena.de/hochschule/careerservice/_ApplicAid_Stipendienratgeber_Webversion.pdf",
+      "domain": "eah-jena.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "community",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-stipendienratgeber-daad-mit-stipendium-ins-ausland-pdf",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Stipendienratgeber",
+      "summary": "PDF mit Infos zu DAAD Auslandsstipendien (Möglichkeiten, Bewerbungsprozess, etc.)",
+      "url": "https://www.studieren-weltweit.de/content/uploads/2020/06/daad-mit-stipendium-ins-ausland.pdf",
+      "domain": "studieren-weltweit.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-stipendienratgeber-stipendien-der-grosse-uberblick",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Stipendienratgeber",
+      "summary": "Überblick über Stipendien und Bewerbungsvoraussetzungen",
+      "url": "https://arbeiterkind.de/aktuelles/stipendien-der-grosse-uberblick",
+      "domain": "arbeiterkind.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "community",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-schuelerstipendien-stipendien-fuer-schueler",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Schülerstipendien",
+      "summary": "Erklärung und Überblick zu Schülerstipendien",
+      "url": "https://arbeiterkind.de/aktuelles/stipendien-fuer-schueler",
+      "domain": "arbeiterkind.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "community",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-finanzierungsmoeglichkeiten-studienfinanzierung-magazine",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Finanzierungsmöglichkeiten",
+      "summary": "Vor- und Nachteile von verschiedenen Finanzierungsmöglichkeiten",
+      "url": "https://www.studysmarter.de/magazine/studienfinanzierung/",
+      "domain": "studysmarter.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-jobben-arbeiten-als-werkstudent",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Jobben",
+      "summary": "Werkstudent Erklärung und wichtige Infos",
+      "url": "https://www.studycheck.de/ratgeber-studium/arbeiten-als-werkstudent",
+      "domain": "studycheck.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-kosten-kosten-studium",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Kosten",
+      "summary": "Überblick über Kostenpunkte im Studium",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/kosten-studium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-studienfinanzierungsrechner-studienfinanzierungsrechner-php",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Studienfinanzierungsrechner",
+      "summary": "",
+      "url": "https://www.studis-online.de/studienfinanzierung/studienfinanzierungsrechner.php",
+      "domain": "studis-online.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-bafoeg-bafoeg-rueckzahlung-fristen-und-erlass",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Bafög",
+      "summary": "Bafög Rückzahlung Konditionen & Tipps",
+      "url": "https://www.e-fellows.net/studium/studienfinanzierung/bafoeg-rueckzahlung---fristen-und-erlass",
+      "domain": "e-fellows.net",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-jobben-so-gehts-zum-perfekten-nebenjob",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Jobben",
+      "summary": "Tipps für Jobsuche",
+      "url": "https://www.e-fellows.net/studium/studienfinanzierung/so-gehts-zum-perfekten-nebenjob",
+      "domain": "e-fellows.net",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-bafoeg-fachrichtungswechsel-ohne-bafoeg-verlust",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Bafög",
+      "summary": "Bafög Infos zu Studienfachwechsel",
+      "url": "https://www.e-fellows.net/studium/studienfinanzierung/fachrichtungswechsel-ohne-bafoeg-verlust",
+      "domain": "e-fellows.net",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "financing-kosten-studienkosten",
+      "category": "FINANCING",
+      "sheet_name": "Finanzierung",
+      "title": "Kosten",
+      "summary": "Überblick über Kostenpunkte im Studium",
+      "url": "https://www.studis-online.de/studienkosten/",
+      "domain": "studis-online.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-abitur-voraussetzungen",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Abitur",
+      "summary": "Voraussetzungen für Studium (Arten von Hochschulreife)",
+      "url": "https://studienwahl.de/studieninfos/voraussetzungen",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-bewerbung-bewerbung",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Bewerbung",
+      "summary": "Bei welchen Studiengängen muss man sich bewerben?",
+      "url": "https://studienwahl.de/bewerbung",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-bewerbung-wo-muss-ich-mich-fuer-ein-studium-bewerben",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Bewerbung",
+      "summary": "Wo bewirbt man sich?",
+      "url": "https://studienwahl.de/bewerbung/wo-muss-ich-mich-fuer-ein-studium-bewerben",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-bewerbung-was-bedeutet-nc",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Bewerbung",
+      "summary": "Bedeutung von NC und Wartezeit",
+      "url": "https://studienwahl.de/bewerbung/was-bedeutet-nc",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-bewerbung-ergebnis-der-studienplatzvergabe",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Bewerbung",
+      "summary": "Studienplatzvergabe: Zulassung bzw. Ablehnung",
+      "url": "https://studienwahl.de/bewerbung/ergebnis-der-studienplatzvergabe",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-bewerbung-kein-studienplatz-gefunden",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Bewerbung",
+      "summary": "Tipps und Alternativen bei Absage für Studienplatz",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/kein-studienplatz-gefunden",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-bewerbung-bewerbung-fuers-studium-html",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Bewerbung",
+      "summary": "Detaillierte Beschreibung des Ablaufs des Bewerbungsverfahrens",
+      "url": "https://www.einstieg.com/bewerbung/bewerbung-fuers-studium.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-hochschulrankings-hochschul-rankings",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Hochschulrankings",
+      "summary": "Infos zu Hochschulrankings und wie diese Unis vergleichen",
+      "url": "https://studienwahl.de/orientieren/schritte-der-entscheidungsfindung/hochschul-rankings",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-studiengang-studiengang-finden",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Studiengang",
+      "summary": "Schritte zur Wahl des passenden Studiengangs",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/studiengang-finden",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-zulassung-voraussetzungen-studium",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Zulassung",
+      "summary": "Infos zu Zulassungskriterien für Studium",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/voraussetzungen-studium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-studiengang-was-soll-ich-wo-studieren-php",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Studiengang",
+      "summary": "Hilfe zur Wahl des Studiengangs",
+      "url": "https://www.studis-online.de/studienwahl/was-soll-ich-wo-studieren.php",
+      "domain": "studis-online.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-hochschulrankings-hochschulrankings-html",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Hochschulrankings",
+      "summary": "Infos zu verschiedenen Hochschulrankings",
+      "url": "https://www.einstieg.com/studium/hochschulrankings.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-datenbasis-erweiterte-studiengangsuche-html",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Datenbasis",
+      "summary": "Datenbasis mit 22.000 Studiengängen in Deutschland",
+      "url": "https://www.hochschulkompass.de/studium/studiengangsuche/erweiterte-studiengangsuche.html?tx_szhrksearch_pi1%5Bsearch%5D=1&tx_szhrksearch_pi1%5Bstudtyp%5D=3&tx_szhrksearch_pi1%5BQUICK%5D=1&tx_szhrksearch_pi1%5Bfach%5D=",
+      "domain": "hochschulkompass.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "directory",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-datenbasis-hochschulsuche-html",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Datenbasis",
+      "summary": "Datenbasis mit 387 Hochschulen in Deutschland",
+      "url": "https://www.hochschulkompass.de/hochschulen/hochschulsuche.html?tx_szhrksearch_pi1%5Bsearch%5D=1&tx_szhrksearch_pi1%5Bname%5D=&tx_szhrksearch_pi1%5Bort%5D=&tx_szhrksearch_pi1%5Bplz%5D=&tx_szhrksearch_pi1%5Btraegerschaft%5D=&tx_szhrksearch_pi1%5Bmember%5D=",
+      "domain": "hochschulkompass.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "directory",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-studienwahltest-studium-interessentest-html",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Studienwahltest",
+      "summary": "Studiumsinteressenstest (wissenschaftlich fundiert & anerkannt)",
+      "url": "https://www.hochschulkompass.de/studium-interessentest.html",
+      "domain": "hochschulkompass.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "directory",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-hochschulinformationstage-hochschulinformationstage-html",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Hochschulinformationstage",
+      "summary": "Seite mit Links zu Hochschulinformationstagen",
+      "url": "https://www.hochschulkompass.de/studium/hilfe-bei-der-studienwahl/hochschulinformationstage.html",
+      "domain": "hochschulkompass.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "directory",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-orientierungsstudium-orientierungsstudium",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Orientierungsstudium",
+      "summary": "Infos zu Orientierungsstudium",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/orientierungsstudium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-studienfelder-studienfelder",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Studienfelder",
+      "summary": "Übersicht über Studienfelder (alles Links)",
+      "url": "https://studienwahl.de/studienfelder",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-geschlechterklischees-studieren-ohne-geschlechterklischees",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Geschlechterklischees",
+      "summary": "Studienfächer nach Geschlechterklischees und Gegenmaßnahmen",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/studieren-ohne-geschlechterklischees",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-studienfeldbezogener-beratungstest-studienfeldbezogene-beratungstests",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Studienfeldbezogener Beratungstest",
+      "summary": "",
+      "url": "https://www.arbeitsagentur.de/bildung/noch-planlos/studienfeldbezogene-beratungstests",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-berufsorientierungstest-welche-ausbildung-welches-studium-passt",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Berufsorientierungstest",
+      "summary": "",
+      "url": "https://www.arbeitsagentur.de/bildung/welche-ausbildung-welches-studium-passt",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "study-choice-studienwahl-tipps-fuer-deine-studienwahl",
+      "category": "STUDY_CHOICE",
+      "sheet_name": "Studienwahl",
+      "title": "Studienwahl",
+      "summary": "Tipps für Studienwahl",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/tipps-fuer-deine-studienwahl",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-begriffsdefinition-hochschul-abc",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Begriffsdefinition",
+      "summary": "Definition von Begriffen bzgl. Studium",
+      "url": "https://studienwahl.de/studieninfos/hochschul-abc",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-begriffsdefinition-erstsemester-a-bis-z-zum-semesterstart-html",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Begriffsdefinition",
+      "summary": "Definition von Begriffen bzgl. Studium",
+      "url": "https://www.einstieg.com/studium/erstsemester-a-bis-z-zum-semesterstart.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-ausbildung-vs-studium-ausbildung-studium-dual",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Ausbildung vs. Studium",
+      "summary": "Abwägung und Argumente für bzw. gegen Ausbildung, Studium, duales Studium",
+      "url": "https://www.arbeitsagentur.de/bildung/berufe-und-wege/ausbildung-studium-dual",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-ausbildung-vs-studium-studium-oder-ausbildung",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Ausbildung vs. Studium",
+      "summary": "Abwägung und Argumente für bzw. gegen Ausbildung, Studium",
+      "url": "https://studienwahl.de/orientieren/studium-oder-ausbildung",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-hochschultypen-die-hochschultypen-im-ueberblick",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Hochschultypen",
+      "summary": "Übersicht und Erklärung zu Unterschieden zwischen Uni, Fachhochschule, etc.",
+      "url": "https://studienwahl.de/studieninfos/die-hochschultypen-im-ueberblick",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-abschluesse-studienabschluesse-und-organisation",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Abschlüsse",
+      "summary": "Informationen zu verschiedenen Abschlüssen: Bachelor and Master",
+      "url": "https://studienwahl.de/studieninfos/studienabschluesse-und-organisation",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-abschluesse-gestufte-studienabschluesse",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Abschlüsse",
+      "summary": "Informationen zu verschiedenen Abschlüssen: Bachelor and Master",
+      "url": "https://studienwahl.de/studieninfos/studienabschluesse-und-organisation/gestufte-studienabschluesse",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-studienaufbau-studienaufbau-und-organisation",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Studienaufbau",
+      "summary": "Infos zu Aufbau des Studiums im allgemeinen, Modulen, ECTS",
+      "url": "https://studienwahl.de/studieninfos/studienabschluesse-und-organisation/studienaufbau-und-organisation",
+      "domain": "studienwahl.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-basics-allgemein-rund-ums-studium",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Basics allgemein",
+      "summary": "Infos zu Studium, Zugang, Hoschultypen, Abschlüssen, etc.",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/rund-ums-studium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-basics-bachelor-und-master-bachelor-und-master",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Basics Bachelor und Master",
+      "summary": "Infos zu Aufbau von Bachelor und Masterstudium",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/bachelor-und-master",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-basics-bachelor-und-master-bachelor-und-master-html",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Basics Bachelor und Master",
+      "summary": "Erklärung von Unterschieden zwischen Bachelor und Master",
+      "url": "https://www.einstieg.com/studium/bachelor-und-master.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-hochschultypen-uni-oder-fachhochschule-html",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Hochschultypen",
+      "summary": "Erklärung von Unterschieden zwischen Uni und Fachhochschule",
+      "url": "https://www.einstieg.com/studium/uni-oder-fachhochschule.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-duales-studium-was-ist-ein-duales-studium-html",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Duales Studium",
+      "summary": "Erklärung von Konzept und Ablauf eines dualen Studiums",
+      "url": "https://www.einstieg.com/studium/was-ist-ein-duales-studium.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-zulassung-studieren-ohne-abitur-studiengaenge-html",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Zulassung",
+      "summary": "Studieren ohne Abitur",
+      "url": "https://www.einstieg.com/studium/studieren-ohne-abitur-studiengaenge.html",
+      "domain": "einstieg.com",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "academic-basics-fernstudium-fernstudium-blended-learning-online-studium",
+      "category": "ACADEMIC_BASICS",
+      "sheet_name": "Basics",
+      "title": "Fernstudium",
+      "summary": "Infos zu Fernstudium und Online-Studium",
+      "url": "https://www.arbeitsagentur.de/bildung/studium/fernstudium-blended-learning-online-studium",
+      "domain": "arbeitsagentur.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "official",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    },
+    {
+      "id": "role-models-beruehmte-arbeiterkinder-bildung-aufstieg-karriere-chancen",
+      "category": "ROLE_MODELS",
+      "sheet_name": "Vorbilder",
+      "title": "Berühmte Arbeiterkinder",
+      "summary": "Bericht über 7 berühmte Arbeiterkinder",
+      "url": "https://www.zeit.de/feature/bildung-aufstieg-karriere-chancen",
+      "domain": "zeit.de",
+      "language": "de",
+      "country_codes": [
+        "DE"
+      ],
+      "source_kind": "editorial",
+      "audience": [
+        "first_generation_students",
+        "students_interested_in_germany"
+      ],
+      "trust_tier": "curated_registry",
+      "origin": "source_registry"
+    }
+  ]
+}
