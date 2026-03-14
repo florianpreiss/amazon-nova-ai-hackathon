@@ -154,10 +154,10 @@ class TestHelperFunctions:
         assert result == "this_key_does_not_exist"
 
     def test_get_agent_label_german(self):
-        assert get_agent_label("FINANCING", "de") == "Finanzberater"
+        assert get_agent_label("FINANCING", "de") == "Studienfinanzierung"
 
     def test_get_agent_label_english(self):
-        assert get_agent_label("FINANCING", "en") == "Finance Advisor"
+        assert get_agent_label("FINANCING", "en") == "Study Funding"
 
     def test_get_agent_label_falls_back_to_english_for_unknown_language(self):
         result = get_agent_label("FINANCING", "xx")
