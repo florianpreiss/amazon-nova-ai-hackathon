@@ -175,7 +175,8 @@ class BaseAgent:
         trusted_sources = ()
         if metadata and metadata.get("trusted_sources"):
             trusted_sources = tuple(metadata["trusted_sources"])
-        prompt += build_sourcing_addendum(trusted_sources, tool_mode=self.tool_mode)
+        if trusted_sources or self.tool_mode == "web_grounding":
+            prompt += build_sourcing_addendum(trusted_sources, tool_mode=self.tool_mode)
         return prompt
 
     def _fallback_reply(self, messages: list[dict]) -> AgentReply:

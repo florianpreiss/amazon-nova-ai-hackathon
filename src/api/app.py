@@ -79,6 +79,7 @@ sessions: dict[str, Conversation] = {}
 class ChatRequest(BaseModel):
     session_id: str | None = None
     message: str
+    language: str = "en"  # BCP 47 tag; used as fallback when message language is ambiguous
 
 
 class ChatResponse(BaseModel):
@@ -108,7 +109,7 @@ async def chat(request: ChatRequest):
     metadata = build_provenance_context(
         agent_key=agent_key,
         user_message=request.message,
-        ui_language="en",
+        ui_language=request.language,
         tool_mode=agent.tool_mode,
     )
 
