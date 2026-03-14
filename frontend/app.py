@@ -242,8 +242,76 @@ st.markdown(
         margin: 0.4rem 4rem 0.4rem 0;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         color: #2d3436;
+        font-family: 'Nunito', sans-serif;
         font-size: 0.9rem;
         line-height: 1.6;
+    }
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] li,
+    [data-testid="stChatMessage"] span,
+    [data-testid="stChatMessage"] a,
+    [data-testid="stChatMessage"] em,
+    [data-testid="stChatMessage"] strong,
+    [data-testid="stChatMessage"] blockquote {
+        font-family: 'Nunito', sans-serif !important;
+    }
+    [data-testid="stChatMessage"] p {
+        margin: 0 0 0.65rem 0;
+    }
+    [data-testid="stChatMessage"] p:last-child,
+    [data-testid="stChatMessage"] ul:last-child,
+    [data-testid="stChatMessage"] ol:last-child,
+    [data-testid="stChatMessage"] pre:last-child,
+    [data-testid="stChatMessage"] blockquote:last-child {
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stChatMessage"] h1,
+    [data-testid="stChatMessage"] h2,
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4,
+    [data-testid="stChatMessage"] h5,
+    [data-testid="stChatMessage"] h6 {
+        color: #2d3436 !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+        margin: 0.35rem 0 0.55rem 0 !important;
+    }
+    [data-testid="stChatMessage"] h1 { font-size: 1.2rem !important; }
+    [data-testid="stChatMessage"] h2 { font-size: 1.08rem !important; }
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4,
+    [data-testid="stChatMessage"] h5,
+    [data-testid="stChatMessage"] h6 { font-size: 0.98rem !important; }
+    [data-testid="stChatMessage"] ul,
+    [data-testid="stChatMessage"] ol {
+        margin: 0.15rem 0 0.8rem 0;
+        padding-left: 1.2rem;
+    }
+    [data-testid="stChatMessage"] strong {
+        color: #1f2527 !important;
+        font-weight: 800 !important;
+    }
+    [data-testid="stChatMessage"] a {
+        color: rgba(96, 88, 185, 1) !important;
+        text-decoration: underline;
+        text-decoration-color: rgba(125, 122, 201, 0.35);
+        text-underline-offset: 0.12em;
+    }
+    [data-testid="stChatMessage"] blockquote {
+        border-left: 3px solid rgba(125, 122, 201, 0.28);
+        color: #5f6470 !important;
+        margin: 0.3rem 0 0.8rem 0;
+        padding-left: 0.85rem;
+    }
+    [data-testid="stChatMessage"] pre {
+        background: #f6f2ec !important;
+        border: 1px solid #ece5de !important;
+        border-radius: 12px;
+        margin: 0.35rem 0 0.85rem 0;
+        overflow-x: auto;
+        padding: 0.8rem 0.9rem !important;
     }
     /* Agent label badge */
     [data-testid="stChatMessage"] small {
@@ -326,6 +394,11 @@ st.markdown(
     }
     .source-list a:hover {
         text-decoration: underline;
+    }
+    .source-domain {
+        color: #7a8388;
+        font-size: 0.76rem;
+        margin-left: 0.35rem;
     }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
@@ -469,14 +542,34 @@ st.markdown(
         [data-testid="stChatMessage"] p,
         [data-testid="stChatMessage"] li,
         [data-testid="stChatMessage"] span,
-        [data-testid="stChatMessage"] code {
+        [data-testid="stChatMessage"] code,
+        [data-testid="stChatMessage"] a {
             color: #e8e4f0 !important;
+        }
+        [data-testid="stChatMessage"] h1,
+        [data-testid="stChatMessage"] h2,
+        [data-testid="stChatMessage"] h3,
+        [data-testid="stChatMessage"] h4,
+        [data-testid="stChatMessage"] h5,
+        [data-testid="stChatMessage"] h6 {
+            color: #f4f0fb !important;
         }
         /* Inline code blocks */
         [data-testid="stChatMessage"] code {
             background: rgba(125, 122, 201, 0.15) !important;
             border-radius: 4px;
             padding: 0.1em 0.35em;
+        }
+        [data-testid="stChatMessage"] pre {
+            background: rgba(125, 122, 201, 0.12) !important;
+            border-color: rgba(125, 122, 201, 0.24) !important;
+        }
+        [data-testid="stChatMessage"] strong {
+            color: #ffffff !important;
+        }
+        [data-testid="stChatMessage"] blockquote {
+            border-left-color: rgba(160, 155, 220, 0.45) !important;
+            color: #b9c0cf !important;
         }
         /* Agent label keeps the purple accent */
         [data-testid="stChatMessage"] small {
@@ -570,6 +663,9 @@ st.markdown(
         }
         .source-list a {
             color: #c8c4e8 !important;
+        }
+        .source-domain {
+            color: #9ea8b4 !important;
         }
 
         /* ── Divider ─────────────────────────── */
@@ -677,10 +773,22 @@ def _render_provenance_contents(provenance: ResponseProvenance, current_lang: st
 
     items: list[str] = []
     for source in provenance.sources:
+        tag_key = (
+            "source_tag_registry"
+            if source.origin == "source_registry"
+            else "source_tag_web_grounding"
+        )
+        tag_label = html_lib.escape(t(tag_key, current_lang))
+        tag_class = "registry" if source.origin == "source_registry" else "web"
         title = html_lib.escape(source.title)
         url = html_lib.escape(source.url, quote=True)
+        domain = html_lib.escape(source.domain)
         items.append(
-            f"<li><a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a></li>"
+            "<li>"
+            f"<span class='source-tag {tag_class}'>{tag_label}</span>"
+            f"<a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            f"<span class='source-domain'>{domain}</span>"
+            "</li>"
         )
 
     st.markdown(
