@@ -1447,13 +1447,16 @@ def _render_profile_sidebar(current_lang: str) -> None:
             )
             return
 
-        agent_value = (
-            get_agent_label(profile.current_agent, current_lang)
-            if profile.current_agent
-            else t("sidebar_pending", current_lang)
+        recognized_facts = getattr(
+            profile,
+            "recognized_facts",
+            getattr(profile, "identity_labels", ()),
         )
+        profile_preview = t("sidebar_profile_pending", current_lang)
+        if recognized_facts:
+            profile_preview = " · ".join(recognized_facts[:2])
         stats = [
-            (t("sidebar_stat_agent", current_lang), agent_value),
+            (t("sidebar_stat_profile", current_lang), profile_preview),
             (
                 t("sidebar_stat_language", current_lang),
                 profile.response_language_label or current_lang.upper(),
@@ -1472,11 +1475,6 @@ def _render_profile_sidebar(current_lang: str) -> None:
             _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
             _render_sidebar_chip_list(profile.topic_labels)
 
-        conversation_summary_points = getattr(profile, "conversation_summary_points", ())
-        if conversation_summary_points:
-            _render_sidebar_section_label(t("sidebar_section_summary", current_lang))
-            _render_sidebar_list(conversation_summary_points, compact=True)
-
         if profile.goal_summaries:
             with st.expander(
                 t("sidebar_section_goals", current_lang),
@@ -1485,14 +1483,18 @@ def _render_profile_sidebar(current_lang: str) -> None:
             ):
                 _render_sidebar_list(profile.goal_summaries)
 
-        recognized_facts = getattr(
-            profile,
-            "recognized_facts",
-            getattr(profile, "identity_labels", ()),
-        )
         if recognized_facts:
             _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
             _render_sidebar_list(recognized_facts, compact=True)
+
+        conversation_summary_points = getattr(profile, "conversation_summary_points", ())
+        if conversation_summary_points:
+            with st.expander(
+                t("sidebar_section_summary", current_lang),
+                expanded=False,
+                icon=":material/notes:",
+            ):
+                _render_sidebar_list(conversation_summary_points, compact=True)
 
         if profile.cited_sources:
             with st.expander(
