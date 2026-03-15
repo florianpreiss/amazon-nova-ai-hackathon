@@ -842,21 +842,21 @@ st.markdown(
         max-width: 38rem;
         text-align: center;
     }
-    .composer-actions {
+    .st-key-composer_actions_container {
         margin: 0 auto 0.8rem auto;
         max-width: 34rem;
     }
-    .composer-actions [data-testid="column"] {
+    .st-key-composer_actions_container [data-testid="column"] {
         display: flex;
         justify-content: center;
     }
-    .composer-actions [data-testid="stButton"] {
+    .st-key-composer_actions_container [data-testid="stButton"] {
         width: 100%;
     }
-    .composer-actions .st-key-composer_reset_chat_button {
+    .st-key-composer_actions_container .st-key-composer_reset_chat_button {
         width: 100%;
     }
-    .st-key-document_popover_button button {
+    .st-key-composer_actions_container [data-testid="baseButton-secondary"] {
         background: rgba(125, 122, 201, 0.08) !important;
         border: 1px solid rgba(125, 122, 201, 0.18) !important;
         border-radius: 14px !important;
@@ -868,7 +868,7 @@ st.markdown(
         padding: 0.3rem 0.95rem !important;
         width: 100% !important;
     }
-    .st-key-document_popover_button button:hover {
+    .st-key-composer_actions_container [data-testid="baseButton-secondary"]:hover {
         background: rgba(125, 122, 201, 0.12) !important;
         border-color: rgba(125, 122, 201, 0.24) !important;
         color: #4f5562 !important;
@@ -1136,15 +1136,15 @@ st.markdown(
         .document-input-note {
             color: #d7c4e6 !important;
         }
-        .composer-actions {
+        .st-key-composer_actions_container {
             max-width: 34rem;
         }
-        .st-key-document_popover_button button {
+        .st-key-composer_actions_container [data-testid="baseButton-secondary"] {
             background: rgba(244, 233, 250, 0.08) !important;
             border-color: rgba(212, 181, 235, 0.16) !important;
             color: #ead8f5 !important;
         }
-        .st-key-document_popover_button button:hover {
+        .st-key-composer_actions_container [data-testid="baseButton-secondary"]:hover {
             background: rgba(244, 233, 250, 0.12) !important;
             border-color: rgba(212, 181, 235, 0.22) !important;
             color: #f2e2fb !important;
@@ -2007,33 +2007,33 @@ def _render_document_input_hint(current_lang: str) -> None:
         or st.session_state.get("onboarding_state") in {"in_progress", "complete"}
     )
 
-    _outer_left, popover_col, reset_col, _outer_right = st.columns([1.3, 1.7, 1.7, 1.3])
-    with (
-        popover_col,
-        st.popover(
-            t("document_popover_button", current_lang),
-            icon=":material/add:",
-            help=t("document_popover_help", current_lang),
-            key="document_popover_button",
-            width="stretch",
-        ),
-    ):
-        st.markdown(f"**{t('document_popover_title', current_lang)}**")
-        st.write(t("document_popover_body", current_lang))
-        st.caption(t("document_popover_limits", current_lang))
-        st.caption(t("document_popover_privacy", current_lang))
-        st.caption(t("document_popover_disclaimer", current_lang))
-    with reset_col:
-        if st.button(
-            t("reset_chat", current_lang),
-            help=t("reset_chat_tooltip", current_lang),
-            key="composer_reset_chat_button",
-            type="primary",
-            use_container_width=True,
-            disabled=not has_session_content,
+    with st.container(key="composer_actions_container"):
+        _outer_left, popover_col, reset_col, _outer_right = st.columns([1.3, 1.7, 1.7, 1.3])
+        with (
+            popover_col,
+            st.popover(
+                t("document_popover_button", current_lang),
+                icon=":material/add:",
+                help=t("document_popover_help", current_lang),
+                width="stretch",
+            ),
         ):
-            _reset_chat()
-            st.rerun()
+            st.markdown(f"**{t('document_popover_title', current_lang)}**")
+            st.write(t("document_popover_body", current_lang))
+            st.caption(t("document_popover_limits", current_lang))
+            st.caption(t("document_popover_privacy", current_lang))
+            st.caption(t("document_popover_disclaimer", current_lang))
+        with reset_col:
+            if st.button(
+                t("reset_chat", current_lang),
+                help=t("reset_chat_tooltip", current_lang),
+                key="composer_reset_chat_button",
+                type="primary",
+                use_container_width=True,
+                disabled=not has_session_content,
+            ):
+                _reset_chat()
+                st.rerun()
 
 
 def _paragraph_block(text: str, css_class: str) -> str:
