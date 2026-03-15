@@ -7,6 +7,7 @@ from src.core.conversation import (
     SessionMemorySnapshot,
     build_session_memory_addendum,
 )
+from src.core.documents import UploadedDocument
 from src.core.provenance import ResponseProvenance, SourceAttribution
 
 pytestmark = pytest.mark.unit
@@ -186,6 +187,34 @@ class TestConversation:
         assert "Narrative profile summary gathered in this session:" in addendum
         assert "Du bist 17, noch in der Schule" in addendum
         assert "Tailored follow-up prompts already prepared: Studium oder Ausbildung" in addendum
+
+    def test_conversation_tracks_document_memory_without_persisting_raw_docs(self):
+        conversation = Conversation(session_id="session-docs", now=lambda: 100.0)
+
+        conversation.set_active_documents(
+            (
+                UploadedDocument(
+                    document_id="doc-1",
+                    name="BAfoeG-Bescheid.pdf",
+                    bedrock_name="BAfoeG-Bescheid",
+                    extension="pdf",
+                    kind="media",
+                    media_type="application/pdf",
+                    size_bytes=32,
+                    sha256="a" * 64,
+                    content=b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n",
+                ),
+            ),
+            summary_text="Der Bescheid erklaert, welche Unterlagen noch fehlen.",
+        )
+
+        snapshot = conversation.snapshot()
+        addendum = build_session_memory_addendum(snapshot)
+
+        assert snapshot.document_memories[0].name == "BAfoeG-Bescheid.pdf"
+        assert conversation.get_active_documents()[0].name == "BAfoeG-Bescheid.pdf"
+        assert "Documents already discussed in this session" in addendum
+        assert "Der Bescheid erklaert" in addendum
 
 
 class TestConversationStore:

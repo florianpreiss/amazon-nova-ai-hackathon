@@ -10,6 +10,7 @@ from typing import Any, Final, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.core.conversation import PersonalizedPrompt, SessionMemorySnapshot, SessionTextTurn
+from src.core.documents import DocumentMemory
 from src.core.provenance import ResponseProvenance, SourceAttribution
 
 SESSION_BUNDLE_TYPE: Final[Literal["koda_session_memory"]] = "koda_session_memory"
@@ -54,6 +55,7 @@ class PortableSessionState(BaseModel):
     onboarding_messages: tuple[SessionTextTurn, ...] = ()
     profile_summary: str | None = None
     personalized_prompts: tuple[PersonalizedPrompt, ...] = ()
+    document_memories: tuple[DocumentMemory, ...] = ()
     messages: tuple[PortableMessage, ...] = ()
 
 
@@ -107,6 +109,7 @@ def build_session_bundle(
         onboarding_messages=snapshot.onboarding_messages,
         profile_summary=snapshot.profile_summary,
         personalized_prompts=snapshot.personalized_prompts,
+        document_memories=snapshot.document_memories,
         messages=tuple(_portable_messages_from_history(messages)),
     )
     exported_at_value = (exported_at or datetime.now(UTC)).isoformat()

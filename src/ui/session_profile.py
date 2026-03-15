@@ -97,6 +97,7 @@ class SessionProfileView:
     profile_summary_text: str | None = None
     recognized_facts: tuple[str, ...] = ()
     conversation_summary_points: tuple[str, ...] = ()
+    document_labels: tuple[str, ...] = ()
     cited_sources: tuple[SourceAttribution, ...] = ()
     crisis_detected: bool = False
 
@@ -118,6 +119,7 @@ class SessionProfileView:
                 self.profile_summary_text,
                 self.recognized_facts,
                 self.conversation_summary_points,
+                self.document_labels,
                 self.cited_sources,
                 self.crisis_detected,
             )
@@ -522,6 +524,7 @@ def build_session_profile_view(
         if source_limit is None
         else tuple(reversed(snapshot.cited_sources[-source_limit:]))
     )
+    document_labels = tuple(document.display_label for document in snapshot.document_memories[-5:])
 
     return SessionProfileView(
         message_count=total_message_count,
@@ -539,6 +542,7 @@ def build_session_profile_view(
             summary_points=summary_points,
             ui_language=language,
         ),
+        document_labels=document_labels,
         cited_sources=cited_sources,
         crisis_detected=snapshot.crisis_detected,
     )

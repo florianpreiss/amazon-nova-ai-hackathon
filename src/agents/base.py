@@ -11,6 +11,7 @@ import structlog
 
 from src.core.client import NovaClient, NovaClientError
 from src.core.conversation import build_session_memory_addendum
+from src.core.documents import build_document_prompt_addendum
 from src.core.provenance import (
     AgentReply,
     ResponseProvenance,
@@ -190,6 +191,8 @@ class BaseAgent:
             prompt += build_identity_addendum(metadata["identity_context"])
         if metadata and metadata.get("session_memory"):
             prompt += build_session_memory_addendum(metadata["session_memory"])
+        if metadata and metadata.get("document_context"):
+            prompt += build_document_prompt_addendum(metadata["document_context"])
         trusted_sources = ()
         if metadata and metadata.get("trusted_sources"):
             trusted_sources = tuple(metadata["trusted_sources"])

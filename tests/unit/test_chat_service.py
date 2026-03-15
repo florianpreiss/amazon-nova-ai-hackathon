@@ -5,6 +5,7 @@ from collections.abc import Generator
 
 import pytest
 from src.core.conversation import ConversationStore
+from src.core.documents import DocumentUploadInput
 from src.core.provenance import AgentReply, build_default_provenance
 from src.core.session_summary import SessionSummary
 from src.i18n import t
@@ -207,6 +208,36 @@ class TestChatService:
         }
         assert result.response.startswith(t("crisis_banner", "de"))
         assert "112" in result.response
+
+    def test_respond_with_documents_attaches_document_blocks_and_memory(self):
+        agent = StubAgent(text="Ich erklaere dir den Bescheid.")
+        service = ChatService(
+            router=StubRouter("FINANCING"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(), "FINANCING": agent},
+        )
+
+        result = service.respond_with_documents(
+            "",
+            [
+                DocumentUploadInput(
+                    name="BAfoeG-Bescheid.pdf",
+                    media_type="application/pdf",
+                    content=b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n",
+                )
+            ],
+            ui_language="de",
+        )
+
+        assert result.agent == "FINANCING"
+        assert agent.messages_seen is not None
+        assert agent.messages_seen[-1]["content"][0]["text"].startswith("Bitte erkläre mir")
+        assert "document" in agent.messages_seen[-1]["content"][1]
+        assert agent.metadata_seen is not None
+        assert agent.metadata_seen["provenance"].document_used is True
+        snapshot = service.get_session_snapshot(result.session_id)
+        assert snapshot is not None
+        assert snapshot.document_memories[0].name == "BAfoeG-Bescheid.pdf"
 
     def test_stream_returns_structured_result_for_tool_agents(self):
         agent = StubAgent(tool_mode="web_grounding", text="Grounded answer")

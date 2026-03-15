@@ -176,7 +176,8 @@ class NovaClient:
 
         deduped: dict[str, SourceAttribution] = {}
         for source in candidates:
-            deduped.setdefault(source.url.casefold(), source)
+            key = (source.url or f"document::{source.title}").casefold()
+            deduped.setdefault(key, source)
         return tuple(deduped.values())
 
     # ── Internal ───────────────────────────────────

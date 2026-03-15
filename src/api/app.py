@@ -5,6 +5,7 @@ Flow: User message → Router (triage) + Crisis Radar (parallel) → Domain Agen
 Sessions are ephemeral. No persistent user data.
 """
 
+import base64
 from contextlib import asynccontextmanager
 
 from config.settings import CORS_ALLOWED_ORIGINS, validate_cors_origins
@@ -12,6 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from src.core.documents import DocumentUploadInput, DocumentValidationError
 from src.core.provenance import ResponseProvenance
 from src.core.session_bundle import SessionBundle
 from src.orchestration import OnboardingTurnResult, build_default_chat_service
@@ -63,6 +65,19 @@ class ChatRequest(BaseModel):
     language: str = "en"  # BCP 47 tag; used as fallback when message language is ambiguous
 
 
+class DocumentInputPayload(BaseModel):
+    name: str
+    content_base64: str
+    media_type: str | None = None
+
+
+class DocumentChatRequest(BaseModel):
+    session_id: str | None = None
+    message: str = ""
+    language: str = "en"
+    documents: list[DocumentInputPayload]
+
+
 class ChatResponse(BaseModel):
     session_id: str
     response: str
@@ -102,6 +117,48 @@ async def chat(request: ChatRequest):
         request.message,
         session_id=request.session_id,
         ui_language=request.language,
+    )
+    return ChatResponse(
+        session_id=result.session_id,
+        response=result.response,
+        agent_used=result.agent,
+        crisis_detected=result.crisis,
+        crisis_resources=result.crisis_resources,
+        provenance=result.provenance,
+    )
+
+
+@app.post("/api/chat/documents", response_model=ChatResponse)
+async def chat_with_documents(request: DocumentChatRequest):
+    """Chat endpoint for document-backed turns."""
+
+    try:
+        document_inputs = [
+            DocumentUploadInput(
+                name=document.name,
+                media_type=document.media_type,
+                content=base64.b64decode(document.content_base64),
+            )
+            for document in request.documents
+        ]
+        result = chat_service.respond_with_documents(
+            request.message,
+            document_inputs,
+            session_id=request.session_id,
+            ui_language=request.language,
+        )
+    except DocumentValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid document payload: {exc}") from exc
+
+    return ChatResponse(
+        session_id=result.session_id,
+        response=result.response,
+        agent_used=result.agent,
+        crisis_detected=result.crisis,
+        crisis_resources=result.crisis_resources,
+        provenance=result.provenance,
     )
 
     return ChatResponse(

@@ -14,6 +14,11 @@ import streamlit.components.v1 as components
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.conversation import SessionMemorySnapshot
+from src.core.documents import (
+    ALLOWED_DOCUMENT_EXTENSIONS,
+    DocumentUploadInput,
+    DocumentValidationError,
+)
 from src.core.provenance import ResponseProvenance
 from src.core.session_bundle import serialize_session_bundle
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
@@ -448,6 +453,10 @@ st.markdown(
         background: rgba(9, 132, 227, 0.12);
         color: #0c6fbe;
     }
+    .sidebar-source-tag.document {
+        background: rgba(255, 159, 67, 0.14);
+        color: #b96b00;
+    }
     .sidebar-source-link {
         color: #735894;
         text-decoration: none;
@@ -737,6 +746,10 @@ st.markdown(
         background: rgba(9, 132, 227, 0.12);
         color: #0c6fbe;
     }
+    .provenance-pill.document {
+        background: rgba(255, 159, 67, 0.16);
+        color: #b96b00;
+    }
     .provenance-pill.model {
         background: rgba(99, 110, 114, 0.12);
         color: #5f6470;
@@ -784,6 +797,10 @@ st.markdown(
         background: rgba(9, 132, 227, 0.12);
         color: #0c6fbe;
     }
+    .source-tag.document {
+        background: rgba(255, 159, 67, 0.14);
+        color: #b96b00;
+    }
     .source-list a {
         color: rgba(96, 88, 185, 1);
         overflow-wrap: anywhere;
@@ -797,6 +814,103 @@ st.markdown(
         font-size: 0.76rem;
         margin-left: 0.1rem;
         overflow-wrap: anywhere;
+    }
+    .document-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin: 0.42rem 0 0.1rem 1.1rem;
+    }
+    .document-chip {
+        background: rgba(255, 159, 67, 0.14);
+        border: 1px solid rgba(255, 159, 67, 0.26);
+        border-radius: 999px;
+        color: #a55e00;
+        display: inline-flex;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        padding: 0.24rem 0.58rem;
+    }
+    .document-input-note {
+        color: #7a6d8c;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.79rem;
+        line-height: 1.45;
+        margin: 0.8rem auto 0.55rem auto;
+        max-width: 38rem;
+        text-align: center;
+    }
+    .document-input-note strong {
+        color: #67527d;
+        font-weight: 700;
+    }
+    .st-key-composer_actions_container {
+        margin: 0 auto 0.8rem auto;
+        max-width: 42rem;
+    }
+    .st-key-composer_actions_container [data-testid="column"] {
+        display: flex;
+        justify-content: center;
+    }
+    .st-key-composer_actions_container [data-testid="column"] > div {
+        width: 100%;
+    }
+    .st-key-composer_actions_container [data-testid="stButton"] {
+        width: 100%;
+    }
+    .st-key-composer_actions_container .st-key-composer_reset_chat_button {
+        width: 100%;
+    }
+    .st-key-composer_actions_container button {
+        background: rgba(125, 122, 201, 0.12) !important;
+        border: 1px solid rgba(125, 122, 201, 0.22) !important;
+        border-radius: 14px !important;
+        color: #5f6470 !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-size: 0.84rem !important;
+        font-weight: 700 !important;
+        min-height: 3rem !important;
+        padding: 0.45rem 1.05rem !important;
+        width: 100% !important;
+    }
+    .st-key-composer_actions_container button:hover {
+        background: rgba(125, 122, 201, 0.16) !important;
+        border-color: rgba(125, 122, 201, 0.28) !important;
+        color: #4f5562 !important;
+        box-shadow: 0 3px 10px rgba(125, 122, 201, 0.16) !important;
+    }
+    .st-key-composer_reset_chat_button button {
+        background: rgba(0, 184, 148, 0.12) !important;
+        border: 1px solid rgba(0, 184, 148, 0.28) !important;
+        color: #0b7d68 !important;
+        font-size: 0.84rem !important;
+        min-height: 3rem !important;
+        padding: 0.45rem 1.05rem !important;
+        width: 100% !important;
+    }
+    .st-key-composer_reset_chat_button button:hover {
+        background: rgba(0, 184, 148, 0.18) !important;
+        border-color: rgba(0, 184, 148, 0.38) !important;
+        color: #096c5d !important;
+        box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
+    }
+    .st-key-quick_actions_panel [data-testid="stButton"] {
+        display: flex;
+        width: 100%;
+    }
+    .st-key-quick_actions_panel [data-testid="baseButton-secondary"] {
+        font-size: 0.79rem !important;
+        min-height: 4rem !important;
+        padding: 0.5rem 0.72rem !important;
+        width: 100% !important;
+    }
+    .st-key-quick_actions_panel [data-testid="baseButton-secondary"] p {
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        overflow: hidden !important;
     }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
@@ -998,6 +1112,10 @@ st.markdown(
             background: rgba(9, 132, 227, 0.2) !important;
             color: #88c7ff !important;
         }
+        .sidebar-source-tag.document {
+            background: rgba(255, 159, 67, 0.22) !important;
+            color: #ffd394 !important;
+        }
         .sidebar-source-link {
             color: #f2e2fb !important;
         }
@@ -1043,6 +1161,41 @@ st.markdown(
         .msg-user {
             background: rgba(125, 122, 201, 0.85) !important;
             color: #ffffff !important;
+        }
+        .document-chip {
+            background: rgba(255, 159, 67, 0.18) !important;
+            border-color: rgba(255, 159, 67, 0.28) !important;
+            color: #ffd394 !important;
+        }
+        .document-input-note {
+            color: #d7c4e6 !important;
+        }
+        .document-input-note strong {
+            color: #f0ddff !important;
+        }
+        .st-key-composer_actions_container {
+            max-width: 42rem;
+        }
+        .st-key-composer_actions_container button {
+            background: rgba(244, 233, 250, 0.14) !important;
+            border-color: rgba(212, 181, 235, 0.2) !important;
+            color: #ead8f5 !important;
+        }
+        .st-key-composer_actions_container button:hover {
+            background: rgba(244, 233, 250, 0.18) !important;
+            border-color: rgba(212, 181, 235, 0.26) !important;
+            color: #f2e2fb !important;
+        }
+        .st-key-composer_reset_chat_button button {
+            background: rgba(0, 184, 148, 0.18) !important;
+            border-color: rgba(0, 184, 148, 0.32) !important;
+            color: #9af0d9 !important;
+        }
+        .st-key-composer_reset_chat_button button:hover {
+            background: rgba(0, 184, 148, 0.24) !important;
+            border-color: rgba(0, 184, 148, 0.4) !important;
+            color: #b8fff0 !important;
+            box-shadow: 0 3px 10px rgba(0, 184, 148, 0.18) !important;
         }
 
         /* ── KODA assistant bubble ────────────── */
@@ -1178,6 +1331,10 @@ st.markdown(
             background: rgba(9, 132, 227, 0.2) !important;
             color: #88c7ff !important;
         }
+        .provenance-pill.document {
+            background: rgba(255, 159, 67, 0.22) !important;
+            color: #ffd394 !important;
+        }
         .provenance-pill.model {
             background: rgba(99, 110, 114, 0.2) !important;
             color: #b7bec8 !important;
@@ -1193,6 +1350,10 @@ st.markdown(
         .source-tag.web {
             background: rgba(9, 132, 227, 0.2) !important;
             color: #88c7ff !important;
+        }
+        .source-tag.document {
+            background: rgba(255, 159, 67, 0.2) !important;
+            color: #ffd394 !important;
         }
         .source-list a {
             color: #d8d3ff !important;
@@ -1460,6 +1621,7 @@ def _provenance_css_class(provenance: ResponseProvenance) -> str:
         "source_registry_and_web": "registry-web",
         "web_grounding": "web",
         "model": "model",
+        "document": "document",
     }
     return mapping[provenance.mode]
 
@@ -1483,21 +1645,30 @@ def _render_provenance_contents(provenance: ResponseProvenance, current_lang: st
 
     items: list[str] = []
     for source in provenance.sources:
-        tag_key = (
-            "source_tag_registry"
-            if source.origin == "source_registry"
-            else "source_tag_web_grounding"
-        )
+        if source.origin == "source_registry":
+            tag_key = "source_tag_registry"
+            tag_class = "registry"
+        elif source.origin == "web_grounding":
+            tag_key = "source_tag_web_grounding"
+            tag_class = "web"
+        else:
+            tag_key = "source_tag_document"
+            tag_class = "document"
         tag_label = html_lib.escape(t(tag_key, current_lang))
-        tag_class = "registry" if source.origin == "source_registry" else "web"
         title = html_lib.escape(source.title)
-        url = html_lib.escape(source.url, quote=True)
-        domain = html_lib.escape(source.domain)
+        url = html_lib.escape(source.url or "", quote=True)
+        domain = html_lib.escape(source.domain or "")
+        title_markup = (
+            f"<a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            if source.url
+            else f"<span>{title}</span>"
+        )
+        domain_markup = f"<span class='source-domain'>{domain}</span>" if domain else ""
         items.append(
             "<li>"
             f"<span class='source-tag {tag_class}'>{tag_label}</span>"
-            f"<a href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
-            f"<span class='source-domain'>{domain}</span>"
+            f"{title_markup}"
+            f"{domain_markup}"
             "</li>"
         )
 
@@ -1562,21 +1733,30 @@ def _render_sidebar_list(items: tuple[str, ...], *, compact: bool = False) -> No
 def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
     items: list[str] = []
     for source in sources:
-        tag_key = (
-            "source_tag_registry"
-            if source.origin == "source_registry"
-            else "source_tag_web_grounding"
-        )
+        if source.origin == "source_registry":
+            tag_key = "source_tag_registry"
+            tag_class = "registry"
+        elif source.origin == "web_grounding":
+            tag_key = "source_tag_web_grounding"
+            tag_class = "web"
+        else:
+            tag_key = "source_tag_document"
+            tag_class = "document"
         tag_label = html_lib.escape(t(tag_key, current_lang))
-        tag_class = "registry" if source.origin == "source_registry" else "web"
         title = html_lib.escape(source.title)
-        url = html_lib.escape(source.url, quote=True)
-        domain = html_lib.escape(source.domain)
+        url = html_lib.escape(source.url or "", quote=True)
+        domain = html_lib.escape(source.domain or "")
+        title_markup = (
+            f"<a class='sidebar-source-link' href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            if source.url
+            else f"<span class='sidebar-source-link'>{title}</span>"
+        )
+        domain_markup = f"<span class='sidebar-source-domain'>{domain}</span>" if domain else ""
         items.append(
             "<li>"
             f"<span class='sidebar-source-tag {tag_class}'>{tag_label}</span>"
-            f"<a class='sidebar-source-link' href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
-            f"<span class='sidebar-source-domain'>{domain}</span>"
+            f"{title_markup}"
+            f"{domain_markup}"
             "</li>"
         )
 
@@ -1791,6 +1971,14 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 ):
                     _render_sidebar_list(conversation_summary_points)
 
+            if profile.document_labels:
+                with st.expander(
+                    t("sidebar_section_documents", current_lang),
+                    expanded=False,
+                    icon=":material/description:",
+                ):
+                    _render_sidebar_list(profile.document_labels)
+
             if profile.cited_sources:
                 with st.expander(
                     t("sidebar_section_sources", current_lang),
@@ -1825,6 +2013,85 @@ def get_response_stream(
 def _safe_user(text: str) -> str:
     """Escape HTML for user-supplied bubble text (plain text, no markdown)."""
     return html_lib.escape(text)
+
+
+def _document_labels(
+    documents: list[dict[str, str]] | tuple[dict[str, str], ...],
+) -> tuple[str, ...]:
+    labels: list[str] = []
+    for document in documents:
+        name = str(document.get("name", "")).strip()
+        if name:
+            labels.append(name)
+    return tuple(labels)
+
+
+def _render_document_chips(labels: tuple[str, ...]) -> None:
+    if not labels:
+        return
+    chips = "".join(
+        f"<span class='document-chip'>{html_lib.escape(label)}</span>" for label in labels
+    )
+    st.markdown(f"<div class='document-chip-row'>{chips}</div>", unsafe_allow_html=True)
+
+
+def _render_user_message(text: str, *, documents: tuple[str, ...] = ()) -> None:
+    st.markdown(
+        f'<div class="msg-user">{_safe_user(text)}</div>',
+        unsafe_allow_html=True,
+    )
+    _render_document_chips(documents)
+
+
+def _render_document_input_hint(current_lang: str) -> None:
+    document_hint = t("document_hint", current_lang)
+    hint_prefix, hint_separator, hint_body = document_hint.partition(":")
+    if hint_separator:
+        note_html = (
+            "<div class='document-input-note'>"
+            f"<strong>{html_lib.escape(hint_prefix + hint_separator)}</strong> "
+            f"{html_lib.escape(hint_body.strip())}"
+            "</div>"
+        )
+    else:
+        note_html = f"<div class='document-input-note'>{html_lib.escape(document_hint)}</div>"
+    st.markdown(
+        note_html,
+        unsafe_allow_html=True,
+    )
+
+    has_session_content = bool(
+        st.session_state.get("messages")
+        or st.session_state.get("session_id")
+        or st.session_state.get("onboarding_state") in {"in_progress", "complete"}
+    )
+
+    with st.container(key="composer_actions_container"):
+        _outer_left, popover_col, reset_col, _outer_right = st.columns([1.3, 1.7, 1.7, 1.3])
+        with (
+            popover_col,
+            st.popover(
+                t("document_popover_button", current_lang),
+                icon=":material/add:",
+                width="stretch",
+            ),
+        ):
+            st.markdown(f"**{t('document_popover_title', current_lang)}**")
+            st.write(t("document_popover_body", current_lang))
+            st.caption(t("document_popover_limits", current_lang))
+            st.caption(t("document_popover_privacy", current_lang))
+            st.caption(t("document_popover_disclaimer", current_lang))
+        with reset_col:
+            if st.button(
+                t("reset_chat", current_lang),
+                help=t("reset_chat_tooltip", current_lang),
+                key="composer_reset_chat_button",
+                type="primary",
+                use_container_width=True,
+                disabled=not has_session_content,
+            ):
+                _reset_chat()
+                st.rerun()
 
 
 def _paragraph_block(text: str, css_class: str) -> str:
@@ -1964,73 +2231,77 @@ def _render_generic_quick_actions(current_lang: str) -> None:
     Args:
         current_lang: Active UI language code ("de" or "en").
     """
-    heading = t("quick_actions_heading", current_lang)
-    sub = t("quick_actions_sub", current_lang)
-    st.markdown(
-        f'<div class="qa-header">'
-        f'<div class="qa-header-title">{heading}</div>'
-        f'<div class="qa-header-sub">{sub}</div>'
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button(t("quick_bafoeg", current_lang), use_container_width=True, key="qa_bafoeg"):
-            _send("quick_bafoeg_msg")
-    with c2:
-        if st.button(t("quick_study", current_lang), use_container_width=True, key="qa_study"):
-            _send("quick_study_msg")
-    with c3:
-        if st.button(
-            t("quick_overwhelmed", current_lang), use_container_width=True, key="qa_overwhelmed"
-        ):
-            _send("quick_overwhelmed_msg")
+    with st.container(key="quick_actions_panel"):
+        heading = t("quick_actions_heading", current_lang)
+        sub = t("quick_actions_sub", current_lang)
+        st.markdown(
+            f'<div class="qa-header">'
+            f'<div class="qa-header-title">{heading}</div>'
+            f'<div class="qa-header-sub">{sub}</div>'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            if st.button(
+                t("quick_bafoeg", current_lang), use_container_width=True, key="qa_bafoeg"
+            ):
+                _send("quick_bafoeg_msg")
+        with c2:
+            if st.button(t("quick_study", current_lang), use_container_width=True, key="qa_study"):
+                _send("quick_study_msg")
+        with c3:
+            if st.button(
+                t("quick_overwhelmed", current_lang), use_container_width=True, key="qa_overwhelmed"
+            ):
+                _send("quick_overwhelmed_msg")
 
-    c4, c5, c6 = st.columns(3)
-    with c4:
-        if st.button(t("quick_ects", current_lang), use_container_width=True, key="qa_ects"):
-            _send("quick_ects_msg")
-    with c5:
-        if st.button(
-            t("quick_scholarships", current_lang),
-            use_container_width=True,
-            key="qa_scholarships",
-        ):
-            _send("quick_scholarships_msg")
-    with c6:
-        if st.button(
-            t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
-        ):
-            _send("quick_rolemodels_msg")
+        c4, c5, c6 = st.columns(3)
+        with c4:
+            if st.button(t("quick_ects", current_lang), use_container_width=True, key="qa_ects"):
+                _send("quick_ects_msg")
+        with c5:
+            if st.button(
+                t("quick_scholarships", current_lang),
+                use_container_width=True,
+                key="qa_scholarships",
+            ):
+                _send("quick_scholarships_msg")
+        with c6:
+            if st.button(
+                t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
+            ):
+                _send("quick_rolemodels_msg")
 
 
 def _render_personalized_quick_actions(current_lang: str, prompts) -> None:
-    heading = t("quick_actions_heading", current_lang)
-    sub = t("quick_actions_sub", current_lang)
-    st.markdown(
-        f'<div class="qa-header">'
-        f'<div class="qa-header-title">{heading}</div>'
-        f'<div class="qa-header-sub">{sub}</div>'
-        f"</div>",
-        unsafe_allow_html=True,
-    )
+    with st.container(key="quick_actions_panel"):
+        heading = t("quick_actions_heading", current_lang)
+        sub = t("quick_actions_sub", current_lang)
+        st.markdown(
+            f'<div class="qa-header">'
+            f'<div class="qa-header-title">{heading}</div>'
+            f'<div class="qa-header-sub">{sub}</div>'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
-    prompt_list = [
-        prompt
-        for prompt in prompts
-        if getattr(prompt, "label", "") and getattr(prompt, "message", "")
-    ]
-    for row_start in range(0, len(prompt_list), 3):
-        row = prompt_list[row_start : row_start + 3]
-        cols = st.columns(len(row))
-        for col, prompt in zip(cols, row, strict=False):
-            with col:
-                if st.button(
-                    str(prompt.label),
-                    use_container_width=True,
-                    key=f"qa_personalized_{row_start}_{prompt.label[:20]}",
-                ):
-                    _send_custom(str(prompt.message))
+        prompt_list = [
+            prompt
+            for prompt in prompts
+            if getattr(prompt, "label", "") and getattr(prompt, "message", "")
+        ]
+        for row_start in range(0, len(prompt_list), 3):
+            row = prompt_list[row_start : row_start + 3]
+            cols = st.columns(len(row))
+            for col, prompt in zip(cols, row, strict=False):
+                with col:
+                    if st.button(
+                        str(prompt.label),
+                        use_container_width=True,
+                        key=f"qa_personalized_{row_start}_{prompt.label[:20]}",
+                    ):
+                        _send_custom(str(prompt.message))
 
 
 def _render_quick_actions(current_lang: str, snapshot) -> None:
@@ -2265,9 +2536,9 @@ else:
 
     for msg in st.session_state.messages:
         if msg["role"] == "user":
-            st.markdown(
-                f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
-                unsafe_allow_html=True,
+            _render_user_message(
+                str(msg["content"]),
+                documents=_document_labels(tuple(msg.get("documents", ()))),
             )
         else:
             label = get_agent_label(msg.get("agent", "COMPASS"), lang)
@@ -2278,82 +2549,146 @@ else:
 
     _render_quick_actions(lang, session_snapshot)
 
-    if st.session_state.messages:
-        _space_col, _reset_col = st.columns([6, 2])
-        with _reset_col:
-            if st.button(
-                t("reset_chat", lang),
-                help=t("reset_chat_tooltip", lang),
-                key="_reset_btn",
-                type="primary",
-                use_container_width=True,
-            ):
-                _reset_chat()
-                st.rerun()
-
     user_input = None
     if "_pending_msg" in st.session_state:
         user_input = st.session_state._pending_msg
         del st.session_state._pending_msg
 
-    chat_input = st.chat_input(t("input_placeholder", lang))
-    if chat_input:
-        user_input = chat_input
+    attached_files = []
+    display_user_text = user_input
+
+    _render_document_input_hint(lang)
+    chat_input = st.chat_input(
+        t("input_placeholder", lang),
+        accept_file="multiple",
+        file_type=list(ALLOWED_DOCUMENT_EXTENSIONS),
+        max_upload_size=25,
+        key="main_chat_input",
+    )
+    if chat_input is not None:
+        if isinstance(chat_input, str):
+            user_input = chat_input
+            display_user_text = chat_input
+        else:
+            user_input = (chat_input.text or "").strip()
+            attached_files = list(chat_input.files or [])
+            display_user_text = user_input or t("document_uploaded_placeholder", lang)
         st.session_state.show_welcome = False
 
-    if user_input:
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        st.markdown(
-            f'<div class="msg-user">{_safe_user(user_input)}</div>',
-            unsafe_allow_html=True,
+    if user_input or attached_files:
+        document_entries = tuple(
+            {
+                "name": uploaded_file.name,
+                "extension": uploaded_file.name.rsplit(".", 1)[-1].casefold()
+                if "." in uploaded_file.name
+                else "",
+            }
+            for uploaded_file in attached_files
         )
+        document_labels = _document_labels(document_entries)
 
-        stream = get_response_stream(
-            user_input,
-            session_id=st.session_state.session_id,
-            ui_lang=lang,
-        )
+        _render_user_message(display_user_text or user_input or "", documents=document_labels)
 
-        label_placeholder = None
-        provenance_placeholder = None
+        if attached_files:
+            document_inputs = [
+                DocumentUploadInput(
+                    name=uploaded_file.name,
+                    media_type=getattr(uploaded_file, "type", None),
+                    content=uploaded_file.getvalue(),
+                )
+                for uploaded_file in attached_files
+            ]
 
-        with st.chat_message("assistant", avatar="\U0001f9ed"):
-            label_placeholder = st.empty()
-            provenance_placeholder = st.empty()
-            full_text, result = _stream_markdown_response(stream)
+            with st.chat_message("assistant", avatar="\U0001f9ed"):
+                try:
+                    with st.spinner(t("thinking", lang)):
+                        chat_result = load_chat_service().respond_with_documents(
+                            user_input,
+                            document_inputs,
+                            session_id=st.session_state.session_id,
+                            ui_language=lang,
+                        )
+                except DocumentValidationError as exc:
+                    st.error(str(exc))
+                    chat_result = None
 
-        chat_result = result if isinstance(result, ChatTurnResult) else None
-        if chat_result is None:
-            chat_result = ChatTurnResult(
-                session_id=st.session_state.session_id or "",
-                response=full_text,
-                agent="COMPASS",
-                crisis=False,
-                provenance=ResponseProvenance(
-                    mode="model",
-                    source_registry_used=False,
-                    web_grounding_used=False,
-                    sources=(),
-                ),
+                if chat_result is not None:
+                    agent_label = get_agent_label(chat_result.agent, lang)
+                    st.caption(agent_label)
+                    display_response = _normalize_assistant_markdown(chat_result.response)
+                    st.markdown(display_response)
+                    _render_provenance_block(chat_result.provenance, lang)
+
+                    st.session_state.messages.append(
+                        {
+                            "role": "user",
+                            "content": display_user_text or user_input or "",
+                            "documents": [dict(item) for item in document_entries],
+                        }
+                    )
+                    st.session_state.session_id = (
+                        chat_result.session_id or st.session_state.session_id
+                    )
+                    st.session_state.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": display_response,
+                            "agent": chat_result.agent,
+                            "provenance": chat_result.provenance.model_dump(),
+                        }
+                    )
+                    st.rerun()
+        else:
+            assert user_input is not None
+            st.session_state.messages.append({"role": "user", "content": user_input})
+
+            stream = get_response_stream(
+                user_input,
+                session_id=st.session_state.session_id,
+                ui_lang=lang,
             )
 
-        st.session_state.session_id = chat_result.session_id or st.session_state.session_id
-        display_response = _normalize_assistant_markdown(chat_result.response)
-        agent_label = get_agent_label(chat_result.agent, lang)
-        if label_placeholder:
-            label_placeholder.caption(agent_label)
-        if provenance_placeholder:
-            _render_provenance_block(chat_result.provenance, lang, provenance_placeholder)
+            label_placeholder = None
+            provenance_placeholder = None
 
-        st.session_state.messages.append(
-            {
-                "role": "assistant",
-                "content": display_response,
-                "agent": chat_result.agent,
-                "provenance": chat_result.provenance.model_dump(),
-            }
-        )
-        st.rerun()
+            with st.chat_message("assistant", avatar="\U0001f9ed"):
+                label_placeholder = st.empty()
+                provenance_placeholder = st.empty()
+                full_text, result = _stream_markdown_response(stream)
+
+            chat_result = result if isinstance(result, ChatTurnResult) else None
+            if chat_result is None:
+                chat_result = ChatTurnResult(
+                    session_id=st.session_state.session_id or "",
+                    response=full_text,
+                    agent="COMPASS",
+                    crisis=False,
+                    provenance=ResponseProvenance(
+                        mode="model",
+                        document_used=False,
+                        source_registry_used=False,
+                        web_grounding_used=False,
+                        sources=(),
+                    ),
+                )
+
+            st.session_state.session_id = chat_result.session_id or st.session_state.session_id
+            display_response = _normalize_assistant_markdown(chat_result.response)
+            agent_label = get_agent_label(chat_result.agent, lang)
+            if label_placeholder:
+                label_placeholder.caption(agent_label)
+            if provenance_placeholder:
+                _render_provenance_block(chat_result.provenance, lang, provenance_placeholder)
+
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": display_response,
+                    "agent": chat_result.agent,
+                    "provenance": chat_result.provenance.model_dump(),
+                }
+            )
+            st.rerun()
 
 
 # ── Footer ─────────────────────────────────────────────

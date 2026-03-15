@@ -18,12 +18,14 @@ from typing import Any, Literal, cast
 from config.settings import SESSION_TIMEOUT_MINUTES
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src.core.documents import DocumentMemory, UploadedDocument
 from src.core.provenance import ResponseProvenance, SourceAttribution
 from src.core.session_summary import SessionSummary
 
 MAX_SESSION_MESSAGES = 24
 MAX_ACTIVE_GOALS = 4
 MAX_TOPICS = 6
+MAX_ACTIVE_DOCUMENTS = 5
 MAX_GOAL_LENGTH = 140
 MAX_ONBOARDING_MESSAGES = 12
 MAX_PERSONALIZED_PROMPTS = 5
@@ -172,7 +174,10 @@ def _remember_recent(values: list[str], candidate: str, *, limit: int) -> None:
 
 
 def _remember_source(sources: list[SourceAttribution], source: SourceAttribution) -> None:
-    deduped = [item for item in sources if item.url != source.url]
+    source_key = (source.url or f"document::{source.title}").casefold()
+    deduped = [
+        item for item in sources if (item.url or f"document::{item.title}").casefold() != source_key
+    ]
     deduped.append(source)
     del sources[:]
     sources.extend(deduped)
@@ -200,6 +205,7 @@ class SessionMemorySnapshot(BaseModel):
     onboarding_messages: tuple[SessionTextTurn, ...] = ()
     profile_summary: str | None = None
     personalized_prompts: tuple[PersonalizedPrompt, ...] = ()
+    document_memories: tuple[DocumentMemory, ...] = ()
 
 
 class SessionTextTurn(BaseModel):
@@ -276,6 +282,8 @@ class Conversation:
         self.onboarding_messages: list[SessionTextTurn] = []
         self.profile_summary: str | None = None
         self.personalized_prompts: list[PersonalizedPrompt] = []
+        self.document_memories: list[DocumentMemory] = []
+        self._active_documents: list[UploadedDocument] = []
         self.crisis_detected = False
 
     @property
@@ -300,6 +308,12 @@ class Conversation:
             "personalized_prompts": [
                 prompt.model_dump(mode="python") for prompt in snapshot.personalized_prompts
             ],
+            "document_memories": [
+                document.model_dump(mode="python") for document in snapshot.document_memories
+            ],
+            "document_context": {
+                "remembered": [document.display_label for document in snapshot.document_memories]
+            },
             "session_memory": snapshot.model_dump(mode="python"),
         }
 
@@ -334,6 +348,8 @@ class Conversation:
             self.onboarding_messages = []
             self.profile_summary = None
             self.personalized_prompts = []
+            self.document_memories = []
+            self._active_documents = []
             self.crisis_detected = False
             self.preferences["response_language"] = ui_language
 
@@ -503,7 +519,46 @@ class Conversation:
                 onboarding_messages=tuple(self.onboarding_messages),
                 profile_summary=self.profile_summary,
                 personalized_prompts=tuple(self.personalized_prompts),
+                document_memories=tuple(self.document_memories),
             )
+
+    def set_active_documents(
+        self,
+        documents: Sequence[UploadedDocument],
+        *,
+        summary_text: str | None = None,
+    ) -> None:
+        with self._lock:
+            deduped_documents: list[UploadedDocument] = []
+            seen_hashes: set[str] = set()
+            for document in documents:
+                if document.sha256 in seen_hashes:
+                    continue
+                seen_hashes.add(document.sha256)
+                deduped_documents.append(document)
+            self._active_documents = deduped_documents[-MAX_ACTIVE_DOCUMENTS:]
+
+            next_memories: list[DocumentMemory] = [
+                memory for memory in self.document_memories if memory.sha256 not in seen_hashes
+            ]
+            for document in self._active_documents:
+                next_memories.append(
+                    DocumentMemory(
+                        document_id=document.document_id,
+                        name=document.name,
+                        extension=document.extension,
+                        kind=document.kind,
+                        size_bytes=document.size_bytes,
+                        sha256=document.sha256,
+                        summary=summary_text,
+                    )
+                )
+            self.document_memories = next_memories[-MAX_ACTIVE_DOCUMENTS:]
+            self._touch()
+
+    def get_active_documents(self) -> tuple[UploadedDocument, ...]:
+        with self._lock:
+            return tuple(self._active_documents)
 
     def is_expired(self) -> bool:
         with self._lock:
@@ -623,6 +678,10 @@ class Conversation:
             self.personalized_prompts = list(
                 _coerce_personalized_prompts(session_memory.get("personalized_prompts", ()))
             )
+            self.document_memories = list(
+                _coerce_document_memories(session_memory.get("document_memories", ()))
+            )
+            self._active_documents = []
             self._trim_messages()
             self._touch()
 
@@ -723,6 +782,7 @@ def build_session_memory_addendum(
         limit=MAX_PROFILE_SUMMARY_LENGTH,
     )
     personalized_prompts = _coerce_personalized_prompts(raw_memory.get("personalized_prompts", ()))
+    document_memories = _coerce_document_memories(raw_memory.get("document_memories", ()))
 
     if not any(
         (
@@ -737,6 +797,7 @@ def build_session_memory_addendum(
             onboarding_state,
             profile_summary,
             personalized_prompts,
+            document_memories,
         )
     ):
         return ""
@@ -780,6 +841,14 @@ def build_session_memory_addendum(
     if personalized_prompts:
         labels = ", ".join(prompt.label for prompt in personalized_prompts[:4])
         lines.append(f"- Tailored follow-up prompts already prepared: {labels}")
+
+    if document_memories:
+        lines.append("- Documents already discussed in this session:")
+        for document in document_memories[:MAX_ACTIVE_DOCUMENTS]:
+            if document.summary:
+                lines.append(f"  - {document.display_label}: {document.summary}")
+            else:
+                lines.append(f"  - {document.display_label}")
 
     if conversation_overview:
         lines.append("- Session summary so far:")
@@ -850,3 +919,20 @@ def _coerce_personalized_prompts(values: Any) -> tuple[PersonalizedPrompt, ...]:
         seen.add(key)
         prompts.append(prompt)
     return tuple(prompts[:MAX_PERSONALIZED_PROMPTS])
+
+
+def _coerce_document_memories(values: Any) -> tuple[DocumentMemory, ...]:
+    documents: list[DocumentMemory] = []
+    seen_hashes: set[str] = set()
+    for item in values or ():
+        if isinstance(item, DocumentMemory):
+            document = item
+        elif isinstance(item, dict):
+            document = DocumentMemory.model_validate(item)
+        else:
+            continue
+        if document.sha256 in seen_hashes:
+            continue
+        seen_hashes.add(document.sha256)
+        documents.append(document)
+    return tuple(documents[-MAX_ACTIVE_DOCUMENTS:])

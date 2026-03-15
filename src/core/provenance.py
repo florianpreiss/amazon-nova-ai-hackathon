@@ -13,12 +13,13 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from src.knowledge import SourceSelectionContext, TrustedSource, select_trusted_sources
 from src.knowledge.source_registry import SelectionReason, SourceCategory
 
-CitationOrigin = Literal["source_registry", "web_grounding"]
+CitationOrigin = Literal["source_registry", "web_grounding", "document_upload"]
 ProvenanceMode = Literal[
     "source_registry",
     "source_registry_and_web",
     "web_grounding",
     "model",
+    "document",
 ]
 
 AGENT_SOURCE_CATEGORY: dict[str, SourceCategory] = {
@@ -76,24 +77,36 @@ class SourceAttribution(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     title: str
-    url: str
-    domain: str
+    url: str | None = None
+    domain: str | None = None
     origin: CitationOrigin
 
-    @field_validator("title", "url")
+    @field_validator("title")
     @classmethod
-    def _must_not_be_blank(cls, value: str) -> str:
+    def _title_must_not_be_blank(cls, value: str) -> str:
         value = value.strip()
         if not value:
             raise ValueError("must not be blank")
         return value
 
+    @field_validator("url")
+    @classmethod
+    def _normalize_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        return value
+
     @field_validator("domain")
     @classmethod
-    def _normalize_domain(cls, value: str) -> str:
+    def _normalize_domain(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         value = value.strip().casefold().removeprefix("www.")
         if not value:
-            raise ValueError("domain must not be blank")
+            return None
         return value
 
 
@@ -103,6 +116,7 @@ class ResponseProvenance(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     mode: ProvenanceMode
+    document_used: bool = False
     source_registry_used: bool
     web_grounding_used: bool
     source_registry_reason: SelectionReason | None = None
@@ -148,6 +162,7 @@ def build_default_provenance(tool_mode: str | None = None) -> ResponseProvenance
     mode: ProvenanceMode = "web_grounding" if web_grounding_used else "model"
     return ResponseProvenance(
         mode=mode,
+        document_used=False,
         source_registry_used=False,
         web_grounding_used=web_grounding_used,
         sources=(),
@@ -197,6 +212,7 @@ def build_provenance_context(
         "trusted_sources": selection.sources,
         "provenance": ResponseProvenance(
             mode=mode,
+            document_used=False,
             source_registry_used=selection.use_registry,
             web_grounding_used=tool_mode == "web_grounding",
             source_registry_reason=selection.reason if selection.use_registry else None,
@@ -257,9 +273,13 @@ def merge_provenance(
         base.web_grounding_used or tool_mode == "web_grounding" or bool(web_sources)
     )
     source_registry_used = base.source_registry_used
+    document_used = base.document_used
+    mode: ProvenanceMode
 
-    if source_registry_used and web_grounding_used:
-        mode: ProvenanceMode = "source_registry_and_web"
+    if document_used:
+        mode = "document"
+    elif source_registry_used and web_grounding_used:
+        mode = "source_registry_and_web"
     elif source_registry_used:
         mode = "source_registry"
     elif web_grounding_used:
@@ -269,6 +289,7 @@ def merge_provenance(
 
     return ResponseProvenance(
         mode=mode,
+        document_used=document_used,
         source_registry_used=source_registry_used,
         web_grounding_used=web_grounding_used,
         source_registry_reason=base.source_registry_reason,
@@ -281,7 +302,7 @@ def dedupe_sources(sources: tuple[SourceAttribution, ...]) -> tuple[SourceAttrib
 
     deduped: dict[str, SourceAttribution] = {}
     for source in sources:
-        key = source.url.casefold()
+        key = (source.url or f"document::{source.title}").casefold()
         existing = deduped.get(key)
         if existing is None:
             deduped[key] = source
@@ -314,4 +335,30 @@ def build_web_source(title: str, url: str) -> SourceAttribution:
         url=url.strip(),
         domain=_normalize_domain(url),
         origin="web_grounding",
+    )
+
+
+def build_document_source(title: str) -> SourceAttribution:
+    """Normalize a user-uploaded document into the shared attribution shape."""
+
+    return SourceAttribution(
+        title=title.strip(),
+        origin="document_upload",
+    )
+
+
+def with_document_sources(
+    base: ResponseProvenance | None,
+    documents: tuple[SourceAttribution, ...],
+) -> ResponseProvenance:
+    """Attach user-uploaded document provenance to an existing base object."""
+
+    normalized_base = base or build_default_provenance()
+    return ResponseProvenance(
+        mode="document",
+        document_used=True,
+        source_registry_used=normalized_base.source_registry_used,
+        web_grounding_used=normalized_base.web_grounding_used,
+        source_registry_reason=normalized_base.source_registry_reason,
+        sources=dedupe_sources(normalized_base.sources + documents),
     )
