@@ -1037,6 +1037,28 @@ def _paragraph_block(text: str, css_class: str) -> str:
     return f"<div class='{css_class}'>{body}</div>"
 
 
+def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | None]:
+    """Render streamed assistant chunks as markdown instead of plain text."""
+
+    content_placeholder = st.empty()
+    chunks: list[str] = []
+    result: ChatTurnResult | None = None
+
+    for item in stream:
+        if isinstance(item, ChatTurnResult):
+            result = item
+            continue
+
+        chunks.append(item)
+        content_placeholder.markdown("".join(chunks))
+
+    full_text = "".join(chunks)
+    if full_text:
+        content_placeholder.markdown(full_text)
+
+    return full_text, result
+
+
 def _send(msg_key: str):
     st.session_state._pending_msg = t(msg_key, lang)
     st.session_state.show_welcome = False
@@ -1235,8 +1257,8 @@ if user_input:
 
     # ── Streaming response ─────────────────────────────────
     # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
-    # st.write_stream() renders each yielded chunk as it arrives.
-    # The final yielded item is a structured turn result — we pop it before display.
+    # Render markdown progressively via a placeholder so formatting survives
+    # during the live response, not only after the rerun from chat history.
     stream = get_response_stream(
         user_input,
         session_id=st.session_state.session_id,
@@ -1244,22 +1266,13 @@ if user_input:
     )
 
     label_placeholder = None
-    result_box: list[ChatTurnResult | None] = [None]
-
-    def _filtered_stream():
-        """Yield only string chunks to st.write_stream; capture the final result."""
-        for item in stream:
-            if isinstance(item, ChatTurnResult):
-                result_box[0] = item
-            else:
-                yield item
+    provenance_placeholder = None
 
     with st.chat_message("assistant", avatar="\U0001f9ed"):
         label_placeholder = st.empty()
-        full_text = st.write_stream(_filtered_stream())
         provenance_placeholder = st.empty()
+        full_text, result = _stream_markdown_response(stream)
 
-    result = result_box[0]
     if result is None:
         result = ChatTurnResult(
             session_id=st.session_state.session_id or "",
