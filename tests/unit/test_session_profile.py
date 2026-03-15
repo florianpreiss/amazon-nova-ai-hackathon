@@ -38,6 +38,15 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
                 origin="source_registry",
             ),
         ),
+        profile_facts=(
+            "Erstakademikerin",
+            "Arbeitet 20h/Woche",
+            "Interessiert sich für BAföG und Stipendien",
+        ),
+        conversation_overview=(
+            "Du vergleichst gerade BAföG, Stipendien und deine Arbeitsbelastung.",
+            "Wichtig ist, dass deine Finanzierung zu 20h Arbeit pro Woche passt.",
+        ),
     )
 
     view = build_session_profile_view(snapshot, ui_language="de")
@@ -52,14 +61,14 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
         "Was sollte ich zuerst beantragen?",
         "Welche Stipendien passen zu mir?",
     )
-    assert view.identity_labels == (
-        "Erstakademiker*in",
-        "Arbeitet etwa 20h/Woche",
+    assert view.recognized_facts == (
+        "Erstakademikerin",
+        "Arbeitet 20h/Woche",
+        "Interessiert sich für BAföG und Stipendien",
     )
     assert view.conversation_summary_points == (
-        "Wichtiger Kontext aus dem Gespräch: Erstakademiker*in, Arbeitet etwa 20h/Woche.",
-        "Im Gespräch geht es bisher vor allem um Fristen, Finanzierung, Studienwahl.",
-        "Dein aktuelles Anliegen ist: Wie plane ich das Semester finanziell?",
+        "Du vergleichst gerade BAföG, Stipendien und deine Arbeitsbelastung.",
+        "Wichtig ist, dass deine Finanzierung zu 20h Arbeit pro Woche passt.",
     )
     assert [source.domain for source in view.cited_sources] == [
         "arbeiterkind.de",
@@ -75,6 +84,37 @@ def test_build_session_profile_view_returns_empty_view_without_snapshot() -> Non
     assert view.response_language_label is None
     assert view.topic_labels == ()
     assert view.goal_summaries == ()
-    assert view.identity_labels == ()
+    assert view.recognized_facts == ()
     assert view.conversation_summary_points == ()
     assert view.cited_sources == ()
+
+
+def test_build_session_profile_view_falls_back_to_structured_memory_without_llm_summary() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-456",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=2,
+        current_agent="COMPASS",
+        crisis_detected=False,
+        topics=("financing", "scholarships"),
+        identity_context={
+            "first_generation_student": True,
+            "working_student": True,
+            "weekly_work_hours": "20h",
+        },
+        preferences={"response_language": "en"},
+        active_goals=("What funding options fit around my 20h job?",),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="en")
+
+    assert view.recognized_facts == (
+        "First-generation student",
+        "Works about 20h/week",
+    )
+    assert view.conversation_summary_points == (
+        "Important context from the chat: First-generation student, Works about 20h/week.",
+        "So far, the conversation is mainly about Scholarships, Financing.",
+        "Your current focus is: What funding options fit around my 20h job?",
+    )

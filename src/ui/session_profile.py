@@ -76,7 +76,7 @@ _LANGUAGE_LABELS = {
     "de": {"de": "Deutsch", "en": "Englisch"},
     "en": {"de": "German", "en": "English"},
 }
-_MAX_SUMMARY_POINTS = 3
+_MAX_SUMMARY_POINTS = 4
 _MAX_GOAL_LENGTH = 180
 
 
@@ -89,7 +89,7 @@ class SessionProfileView:
     response_language_label: str | None = None
     topic_labels: tuple[str, ...] = ()
     goal_summaries: tuple[str, ...] = ()
-    identity_labels: tuple[str, ...] = ()
+    recognized_facts: tuple[str, ...] = ()
     conversation_summary_points: tuple[str, ...] = ()
     cited_sources: tuple[SourceAttribution, ...] = ()
     crisis_detected: bool = False
@@ -103,7 +103,7 @@ class SessionProfileView:
                 self.response_language_label,
                 self.topic_labels,
                 self.goal_summaries,
-                self.identity_labels,
+                self.recognized_facts,
                 self.conversation_summary_points,
                 self.cited_sources,
                 self.crisis_detected,
@@ -172,6 +172,30 @@ def _build_identity_labels(
     return tuple(labels)
 
 
+def _merge_recognized_facts(
+    *,
+    summary_profile_facts: tuple[str, ...],
+    structured_facts: tuple[str, ...],
+) -> tuple[str, ...]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for fact in (*summary_profile_facts, *structured_facts):
+        normalized = _normalize_fact_for_dedupe(fact)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(fact)
+    return tuple(deduped)
+
+
+def _normalize_fact_for_dedupe(text: str) -> str:
+    normalized = text.casefold().replace("*", "")
+    for filler in (" etwa ", " about ", " circa ", " ca. ", " ca "):
+        normalized = normalized.replace(filler, " ")
+    normalized = re.sub(r"[^a-z0-9äöüß]+", "", normalized)
+    return normalized.strip()
+
+
 def _format_topic_sentence(topic_labels: tuple[str, ...], *, ui_language: str) -> str | None:
     if not topic_labels:
         return None
@@ -205,11 +229,15 @@ def _build_conversation_summary_points(
     *,
     topic_labels: tuple[str, ...],
     goal_summaries: tuple[str, ...],
-    identity_labels: tuple[str, ...],
+    recognized_facts: tuple[str, ...],
+    summary_points: tuple[str, ...],
     ui_language: str,
 ) -> tuple[str, ...]:
+    if summary_points:
+        return summary_points[:_MAX_SUMMARY_POINTS]
+
     candidates = (
-        _format_identity_sentence(identity_labels, ui_language=ui_language),
+        _format_identity_sentence(recognized_facts, ui_language=ui_language),
         _format_topic_sentence(topic_labels, ui_language=ui_language),
         _format_goal_sentence(goal_summaries, ui_language=ui_language),
     )
@@ -243,7 +271,17 @@ def build_session_profile_view(
         for topic in reversed(snapshot.topics[-topic_limit:])
     )
     goal_summaries = tuple(reversed(snapshot.active_goals[-goal_limit:]))
-    identity_labels = _build_identity_labels(snapshot.identity_context, ui_language=language)
+    structured_facts = _build_identity_labels(snapshot.identity_context, ui_language=language)
+    summary_profile_facts = tuple(
+        str(item).strip() for item in snapshot.profile_facts if str(item).strip()
+    )
+    recognized_facts = _merge_recognized_facts(
+        summary_profile_facts=summary_profile_facts,
+        structured_facts=structured_facts,
+    )
+    summary_points = tuple(
+        str(item).strip() for item in snapshot.conversation_overview if str(item).strip()
+    )
     cited_sources = (
         tuple(reversed(snapshot.cited_sources))
         if source_limit is None
@@ -256,11 +294,12 @@ def build_session_profile_view(
         response_language_label=response_language_label,
         topic_labels=topic_labels,
         goal_summaries=goal_summaries,
-        identity_labels=identity_labels,
+        recognized_facts=recognized_facts,
         conversation_summary_points=_build_conversation_summary_points(
             topic_labels=topic_labels,
             goal_summaries=goal_summaries,
-            identity_labels=identity_labels,
+            recognized_facts=recognized_facts,
+            summary_points=summary_points,
             ui_language=language,
         ),
         cited_sources=cited_sources,

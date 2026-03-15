@@ -1484,9 +1484,9 @@ def _render_profile_sidebar(current_lang: str) -> None:
             ):
                 _render_sidebar_list(profile.goal_summaries)
 
-        if profile.identity_labels:
+        if profile.recognized_facts:
             _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
-            _render_sidebar_list(profile.identity_labels, compact=True)
+            _render_sidebar_list(profile.recognized_facts, compact=True)
 
         if profile.cited_sources:
             with st.expander(

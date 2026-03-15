@@ -5,6 +5,7 @@ from collections.abc import Generator
 import pytest
 from src.core.conversation import ConversationStore
 from src.core.provenance import AgentReply, build_default_provenance
+from src.core.session_summary import SessionSummary
 from src.i18n import t
 from src.orchestration import ChatService, ChatTurnResult
 
@@ -56,6 +57,32 @@ class StubAgent:
         self.messages_seen = messages
         self.metadata_seen = metadata or {}
         yield from self.stream_chunks
+
+
+class StubSummarizer:
+    def summarize(
+        self,
+        messages: list[dict],
+        *,
+        ui_language: str,
+        previous_summary: SessionSummary | None = None,
+    ) -> SessionSummary:
+        assert messages
+        assert ui_language in {"de", "en"}
+        if previous_summary is not None:
+            assert isinstance(previous_summary, SessionSummary)
+        if ui_language == "de":
+            return SessionSummary(
+                profile_facts=("Erstakademikerin", "Arbeitet 20h/Woche"),
+                conversation_overview=(
+                    "Du fragst nach Finanzierung und Studienalltag.",
+                    "Die Arbeit mit 20h/Woche beeinflusst deine Optionen.",
+                ),
+            )
+        return SessionSummary(
+            profile_facts=("First-generation student",),
+            conversation_overview=("You are exploring study funding.",),
+        )
 
 
 class TestChatService:
@@ -176,6 +203,7 @@ class TestChatService:
             crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
             agents={"COMPASS": StubAgent(), "ROLE_MODELS": StubAgent(text="Klar.")},
             sessions=ConversationStore(now=clock),
+            summarizer=StubSummarizer(),
         )
 
         result = service.respond(
@@ -190,6 +218,11 @@ class TestChatService:
         assert snapshot.identity_context["first_generation_student"] is True
         assert snapshot.topics[-1] == "role models"
         assert snapshot.preferences["response_language"] == "de"
+        assert snapshot.profile_facts == ("Erstakademikerin", "Arbeitet 20h/Woche")
+        assert snapshot.conversation_overview == (
+            "Du fragst nach Finanzierung und Studienalltag.",
+            "Die Arbeit mit 20h/Woche beeinflusst deine Optionen.",
+        )
 
     def test_end_session_removes_ephemeral_memory_immediately(self):
         service = ChatService(
