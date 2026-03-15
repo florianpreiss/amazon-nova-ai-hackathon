@@ -834,17 +834,49 @@ st.markdown(
         padding: 0.24rem 0.58rem;
     }
     .document-input-note {
-        align-items: center;
         color: #7a6d8c;
-        display: flex;
         font-family: 'Nunito', sans-serif;
-        font-size: 0.78rem;
-        gap: 0.45rem;
-        margin: 0.4rem 0 0.35rem 0;
+        font-size: 0.79rem;
+        line-height: 1.45;
+        margin: 0.35rem auto 0.55rem auto;
+        max-width: 38rem;
+        text-align: center;
     }
-    .document-input-note strong {
-        color: #67527d;
-        font-weight: 700;
+    .composer-actions {
+        margin: 0 auto 0.8rem auto;
+        max-width: 34rem;
+    }
+    .composer-actions [data-testid="column"] {
+        display: flex;
+        justify-content: center;
+    }
+    .composer-actions [data-testid="stButton"] {
+        width: 100%;
+    }
+    .composer-actions .st-key-composer_reset_chat_button {
+        width: 100%;
+    }
+    .st-key-document_popover_button button {
+        background: rgba(125, 122, 201, 0.08) !important;
+        border: 1px solid rgba(125, 122, 201, 0.18) !important;
+        border-radius: 14px !important;
+        color: #5f6470 !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        min-height: 2.7rem !important;
+        padding: 0.3rem 0.95rem !important;
+        width: 100% !important;
+    }
+    .st-key-document_popover_button button:hover {
+        background: rgba(125, 122, 201, 0.12) !important;
+        border-color: rgba(125, 122, 201, 0.24) !important;
+        color: #4f5562 !important;
+        box-shadow: 0 2px 8px rgba(125, 122, 201, 0.14) !important;
+    }
+    .st-key-composer_reset_chat_button button {
+        min-height: 2.7rem !important;
+        width: 100% !important;
     }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
@@ -1104,7 +1136,17 @@ st.markdown(
         .document-input-note {
             color: #d7c4e6 !important;
         }
-        .document-input-note strong {
+        .composer-actions {
+            max-width: 34rem;
+        }
+        .st-key-document_popover_button button {
+            background: rgba(244, 233, 250, 0.08) !important;
+            border-color: rgba(212, 181, 235, 0.16) !important;
+            color: #ead8f5 !important;
+        }
+        .st-key-document_popover_button button:hover {
+            background: rgba(244, 233, 250, 0.12) !important;
+            border-color: rgba(212, 181, 235, 0.22) !important;
             color: #f2e2fb !important;
         }
 
@@ -1954,23 +1996,26 @@ def _render_user_message(text: str, *, documents: tuple[str, ...] = ()) -> None:
 
 
 def _render_document_input_hint(current_lang: str) -> None:
-    left_col, right_col = st.columns([5, 1])
-    with left_col:
-        st.markdown(
-            (
-                "<div class='document-input-note'>"
-                f"<strong>{html_lib.escape(t('document_popover_button', current_lang))}</strong>"
-                f"<span>{html_lib.escape(t('document_hint', current_lang))}</span>"
-                "</div>"
-            ),
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        f"<div class='document-input-note'>{html_lib.escape(t('document_hint', current_lang))}</div>",
+        unsafe_allow_html=True,
+    )
+
+    has_session_content = bool(
+        st.session_state.get("messages")
+        or st.session_state.get("session_id")
+        or st.session_state.get("onboarding_state") in {"in_progress", "complete"}
+    )
+
+    _outer_left, popover_col, reset_col, _outer_right = st.columns([1.3, 1.7, 1.7, 1.3])
     with (
-        right_col,
+        popover_col,
         st.popover(
             t("document_popover_button", current_lang),
-            icon=":material/attach_file:",
+            icon=":material/add:",
             help=t("document_popover_help", current_lang),
+            key="document_popover_button",
+            width="stretch",
         ),
     ):
         st.markdown(f"**{t('document_popover_title', current_lang)}**")
@@ -1978,6 +2023,17 @@ def _render_document_input_hint(current_lang: str) -> None:
         st.caption(t("document_popover_limits", current_lang))
         st.caption(t("document_popover_privacy", current_lang))
         st.caption(t("document_popover_disclaimer", current_lang))
+    with reset_col:
+        if st.button(
+            t("reset_chat", current_lang),
+            help=t("reset_chat_tooltip", current_lang),
+            key="composer_reset_chat_button",
+            type="primary",
+            use_container_width=True,
+            disabled=not has_session_content,
+        ):
+            _reset_chat()
+            st.rerun()
 
 
 def _paragraph_block(text: str, css_class: str) -> str:
@@ -2430,19 +2486,6 @@ else:
                 _render_provenance_block(msg.get("provenance"), lang)
 
     _render_quick_actions(lang, session_snapshot)
-
-    if st.session_state.messages:
-        _space_col, _reset_col = st.columns([6, 2])
-        with _reset_col:
-            if st.button(
-                t("reset_chat", lang),
-                help=t("reset_chat_tooltip", lang),
-                key="_reset_btn",
-                type="primary",
-                use_container_width=True,
-            ):
-                _reset_chat()
-                st.rerun()
 
     user_input = None
     if "_pending_msg" in st.session_state:
