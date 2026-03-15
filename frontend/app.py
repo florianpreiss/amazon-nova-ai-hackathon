@@ -1236,8 +1236,19 @@ st.markdown(
 # ── Language toggle ───────────
 
 
+def _lang_option_for_code(code: str) -> str:
+    return "🇩🇪 Deutsch" if code == "de" else "🇬🇧 English"
+
+
 def _set_lang(new_lang: str):
     st.session_state.lang = new_lang
+    st.session_state._lang_pills = _lang_option_for_code(new_lang)
+
+
+def _handle_lang_pills_change() -> None:
+    new_lang = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
+    if st.session_state.lang != new_lang:
+        st.session_state.lang = new_lang
 
 
 def _reset_chat() -> None:
@@ -1263,20 +1274,19 @@ def _reset_chat() -> None:
 
 
 # ── Language toggle ─────────────────────────────────────
+if "_lang_pills" not in st.session_state or st.session_state._lang_pills != _lang_option_for_code(
+    lang
+):
+    st.session_state._lang_pills = _lang_option_for_code(lang)
+
 st.pills(
     label="Language",
     options=["🇩🇪 Deutsch", "🇬🇧 English"],
-    default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
-    on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
+    default=_lang_option_for_code(lang),
+    on_change=_handle_lang_pills_change,
     key="_lang_pills",
     label_visibility="collapsed",
 )
-# Apply the language if changed via pills
-if "_lang_pills" in st.session_state:
-    new = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
-    if new != lang:
-        st.session_state.lang = new
-        st.rerun()
 
 
 # ── Shared chat service ────────────────────────────────
@@ -1466,12 +1476,14 @@ def _apply_imported_session(imported_session, current_lang: str) -> None:
     if existing_session_id and existing_session_id != imported_session.session_id:
         load_chat_service().end_session(existing_session_id)
 
+    next_lang = imported_session.ui_language or current_lang
     st.session_state.session_id = imported_session.session_id
     st.session_state.messages = [
         _history_message_to_ui(message) for message in imported_session.messages
     ]
     st.session_state.show_welcome = False
-    st.session_state.lang = imported_session.ui_language or current_lang
+    st.session_state.lang = next_lang
+    st.session_state._lang_pills = _lang_option_for_code(next_lang)
     st.session_state.memory_import_revision += 1
 
 
@@ -1540,71 +1552,71 @@ def _render_profile_sidebar(current_lang: str) -> None:
             unsafe_allow_html=True,
         )
 
-        _render_session_portability(current_lang, session_id)
-
         if not profile.has_content:
             st.markdown(
                 f"<div class='sidebar-empty'>{html_lib.escape(t('sidebar_empty', current_lang))}</div>",
                 unsafe_allow_html=True,
             )
-            return
-
-        recognized_facts = getattr(
-            profile,
-            "recognized_facts",
-            getattr(profile, "identity_labels", ()),
-        )
-        profile_preview = t("sidebar_profile_pending", current_lang)
-        if recognized_facts:
-            preview_items = list(recognized_facts[:3])
-            if len(recognized_facts) > 3:
-                preview_items.append(f"+{len(recognized_facts) - 3}")
-            profile_preview = " · ".join(preview_items)
-        stats = [
-            (t("sidebar_stat_profile", current_lang), profile_preview),
-            (
-                t("sidebar_stat_language", current_lang),
-                profile.response_language_label or current_lang.upper(),
-            ),
-            (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
-        ]
-        _render_sidebar_stats(stats)
-
-        if profile.crisis_detected:
-            st.markdown(
-                f"<div class='sidebar-alert'>{html_lib.escape(t('sidebar_crisis_note', current_lang))}</div>",
-                unsafe_allow_html=True,
+        else:
+            recognized_facts = getattr(
+                profile,
+                "recognized_facts",
+                getattr(profile, "identity_labels", ()),
             )
+            profile_preview = t("sidebar_profile_pending", current_lang)
+            if recognized_facts:
+                preview_items = list(recognized_facts[:3])
+                if len(recognized_facts) > 3:
+                    preview_items.append(f"+{len(recognized_facts) - 3}")
+                profile_preview = " · ".join(preview_items)
+            stats = [
+                (t("sidebar_stat_profile", current_lang), profile_preview),
+                (
+                    t("sidebar_stat_language", current_lang),
+                    profile.response_language_label or current_lang.upper(),
+                ),
+                (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
+            ]
+            _render_sidebar_stats(stats)
 
-        if profile.topic_labels:
-            _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
-            _render_sidebar_chip_list(profile.topic_labels)
-            st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+            if profile.crisis_detected:
+                st.markdown(
+                    f"<div class='sidebar-alert'>{html_lib.escape(t('sidebar_crisis_note', current_lang))}</div>",
+                    unsafe_allow_html=True,
+                )
 
-        if profile.goal_summaries:
-            with st.expander(
-                t("sidebar_section_goals", current_lang),
-                expanded=False,
-                icon=":material/question_answer:",
-            ):
-                _render_sidebar_list(profile.goal_summaries)
+            if profile.topic_labels:
+                _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
+                _render_sidebar_chip_list(profile.topic_labels)
+                st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
 
-        conversation_summary_points = getattr(profile, "conversation_summary_points", ())
-        if conversation_summary_points:
-            with st.expander(
-                t("sidebar_section_summary", current_lang),
-                expanded=False,
-                icon=":material/notes:",
-            ):
-                _render_sidebar_list(conversation_summary_points)
+            if profile.goal_summaries:
+                with st.expander(
+                    t("sidebar_section_goals", current_lang),
+                    expanded=False,
+                    icon=":material/question_answer:",
+                ):
+                    _render_sidebar_list(profile.goal_summaries)
 
-        if profile.cited_sources:
-            with st.expander(
-                t("sidebar_section_sources", current_lang),
-                expanded=False,
-                icon=":material/library_books:",
-            ):
-                _render_sidebar_sources(profile.cited_sources, current_lang)
+            conversation_summary_points = getattr(profile, "conversation_summary_points", ())
+            if conversation_summary_points:
+                with st.expander(
+                    t("sidebar_section_summary", current_lang),
+                    expanded=False,
+                    icon=":material/notes:",
+                ):
+                    _render_sidebar_list(conversation_summary_points)
+
+            if profile.cited_sources:
+                with st.expander(
+                    t("sidebar_section_sources", current_lang),
+                    expanded=False,
+                    icon=":material/library_books:",
+                ):
+                    _render_sidebar_sources(profile.cited_sources, current_lang)
+
+        st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+        _render_session_portability(current_lang, session_id)
 
 
 def get_response_stream(
