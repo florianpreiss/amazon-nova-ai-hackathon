@@ -1537,8 +1537,9 @@ def _render_sidebar_section_label(label: str) -> None:
 
 
 def _render_sidebar_stats(stats: list[tuple[str, str]]) -> None:
+    first_card_wide = len(stats) >= 3
     cards = "".join(
-        f"<div class='sidebar-stat{' wide' if index == 0 else ''}'>"
+        f"<div class='sidebar-stat{' wide' if first_card_wide and index == 0 else ''}'>"
         f"<div class='sidebar-stat-label'>{html_lib.escape(label)}</div>"
         f"<div class='sidebar-stat-value'>{html_lib.escape(value)}</div>"
         "</div>"
