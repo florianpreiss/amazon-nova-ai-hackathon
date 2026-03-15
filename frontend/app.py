@@ -178,11 +178,11 @@ st.markdown(
     .koda-title {
         align-items: center;
         color: rgba(125, 122, 201, 1);
-        display: inline-grid;
+        display: grid;
         font-family: 'Source Serif 4', Georgia, serif;
         font-size: 4.6rem;
         font-weight: 700;
-        gap: 0.26rem;
+        gap: 0.42rem;
         grid-auto-columns: max-content;
         grid-auto-flow: column;
         justify-content: center;
@@ -192,7 +192,7 @@ st.markdown(
         line-height: 1;
         max-width: 52rem;
         padding: 0 0.2rem;
-        width: fit-content;
+        width: 100%;
     }
     .koda-title-letter {
         align-items: center;
@@ -1544,11 +1544,11 @@ st.markdown(
         }
         .koda-title {
             font-size: 3rem;
-            gap: 0.16rem;
+            gap: 0.26rem;
             justify-content: center;
             margin-top: 0.15rem;
             max-width: none;
-            width: auto;
+            width: 100%;
         }
         .koda-title-mark {
             height: 4.75rem;
@@ -1692,7 +1692,7 @@ st.markdown(
         }
         .koda-title {
             font-size: 2.2rem;
-            gap: 0.1rem;
+            gap: 0.16rem;
         }
         .koda-title-mark {
             height: 3.4rem;
