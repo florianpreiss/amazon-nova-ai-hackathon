@@ -1042,32 +1042,31 @@ def _normalize_assistant_markdown(text: str) -> str:
     """Repair common markdown formatting issues before rendering assistant text."""
 
     normalized = text.replace("\r\n", "\n").replace("\r", "\n").replace("\\n", "\n")
-
-    def _sanitize_emphasis(match: re.Match[str]) -> str:
-        marker = match.group(1)
-        content = match.group(2)
-        stripped = content.strip()
-        # Long or multiline bold spans usually come from malformed model output
-        # and make whole sections look bold in Streamlit. Keep only short,
-        # deliberate emphasis.
-        if "\n" in content or len(stripped) > 80:
-            return stripped
-        return f"{marker}{stripped}{marker}"
-
-    normalized = re.sub(r"(\*\*|__)(.+?)\1", _sanitize_emphasis, normalized, flags=re.DOTALL)
-
-    for marker in ("**", "__"):
-        if normalized.count(marker) % 2 == 1:
-            if normalized.startswith(marker):
-                normalized = normalized[len(marker) :]
-            elif normalized.endswith(marker):
-                normalized = normalized[: -len(marker)]
-            else:
-                normalized = normalized.replace(marker, "")
+    # Assistant emphasis markers are often malformed in streamed output and can
+    # cause large sections to render bold. Keep the text, drop the markers.
+    normalized = normalized.replace("**", "").replace("__", "")
 
     normalized = re.sub(r"\s*---\s*", "\n\n---\n\n", normalized)
     normalized = re.sub(r"([:.;!?])\s+(#{1,6}\s+)", r"\1\n\n\2", normalized)
     normalized = re.sub(r"---\s+(#{1,6}\s+)", r"---\n\n\1", normalized)
+
+    repaired_lines: list[str] = []
+    for raw_line in normalized.split("\n"):
+        line = raw_line.strip()
+        if not line:
+            repaired_lines.append("")
+            continue
+
+        if re.match(r"^\d+\.\s", line) and " - " in line:
+            line = re.sub(r"\s-\s+(?=[A-ZÄÖÜ])", "\n   - ", line)
+        elif not line.startswith("- ") and (
+            "? - " in line or ": - " in line or line.count(" - ") >= 2
+        ):
+            line = re.sub(r"\s-\s+(?=[A-ZÄÖÜ])", "\n- ", line)
+
+        repaired_lines.append(line)
+
+    normalized = "\n".join(repaired_lines)
     normalized = re.sub(r"[ \t]+\n", "\n", normalized)
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
     return normalized.strip()
