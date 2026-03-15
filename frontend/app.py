@@ -57,11 +57,11 @@ st.markdown(
     [data-testid="stExpandSidebarButton"],
     [data-testid="stSidebarCollapseButton"] button {
         align-items: center !important;
-        background: rgba(247, 235, 245, 0.92) !important;
-        border: 1px solid rgba(151, 121, 173, 0.22) !important;
+        background: rgba(233, 241, 252, 0.94) !important;
+        border: 1px solid rgba(118, 145, 190, 0.24) !important;
         border-radius: 999px !important;
-        box-shadow: 0 10px 24px rgba(151, 121, 173, 0.16) !important;
-        color: #7c6698 !important;
+        box-shadow: 0 10px 24px rgba(116, 145, 194, 0.2) !important;
+        color: #5f78a6 !important;
         display: inline-flex !important;
         justify-content: center !important;
         transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease !important;
@@ -71,13 +71,13 @@ st.markdown(
     }
     [data-testid="stExpandSidebarButton"]:hover,
     [data-testid="stSidebarCollapseButton"] button:hover {
-        background: rgba(255, 248, 253, 0.98) !important;
-        box-shadow: 0 12px 28px rgba(151, 121, 173, 0.22) !important;
+        background: rgba(244, 248, 255, 0.98) !important;
+        box-shadow: 0 12px 28px rgba(116, 145, 194, 0.28) !important;
         transform: translateY(-1px) !important;
     }
     [data-testid="stExpandSidebarButton"] svg,
     [data-testid="stSidebarCollapseButton"] svg {
-        color: #7c6698 !important;
+        color: #5f78a6 !important;
         fill: currentColor !important;
     }
 
@@ -186,16 +186,18 @@ st.markdown(
     /* ── Sidebar session profile ────────────── */
     [data-testid="stSidebar"] {
         background:
-            linear-gradient(180deg, rgba(247, 235, 245, 0.96) 0%, rgba(244, 232, 245, 0.95) 100%);
-        border-right: 1px solid rgba(151, 121, 173, 0.16);
+            linear-gradient(180deg, rgba(227, 237, 249, 0.95) 0%, rgba(219, 233, 248, 0.94) 100%);
+        border-right: 1px solid rgba(120, 146, 190, 0.18);
         overflow: hidden;
         position: relative;
     }
     [data-testid="stSidebar"]::before {
         background:
-            radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.76) 0%, rgba(255, 255, 255, 0) 28%),
-            radial-gradient(circle at 84% 20%, rgba(182, 197, 255, 0.18) 0%, rgba(182, 197, 255, 0) 22%),
-            linear-gradient(150deg, rgba(255, 255, 255, 0.28) 0%, rgba(210, 214, 255, 0.14) 55%, rgba(208, 171, 227, 0.12) 100%);
+            linear-gradient(180deg, rgba(255, 255, 255, 0.68) 0%, rgba(233, 243, 255, 0.48) 100%),
+            url('app/static/right-bg.jpeg');
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-size: cover;
         content: "";
         inset: 0;
         opacity: 0.96;
@@ -204,17 +206,12 @@ st.markdown(
     }
     [data-testid="stSidebar"]::after {
         background:
-            repeating-linear-gradient(
-                168deg,
-                rgba(255, 255, 255, 0.18) 0 54px,
-                rgba(255, 255, 255, 0) 54px 126px
-            );
+            linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(173, 198, 232, 0.12) 100%);
         content: "";
-        inset: -12% -18%;
-        opacity: 0.34;
+        inset: 0;
+        opacity: 0.55;
         pointer-events: none;
         position: absolute;
-        transform: rotate(-6deg);
     }
     [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
         padding-top: 1rem;
@@ -226,7 +223,7 @@ st.markdown(
         padding-top: 0.2rem;
     }
     .sidebar-kicker {
-        color: #8e6ea3;
+        color: #6c87b6;
         font-size: 0.72rem;
         font-weight: 800;
         letter-spacing: 0.08em;
@@ -234,7 +231,7 @@ st.markdown(
         text-transform: uppercase;
     }
     .sidebar-title {
-        color: #4b355d;
+        color: #445c85;
         font-family: 'Source Serif 4', Georgia, serif;
         font-size: 1.45rem;
         font-weight: 700;
@@ -252,14 +249,14 @@ st.markdown(
     }
     .sidebar-note {
         background: rgba(255, 255, 255, 0.58);
-        border: 1px solid rgba(151, 121, 173, 0.14);
-        color: #6d557b;
+        border: 1px solid rgba(120, 146, 190, 0.16);
+        color: #566f96;
         margin-bottom: 0.9rem;
     }
     .sidebar-empty {
         background: rgba(255, 255, 255, 0.74);
-        border: 1px dashed rgba(151, 121, 173, 0.22);
-        color: #6e5a7d;
+        border: 1px dashed rgba(120, 146, 190, 0.24);
+        color: #59739b;
         margin-top: 0.2rem;
     }
     .sidebar-alert {
@@ -276,7 +273,7 @@ st.markdown(
     }
     .sidebar-stat {
         background: rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(151, 121, 173, 0.12);
+        border: 1px solid rgba(120, 146, 190, 0.14);
         border-radius: 14px;
         padding: 0.62rem 0.72rem;
     }
@@ -284,7 +281,7 @@ st.markdown(
         grid-column: 1 / -1;
     }
     .sidebar-stat-label {
-        color: #8a6d9d;
+        color: #7288af;
         font-family: 'Nunito', sans-serif;
         font-size: 0.64rem;
         font-weight: 700;
@@ -293,7 +290,7 @@ st.markdown(
         text-transform: uppercase;
     }
     .sidebar-stat-value {
-        color: #4b355d;
+        color: #445c85;
         font-family: 'Source Serif 4', Georgia, serif;
         font-size: 0.95rem;
         font-weight: 700;
@@ -303,7 +300,7 @@ st.markdown(
         margin-top: 0.9rem;
     }
     .sidebar-section-label {
-        color: #765a88;
+        color: #647ea8;
         font-family: 'Nunito', sans-serif;
         font-size: 0.74rem;
         font-weight: 800;
@@ -317,10 +314,10 @@ st.markdown(
         gap: 0.38rem;
     }
     .sidebar-chip {
-        background: rgba(151, 121, 173, 0.08);
-        border: 1px solid rgba(151, 121, 173, 0.14);
+        background: rgba(120, 146, 190, 0.08);
+        border: 1px solid rgba(120, 146, 190, 0.15);
         border-radius: 999px;
-        color: #7b5f91;
+        color: #6179a5;
         display: inline-block;
         font-family: 'Nunito', sans-serif;
         font-size: 0.74rem;
@@ -335,7 +332,7 @@ st.markdown(
     }
     .sidebar-list li,
     .sidebar-source-list li {
-        color: #4b355d;
+        color: #445c85;
         font-family: 'Nunito', sans-serif;
         font-size: 0.84rem;
         line-height: 1.55;
@@ -371,14 +368,14 @@ st.markdown(
         color: #0c6fbe;
     }
     .sidebar-source-link {
-        color: #6d4d88;
+        color: #5c76a2;
         text-decoration: none;
     }
     .sidebar-source-link:hover {
         text-decoration: underline;
     }
     .sidebar-source-domain {
-        color: #876a96;
+        color: #7c92b5;
         display: block;
         font-size: 0.74rem;
         margin-top: 0.08rem;
@@ -386,12 +383,12 @@ st.markdown(
     }
     [data-testid="stExpander"] {
         background: rgba(255, 255, 255, 0.42);
-        border: 1px solid rgba(151, 121, 173, 0.12);
+        border: 1px solid rgba(120, 146, 190, 0.14);
         border-radius: 14px;
         overflow: hidden;
     }
     [data-testid="stExpander"] details summary p {
-        color: #765a88 !important;
+        color: #6179a5 !important;
         font-family: 'Nunito', sans-serif !important;
         font-size: 0.82rem !important;
         font-weight: 800 !important;
@@ -823,36 +820,33 @@ st.markdown(
             color: #aeb6c8 !important;
         }
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #2b2034 0%, #22192b 100%) !important;
-            border-right-color: rgba(207, 169, 230, 0.18) !important;
+            background: linear-gradient(180deg, #21314c 0%, #1b2940 100%) !important;
+            border-right-color: rgba(166, 191, 229, 0.18) !important;
         }
         [data-testid="stSidebar"]::before {
             background:
-                radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 24%),
-                radial-gradient(circle at 78% 24%, rgba(126, 153, 230, 0.16) 0%, rgba(126, 153, 230, 0) 22%),
-                linear-gradient(150deg, rgba(255, 255, 255, 0.05) 0%, rgba(130, 114, 177, 0.12) 58%, rgba(89, 123, 201, 0.14) 100%) !important;
+                linear-gradient(180deg, rgba(17, 27, 44, 0.54) 0%, rgba(24, 42, 68, 0.44) 100%),
+                url('app/static/right-bg.jpeg') !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            background-size: cover !important;
         }
         [data-testid="stSidebar"]::after {
-            background:
-                repeating-linear-gradient(
-                    168deg,
-                    rgba(255, 255, 255, 0.06) 0 54px,
-                    rgba(255, 255, 255, 0) 54px 126px
-                ) !important;
-            opacity: 0.28 !important;
+            background: linear-gradient(180deg, rgba(193, 214, 241, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+            opacity: 0.48 !important;
         }
         .sidebar-title {
-            color: #f7eefc !important;
+            color: #edf5ff !important;
         }
         .sidebar-note {
-            background: rgba(247, 235, 245, 0.08) !important;
-            border-color: rgba(207, 169, 230, 0.16) !important;
-            color: #decbe9 !important;
+            background: rgba(224, 237, 255, 0.08) !important;
+            border-color: rgba(166, 191, 229, 0.16) !important;
+            color: #d3e3fb !important;
         }
         .sidebar-empty {
             background: rgba(17, 35, 48, 0.78) !important;
-            border-color: rgba(207, 169, 230, 0.22) !important;
-            color: #e7d8ef !important;
+            border-color: rgba(166, 191, 229, 0.22) !important;
+            color: #ddeafc !important;
         }
         .sidebar-alert {
             background: rgba(214, 48, 49, 0.14) !important;
@@ -860,24 +854,24 @@ st.markdown(
             color: #ffb3b0 !important;
         }
         .sidebar-stat {
-            background: rgba(38, 27, 46, 0.82) !important;
-            border-color: rgba(207, 169, 230, 0.16) !important;
+            background: rgba(28, 42, 66, 0.82) !important;
+            border-color: rgba(166, 191, 229, 0.16) !important;
         }
         .sidebar-stat-label {
-            color: #c9addd !important;
+            color: #b9cdea !important;
         }
         .sidebar-stat-value,
         .sidebar-list li,
         .sidebar-source-list li {
-            color: #f7eefc !important;
+            color: #edf5ff !important;
         }
         .sidebar-section-label {
-            color: #dbc3ea !important;
+            color: #c9daf4 !important;
         }
         .sidebar-chip {
-            background: rgba(207, 169, 230, 0.12) !important;
-            border-color: rgba(207, 169, 230, 0.2) !important;
-            color: #f0defa !important;
+            background: rgba(166, 191, 229, 0.12) !important;
+            border-color: rgba(166, 191, 229, 0.2) !important;
+            color: #e2eeff !important;
         }
         .sidebar-source-tag.registry {
             background: rgba(0, 184, 148, 0.2) !important;
@@ -888,32 +882,32 @@ st.markdown(
             color: #88c7ff !important;
         }
         .sidebar-source-link {
-            color: #f0defa !important;
+            color: #e2eeff !important;
         }
         .sidebar-source-domain {
-            color: #cfb7dd !important;
+            color: #b5cae8 !important;
         }
         [data-testid="stExpander"] {
-            background: rgba(42, 31, 51, 0.54) !important;
-            border-color: rgba(207, 169, 230, 0.14) !important;
+            background: rgba(33, 48, 73, 0.54) !important;
+            border-color: rgba(166, 191, 229, 0.14) !important;
         }
         [data-testid="stExpander"] details summary p {
-            color: #f0defa !important;
+            color: #e2eeff !important;
         }
         [data-testid="stExpandSidebarButton"],
         [data-testid="stSidebarCollapseButton"] button {
-            background: rgba(63, 46, 78, 0.92) !important;
-            border-color: rgba(207, 169, 230, 0.22) !important;
+            background: rgba(37, 53, 83, 0.92) !important;
+            border-color: rgba(166, 191, 229, 0.22) !important;
             box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28) !important;
-            color: #f0defa !important;
+            color: #e2eeff !important;
         }
         [data-testid="stExpandSidebarButton"]:hover,
         [data-testid="stSidebarCollapseButton"] button:hover {
-            background: rgba(84, 62, 103, 0.96) !important;
+            background: rgba(56, 78, 119, 0.96) !important;
         }
         [data-testid="stExpandSidebarButton"] svg,
         [data-testid="stSidebarCollapseButton"] svg {
-            color: #f0defa !important;
+            color: #e2eeff !important;
         }
 
         /* ── Stat boxes ───────────────────────── */
