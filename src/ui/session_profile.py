@@ -76,7 +76,7 @@ _LANGUAGE_LABELS = {
     "de": {"de": "Deutsch", "en": "Englisch"},
     "en": {"de": "German", "en": "English"},
 }
-_MAX_SUMMARY_POINTS = 4
+_MAX_SUMMARY_POINTS = 5
 _MAX_GOAL_LENGTH = 180
 
 

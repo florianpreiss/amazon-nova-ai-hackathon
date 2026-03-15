@@ -31,15 +31,17 @@ Rules:
   - Do not guess or invent traits.
   - Good examples: "Erstakademikerin", "Arbeitet 20h/Woche", "Interessiert sich für BAföG und Stipendien".
 - conversation_overview:
-  - 1 to 4 concise bullets.
+  - 2 to 5 bullets when possible.
   - Summarize the whole conversation so far, not just the last answer.
-  - Include enough context that the user could resume the chat later.
+  - Include enough context that the user could resume the chat later without losing important details.
+  - Each bullet can be one or two short sentences if needed.
+  - Mention the user's situation, what has already been explained, and any important next-step or open question when relevant.
   - Avoid repeating the same point in different words.
-- Keep each bullet compact and easy to scan in a sidebar.
+- Keep each bullet easy to scan in a sidebar, but do not make it so short that the meaning becomes vague.
 - No markdown, no prose outside JSON, no explanations.
 """
 
-_MAX_SUMMARY_MESSAGES = 12
+_MAX_SUMMARY_MESSAGES = 16
 
 
 class SessionSummary(BaseModel):
@@ -111,7 +113,7 @@ class NovaSessionSummarizer:
             response = self.client.converse(
                 trimmed_messages,
                 system_prompt=system_prompt,
-                max_tokens=450,
+                max_tokens=650,
                 temperature=0.1,
                 top_p=0.3,
             )

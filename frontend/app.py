@@ -341,6 +341,9 @@ st.markdown(
     .sidebar-list.compact li {
         margin-bottom: 0.28rem;
     }
+    .sidebar-gap {
+        height: 0.5rem;
+    }
     .sidebar-source-list {
         list-style: none;
         padding-left: 0;
@@ -1454,7 +1457,10 @@ def _render_profile_sidebar(current_lang: str) -> None:
         )
         profile_preview = t("sidebar_profile_pending", current_lang)
         if recognized_facts:
-            profile_preview = " · ".join(recognized_facts[:2])
+            preview_items = list(recognized_facts[:3])
+            if len(recognized_facts) > 3:
+                preview_items.append(f"+{len(recognized_facts) - 3}")
+            profile_preview = " · ".join(preview_items)
         stats = [
             (t("sidebar_stat_profile", current_lang), profile_preview),
             (
@@ -1474,6 +1480,7 @@ def _render_profile_sidebar(current_lang: str) -> None:
         if profile.topic_labels:
             _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
             _render_sidebar_chip_list(profile.topic_labels)
+            st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
 
         if profile.goal_summaries:
             with st.expander(
@@ -1483,10 +1490,6 @@ def _render_profile_sidebar(current_lang: str) -> None:
             ):
                 _render_sidebar_list(profile.goal_summaries)
 
-        if recognized_facts:
-            _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
-            _render_sidebar_list(recognized_facts, compact=True)
-
         conversation_summary_points = getattr(profile, "conversation_summary_points", ())
         if conversation_summary_points:
             with st.expander(
@@ -1494,7 +1497,7 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 expanded=False,
                 icon=":material/notes:",
             ):
-                _render_sidebar_list(conversation_summary_points, compact=True)
+                _render_sidebar_list(conversation_summary_points)
 
         if profile.cited_sources:
             with st.expander(
