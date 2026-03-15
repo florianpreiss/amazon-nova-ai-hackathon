@@ -10,6 +10,7 @@ from collections.abc import Generator
 import structlog
 
 from src.core.client import NovaClient, NovaClientError
+from src.core.conversation import build_session_memory_addendum
 from src.core.provenance import (
     AgentReply,
     ResponseProvenance,
@@ -180,6 +181,8 @@ class BaseAgent:
         prompt = self._base_prompt
         if metadata and metadata.get("identity_context"):
             prompt += build_identity_addendum(metadata["identity_context"])
+        if metadata and metadata.get("session_memory"):
+            prompt += build_session_memory_addendum(metadata["session_memory"])
         trusted_sources = ()
         if metadata and metadata.get("trusted_sources"):
             trusted_sources = tuple(metadata["trusted_sources"])

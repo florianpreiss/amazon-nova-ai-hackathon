@@ -3,6 +3,7 @@
 from collections.abc import Generator
 
 import pytest
+from src.core.conversation import ConversationStore
 from src.core.provenance import AgentReply, build_default_provenance
 from src.i18n import t
 from src.orchestration import ChatService, ChatTurnResult
@@ -74,6 +75,7 @@ class TestChatService:
         )
 
         assert result.response == "Antwort"
+        assert result.session_id
         assert result.agent == "FINANCING"
         assert agent.messages_seen is not None
         assert agent.metadata_seen is not None
@@ -81,6 +83,7 @@ class TestChatService:
         assert agent.messages_seen[-1]["content"][0]["text"] == "Wie beantrage ich BAfoeG?"
         assert agent.metadata_seen["identity_context"] == {"first_gen": True}
         assert agent.metadata_seen["provenance"].source_registry_used is True
+        assert agent.metadata_seen["session_memory"]["message_count"] == 1
         assert agent.metadata_seen["trusted_sources"]
 
     def test_respond_adds_localized_crisis_prefix(self):
@@ -102,6 +105,7 @@ class TestChatService:
         result = service.respond("Ich kann nicht mehr", ui_language="de")
 
         assert result.crisis is True
+        assert result.session_id
         assert result.crisis_resources == {
             "emergency": "112",
             "student_support": "Studierendenwerk",
@@ -121,6 +125,7 @@ class TestChatService:
 
         assert streamed[:-1] == ["Grounded answer"]
         assert isinstance(streamed[-1], ChatTurnResult)
+        assert streamed[-1].session_id
         assert streamed[-1].response == "Grounded answer"
         assert streamed[-1].agent == "STUDY_CHOICE"
 
@@ -137,3 +142,66 @@ class TestChatService:
         assert streamed[:-1] == ["First draft"]
         assert isinstance(streamed[-1], ChatTurnResult)
         assert streamed[-1].response == "Improved answer"
+
+    def test_respond_reuses_session_memory_without_replaying_history(self):
+        agent = StubAgent(text="Antwort")
+        service = ChatService(
+            router=StubRouter("FINANCING"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(), "FINANCING": agent},
+        )
+
+        first = service.respond("Ich brauche Hilfe bei BAfoeG.", ui_language="de")
+        second = service.respond(
+            "Und was ist mit Stipendien?",
+            session_id=first.session_id,
+            ui_language="de",
+        )
+
+        assert second.session_id == first.session_id
+        assert agent.messages_seen is not None
+        assert len(agent.messages_seen) == 3
+        assert agent.messages_seen[0]["content"][0]["text"] == "Ich brauche Hilfe bei BAfoeG."
+        assert agent.messages_seen[1]["content"][0]["text"] == "Antwort"
+        assert agent.messages_seen[2]["content"][0]["text"] == "Und was ist mit Stipendien?"
+        assert agent.metadata_seen is not None
+        assert agent.metadata_seen["session_memory"]["active_goals"] == (
+            "Ich brauche Hilfe bei BAfoeG.",
+        )
+
+    def test_get_session_snapshot_exposes_ephemeral_summary(self):
+        clock = iter([100.0, 100.0, 100.0, 101.0, 101.0, 102.0, 102.0, 103.0, 103.0]).__next__
+        service = ChatService(
+            router=StubRouter("ROLE_MODELS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(), "ROLE_MODELS": StubAgent(text="Klar.")},
+            sessions=ConversationStore(now=clock),
+        )
+
+        result = service.respond(
+            "Ich bin Erstakademikerin und fuehle mich wie ein Impostor.",
+            ui_language="de",
+        )
+        snapshot = service.get_session_snapshot(result.session_id)
+
+        assert snapshot is not None
+        assert snapshot.session_id == result.session_id
+        assert snapshot.current_agent == "ROLE_MODELS"
+        assert snapshot.identity_context["first_generation_student"] is True
+        assert snapshot.topics[-1] == "role models"
+        assert snapshot.preferences["response_language"] == "de"
+
+    def test_end_session_removes_ephemeral_memory_immediately(self):
+        service = ChatService(
+            router=StubRouter("COMPASS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(text="Alles klar.")},
+        )
+
+        result = service.respond("Ich brauche Orientierung.", ui_language="de")
+
+        assert service.get_session_snapshot(result.session_id) is not None
+
+        service.end_session(result.session_id)
+
+        assert service.get_session_snapshot(result.session_id) is None

@@ -3,8 +3,8 @@ KODA — Streamlit Chat Interface.
 """
 
 import html as html_lib
+import re
 import sys
-import uuid
 from pathlib import Path
 
 import streamlit as st
@@ -29,7 +29,7 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.session_id = None
 if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
 if "lang" not in st.session_state:
@@ -874,16 +874,19 @@ def _reset_chat() -> None:
     """
     Clear all conversation state and return to the welcome screen.
 
-    Resets messages, session ID, and welcome flag.  A new session ID is
-    generated so any server-side session store would treat this as a fresh
-    session.  The language preference is intentionally preserved — the user
-    should not have to re-select it after resetting.
+    Deletes the active in-memory session, resets local messages and session ID,
+    and returns to the welcome screen. The next chat turn will receive a fresh
+    ephemeral server-side session. The language preference is intentionally
+    preserved — the user should not have to re-select it after resetting.
 
     Privacy note: no persistent storage exists, so "reset" is purely
     in-memory.  Compliant with the ephemeral-session guarantee in the footer.
     """
+    session_id = st.session_state.session_id
+    if session_id:
+        load_chat_service().end_session(session_id)
     st.session_state.messages = []
-    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.session_id = None
     st.session_state.show_welcome = True
     # Clear any pending quick-action message
     st.session_state.pop("_pending_msg", None)
@@ -1003,14 +1006,23 @@ def _render_provenance_block(
         _render_provenance_contents(normalized, current_lang)
 
 
-def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
+def get_response_stream(
+    user_message: str,
+    *,
+    session_id: str | None,
+    ui_lang: str = "de",
+):
     """
     Streaming wrapper around the shared chat service.
 
     Yields text chunks first and finishes with a ``ChatTurnResult`` so the
     caller can render progressively and still capture the structured metadata.
     """
-    yield from load_chat_service().respond_stream(user_message, history, ui_language=ui_lang)
+    yield from load_chat_service().respond_stream(
+        user_message,
+        session_id=session_id,
+        ui_language=ui_lang,
+    )
 
 
 def _safe_user(text: str) -> str:
@@ -1024,6 +1036,62 @@ def _paragraph_block(text: str, css_class: str) -> str:
     paragraphs = [html_lib.escape(part.strip()) for part in text.split("\n\n") if part.strip()]
     body = "".join(f"<p>{paragraph}</p>" for paragraph in paragraphs)
     return f"<div class='{css_class}'>{body}</div>"
+
+
+def _normalize_assistant_markdown(text: str) -> str:
+    """Repair common markdown formatting issues before rendering assistant text."""
+
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").replace("\\n", "\n")
+    # Assistant emphasis markers are often malformed in streamed output and can
+    # cause large sections to render bold. Keep the text, drop the markers.
+    normalized = normalized.replace("**", "").replace("__", "")
+
+    normalized = re.sub(r"\s*---\s*", "\n\n---\n\n", normalized)
+    normalized = re.sub(r"([:.;!?])\s+(#{1,6}\s+)", r"\1\n\n\2", normalized)
+    normalized = re.sub(r"---\s+(#{1,6}\s+)", r"---\n\n\1", normalized)
+
+    repaired_lines: list[str] = []
+    for raw_line in normalized.split("\n"):
+        line = raw_line.strip()
+        if not line:
+            repaired_lines.append("")
+            continue
+
+        if re.match(r"^\d+\.\s", line) and " - " in line:
+            line = re.sub(r"\s-\s+(?=[A-ZÄÖÜ])", "\n   - ", line)
+        elif not line.startswith("- ") and (
+            "? - " in line or ": - " in line or line.count(" - ") >= 2
+        ):
+            line = re.sub(r"\s-\s+(?=[A-ZÄÖÜ])", "\n- ", line)
+
+        repaired_lines.append(line)
+
+    normalized = "\n".join(repaired_lines)
+    normalized = re.sub(r"[ \t]+\n", "\n", normalized)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized.strip()
+
+
+def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | None]:
+    """Render streamed assistant chunks as markdown instead of plain text."""
+
+    content_placeholder = st.empty()
+    chunks: list[str] = []
+    result: ChatTurnResult | None = None
+
+    for item in stream:
+        if isinstance(item, ChatTurnResult):
+            result = item
+            continue
+
+        chunks.append(item)
+        content_placeholder.markdown(_normalize_assistant_markdown("".join(chunks)))
+
+    full_text = _normalize_assistant_markdown("".join(chunks))
+    if full_text:
+        content_placeholder.markdown(full_text)
+
+    return full_text, result
 
 
 def _send(msg_key: str):
@@ -1177,7 +1245,7 @@ for msg in st.session_state.messages:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
-            st.markdown(msg["content"])
+            st.markdown(_normalize_assistant_markdown(msg["content"]))
             _render_provenance_block(msg.get("provenance"), lang)
 
 
@@ -1224,29 +1292,25 @@ if user_input:
 
     # ── Streaming response ─────────────────────────────────
     # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
-    # st.write_stream() renders each yielded chunk as it arrives.
-    # The final yielded item is a structured turn result — we pop it before display.
-    stream = get_response_stream(user_input, st.session_state.messages[:-1], ui_lang=lang)
+    # Render markdown progressively via a placeholder so formatting survives
+    # during the live response, not only after the rerun from chat history.
+    stream = get_response_stream(
+        user_input,
+        session_id=st.session_state.session_id,
+        ui_lang=lang,
+    )
 
     label_placeholder = None
-    result_box: list[ChatTurnResult | None] = [None]
-
-    def _filtered_stream():
-        """Yield only string chunks to st.write_stream; capture the final result."""
-        for item in stream:
-            if isinstance(item, ChatTurnResult):
-                result_box[0] = item
-            else:
-                yield item
+    provenance_placeholder = None
 
     with st.chat_message("assistant", avatar="\U0001f9ed"):
         label_placeholder = st.empty()
-        full_text = st.write_stream(_filtered_stream())
         provenance_placeholder = st.empty()
+        full_text, result = _stream_markdown_response(stream)
 
-    result = result_box[0]
     if result is None:
         result = ChatTurnResult(
+            session_id=st.session_state.session_id or "",
             response=full_text,
             agent="COMPASS",
             crisis=False,
@@ -1258,6 +1322,8 @@ if user_input:
             ),
         )
 
+    st.session_state.session_id = result.session_id or st.session_state.session_id
+    display_response = _normalize_assistant_markdown(result.response)
     agent_label = get_agent_label(result.agent, lang)
     if label_placeholder:
         label_placeholder.caption(agent_label)
@@ -1267,7 +1333,7 @@ if user_input:
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": result.response,
+            "content": display_response,
             "agent": result.agent,
             "provenance": result.provenance.model_dump(),
         }
