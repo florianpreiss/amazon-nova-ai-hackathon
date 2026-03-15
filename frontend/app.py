@@ -13,10 +13,11 @@ import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.core.conversation import SessionMemorySnapshot
 from src.core.provenance import ResponseProvenance
 from src.core.session_bundle import serialize_session_bundle
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
-from src.orchestration import ChatTurnResult, build_default_chat_service
+from src.orchestration import ChatTurnResult, OnboardingTurnResult, build_default_chat_service
 from src.ui import build_session_profile_view
 
 # ── Page config ────────────────────────────────────────
@@ -214,6 +215,40 @@ st.markdown(
     .footer-copy p:first-child {
         margin-top: 0;
     }
+    .onboarding-panel {
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(154, 129, 186, 0.18);
+        border-radius: 22px;
+        box-shadow: 0 18px 40px rgba(133, 122, 171, 0.08);
+        margin: 1.1rem auto 0;
+        max-width: 760px;
+        padding: 1.2rem 1.25rem;
+    }
+    .onboarding-title {
+        color: #625b86;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 1.15rem;
+        font-weight: 600;
+        line-height: 1.3;
+        margin: 0 0 0.5rem;
+        text-align: center;
+    }
+    .onboarding-body,
+    .onboarding-hint {
+        color: #636e72;
+        font-family: 'Nunito', sans-serif;
+        margin: 0;
+        text-align: center;
+    }
+    .onboarding-body {
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+    .onboarding-hint {
+        font-size: 0.82rem;
+        line-height: 1.5;
+        margin-top: 0.65rem;
+    }
 
     /* ── Sidebar session profile ────────────── */
     [data-testid="stSidebar"] {
@@ -284,6 +319,17 @@ st.markdown(
         border: 1px solid rgba(154, 129, 186, 0.16);
         color: #6c5a86;
         margin-bottom: 0.9rem;
+    }
+    .sidebar-profile-summary {
+        background: rgba(255, 255, 255, 0.56);
+        border: 1px solid rgba(154, 129, 186, 0.14);
+        border-radius: 16px;
+        color: #4f4d63;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.84rem;
+        line-height: 1.55;
+        margin: 0.9rem 0 0.3rem 0;
+        padding: 0.8rem 0.9rem;
     }
     .sidebar-empty {
         background: rgba(255, 255, 255, 0.74);
@@ -878,6 +924,11 @@ st.markdown(
             border-color: rgba(212, 181, 235, 0.16) !important;
             color: #ead8f5 !important;
         }
+        .sidebar-profile-summary {
+            background: rgba(34, 34, 48, 0.58) !important;
+            border-color: rgba(199, 189, 255, 0.12) !important;
+            color: rgba(245, 242, 255, 0.92) !important;
+        }
         .sidebar-empty {
             background: rgba(17, 35, 48, 0.78) !important;
             border-color: rgba(212, 181, 235, 0.22) !important;
@@ -1147,6 +1198,10 @@ st.markdown(
             font-size: 0.8rem;
             padding: 0.8rem 0.82rem;
         }
+        .sidebar-profile-summary {
+            font-size: 0.8rem;
+            padding: 0.78rem 0.82rem;
+        }
         .sidebar-stats {
             gap: 0.45rem;
         }
@@ -1161,6 +1216,15 @@ st.markdown(
         }
         .footer-copy {
             font-size: 0.81rem;
+        }
+        .onboarding-panel {
+            padding: 1rem 1rem 0.95rem;
+        }
+        .onboarding-title {
+            font-size: 1.05rem;
+        }
+        .onboarding-body {
+            font-size: 0.91rem;
         }
         .stat-box {
             padding: 1rem 0.85rem;
@@ -1517,7 +1581,10 @@ def _apply_imported_session(imported_session, current_lang: str) -> None:
     st.session_state.messages = [
         _history_message_to_ui(message) for message in imported_session.messages
     ]
-    st.session_state.show_welcome = False
+    st.session_state.show_welcome = (
+        imported_session.snapshot.onboarding_state == "skipped"
+        and not bool(imported_session.messages)
+    )
     st.session_state.lang = next_lang
     st.session_state._lang_toggle = next_lang
     st.session_state.memory_import_revision += 1
@@ -1577,9 +1644,32 @@ def _on_lang_change():
     st.session_state.lang = st.session_state._lang_toggle
 
 
+def _get_session_snapshot():
+    session_id = st.session_state.session_id
+    if not session_id:
+        return None
+    return load_chat_service().get_session_snapshot(session_id)
+
+
+def _get_onboarding_state(snapshot: SessionMemorySnapshot | None) -> str:
+    if snapshot is None:
+        return "pending"
+    return snapshot.onboarding_state
+
+
+def _profile_preview_from_summary(summary_text: str | None, current_lang: str) -> str:
+    if not summary_text:
+        return t("sidebar_profile_pending", current_lang)
+
+    compact = re.sub(r"\s+", " ", summary_text).strip()
+    if len(compact) <= 88:
+        return compact
+    return compact[:87].rstrip() + "..."
+
+
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
-    snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
+    snapshot = _get_session_snapshot()
     profile = build_session_profile_view(snapshot, ui_language=current_lang)
 
     with st.sidebar:
@@ -1624,6 +1714,11 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 if len(recognized_facts) > 3:
                     preview_items.append(f"+{len(recognized_facts) - 3}")
                 profile_preview = " · ".join(preview_items)
+            elif profile.profile_summary_text:
+                profile_preview = _profile_preview_from_summary(
+                    profile.profile_summary_text,
+                    current_lang,
+                )
             stats = [
                 (t("sidebar_stat_profile", current_lang), profile_preview),
                 (
@@ -1633,6 +1728,16 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
             ]
             _render_sidebar_stats(stats)
+
+            if profile.profile_summary_text:
+                st.markdown(
+                    (
+                        "<div class='sidebar-profile-summary'>"
+                        f"{html_lib.escape(profile.profile_summary_text)}"
+                        "</div>"
+                    ),
+                    unsafe_allow_html=True,
+                )
 
             if profile.crisis_detected:
                 st.markdown(
@@ -1740,15 +1845,15 @@ def _normalize_assistant_markdown(text: str) -> str:
     return normalized.strip()
 
 
-def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | None]:
+def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | OnboardingTurnResult | None]:
     """Render streamed assistant chunks as markdown instead of plain text."""
 
     content_placeholder = st.empty()
     chunks: list[str] = []
-    result: ChatTurnResult | None = None
+    result: ChatTurnResult | OnboardingTurnResult | None = None
 
     for item in stream:
-        if isinstance(item, ChatTurnResult):
+        if isinstance(item, (ChatTurnResult, OnboardingTurnResult)):
             result = item
             continue
 
@@ -1767,7 +1872,12 @@ def _send(msg_key: str):
     st.session_state.show_welcome = False
 
 
-def _render_quick_actions(current_lang: str) -> None:
+def _send_custom(message: str) -> None:
+    st.session_state._pending_msg = message
+    st.session_state.show_welcome = False
+
+
+def _render_generic_quick_actions(current_lang: str) -> None:
     """
     Render the six quick-action suggestion buttons.
 
@@ -1819,6 +1929,97 @@ def _render_quick_actions(current_lang: str) -> None:
             _send("quick_rolemodels_msg")
 
 
+def _render_personalized_quick_actions(current_lang: str, prompts) -> None:
+    heading = t("quick_actions_heading", current_lang)
+    sub = t("quick_actions_sub", current_lang)
+    st.markdown(
+        f'<div class="qa-header">'
+        f'<div class="qa-header-title">{heading}</div>'
+        f'<div class="qa-header-sub">{sub}</div>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    prompt_list = [
+        prompt
+        for prompt in prompts
+        if getattr(prompt, "label", "") and getattr(prompt, "message", "")
+    ]
+    for row_start in range(0, len(prompt_list), 3):
+        row = prompt_list[row_start : row_start + 3]
+        cols = st.columns(len(row))
+        for col, prompt in zip(cols, row, strict=False):
+            with col:
+                if st.button(
+                    str(prompt.label),
+                    use_container_width=True,
+                    key=f"qa_personalized_{row_start}_{prompt.label[:20]}",
+                ):
+                    _send_custom(str(prompt.message))
+
+
+def _render_quick_actions(current_lang: str, snapshot) -> None:
+    prompts = getattr(snapshot, "personalized_prompts", ()) if snapshot is not None else ()
+    if prompts:
+        _render_personalized_quick_actions(current_lang, prompts)
+        return
+    _render_generic_quick_actions(current_lang)
+
+
+def _render_welcome_screen(current_lang: str) -> None:
+    if current_lang == "de":
+        left_label = "Nicht-Akademikerkinder"
+        left_value = "27 von 100"
+        left_delta = "beginnen ein Studium"
+        right_label = "Akademikerkinder"
+        right_value = "79 von 100"
+        right_delta = "beginnen ein Studium"
+    else:
+        left_label = "Non-academic families"
+        left_value = "27 of 100"
+        left_delta = "start university"
+        right_label = "Academic families"
+        right_value = "79 of 100"
+        right_delta = "start university"
+
+    col_left, col_right = st.columns(2)
+    with col_left:
+        st.markdown(
+            (
+                "<div class='stat-box'>"
+                f"<div class='stat-label'>{left_label}</div>"
+                f"<div class='stat-value low'>{left_value}</div>"
+                f"<div class='stat-delta'>{left_delta}</div>"
+                "</div>"
+            ),
+            unsafe_allow_html=True,
+        )
+    with col_right:
+        st.markdown(
+            (
+                "<div class='stat-box'>"
+                f"<div class='stat-label'>{right_label}</div>"
+                f"<div class='stat-value high'>{right_value}</div>"
+                f"<div class='stat-delta'>{right_delta}</div>"
+                "</div>"
+            ),
+            unsafe_allow_html=True,
+        )
+
+    st.write("")
+    st.markdown(
+        _paragraph_block(t("welcome_body", current_lang), "welcome-copy"),
+        unsafe_allow_html=True,
+    )
+    st.write("")
+
+
+def _render_onboarding_message(text: str, current_lang: str) -> None:
+    with st.chat_message("assistant", avatar="🧭"):
+        st.caption(get_agent_label("ONBOARDING", current_lang))
+        st.markdown(_normalize_assistant_markdown(text))
+
+
 _render_profile_sidebar(lang)
 
 
@@ -1840,182 +2041,214 @@ st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe
 st.markdown(f"""<div class="koda-heritage">{heritage_text}</div>""", unsafe_allow_html=True)
 
 
-# ── Welcome screen ─────────────────────────────────────
-
-if st.session_state.show_welcome and not st.session_state.messages:
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        if lang == "de":
-            st.markdown(
-                """
-            <div class="stat-box">
-                <div class="stat-label">Nicht-Akademikerkinder</div>
-                <div class="stat-value low">27 von 100</div>
-                <div class="stat-delta">beginnen ein Studium</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                """
-            <div class="stat-box">
-                <div class="stat-label">Non-academic families</div>
-                <div class="stat-value low">27 of 100</div>
-                <div class="stat-delta">start university</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-
-    with col_right:
-        if lang == "de":
-            st.markdown(
-                """
-            <div class="stat-box">
-                <div class="stat-label">Akademikerkinder</div>
-                <div class="stat-value high">79 von 100</div>
-                <div class="stat-delta">beginnen ein Studium</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                """
-            <div class="stat-box">
-                <div class="stat-label">Academic families</div>
-                <div class="stat-value high">79 of 100</div>
-                <div class="stat-delta">start university</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-
-    st.write("")
-
-    st.markdown(_paragraph_block(t("welcome_body", lang), "welcome-copy"), unsafe_allow_html=True)
-
-    st.write("")
+session_snapshot = _get_session_snapshot()
+onboarding_state = _get_onboarding_state(session_snapshot)
+show_onboarding_landing = onboarding_state == "pending" and not st.session_state.messages
+show_onboarding_chat = onboarding_state == "in_progress"
 
 
-# ── Chat history ───────────────────────────────────────
+# ── Onboarding landing ─────────────────────────────────
 
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        # User text is plain — escape HTML to prevent XSS injection
-        st.markdown(
-            f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        # Agent response: use Streamlit's native chat_message so that
-        # st.markdown() inside it renders all markdown formatting correctly
-        # (headers, bold, lists, code blocks, etc.)
-        label = get_agent_label(msg.get("agent", "COMPASS"), lang)
-        with st.chat_message("assistant", avatar="🧭"):
-            st.caption(label)
-            st.markdown(_normalize_assistant_markdown(msg["content"]))
-            _render_provenance_block(msg.get("provenance"), lang)
-
-
-# ── Quick actions (persistent) ─────────────────────────
-# Rendered after every chat turn so users can always select a topic
-# without typing.  Unique widget keys prevent Streamlit duplicate-key
-# errors across re-renders.
-_render_quick_actions(lang)
-
-
-# ── Reset button — sits right above the chat input ────────
-# Only shown once the user has started a conversation.
-if st.session_state.messages:
-    _space_col, _reset_col = st.columns([6, 2])
-    with _reset_col:
-        if st.button(
-            t("reset_chat", lang),
-            help=t("reset_chat_tooltip", lang),
-            key="_reset_btn",
-            type="primary",
-            use_container_width=True,
-        ):
-            _reset_chat()
-            st.rerun()
-
-# ── Input handling ─────────────────────────────────────
-
-user_input = None
-if "_pending_msg" in st.session_state:
-    user_input = st.session_state._pending_msg
-    del st.session_state._pending_msg
-
-chat_input = st.chat_input(t("input_placeholder", lang))
-if chat_input:
-    user_input = chat_input
-    st.session_state.show_welcome = False
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
+if show_onboarding_landing:
+    _render_welcome_screen(lang)
     st.markdown(
-        f'<div class="msg-user">{_safe_user(user_input)}</div>',
+        (
+            "<div class='onboarding-panel'>"
+            f"<div class='onboarding-title'>{html_lib.escape(t('onboarding_pending_title', lang))}</div>"
+            f"<p class='onboarding-body'>{html_lib.escape(t('onboarding_pending_body', lang))}</p>"
+            f"<p class='onboarding-hint'>{html_lib.escape(t('onboarding_skip_hint', lang))}</p>"
+            "</div>"
+        ),
         unsafe_allow_html=True,
     )
 
-    # ── Streaming response ─────────────────────────────────
-    # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
-    # Render markdown progressively via a placeholder so formatting survives
-    # during the live response, not only after the rerun from chat history.
-    stream = get_response_stream(
-        user_input,
-        session_id=st.session_state.session_id,
-        ui_lang=lang,
-    )
-
-    label_placeholder = None
-    provenance_placeholder = None
-
-    with st.chat_message("assistant", avatar="\U0001f9ed"):
-        label_placeholder = st.empty()
-        provenance_placeholder = st.empty()
-        full_text, result = _stream_markdown_response(stream)
-
-    if result is None:
-        result = ChatTurnResult(
-            session_id=st.session_state.session_id or "",
-            response=full_text,
-            agent="COMPASS",
-            crisis=False,
-            provenance=ResponseProvenance(
-                mode="model",
-                source_registry_used=False,
-                web_grounding_used=False,
-                sources=(),
-            ),
+    start_col, skip_col = st.columns([3, 2])
+    with start_col:
+        start_onboarding = st.button(
+            t("onboarding_start_btn", lang),
+            use_container_width=True,
+            type="primary",
+            key="onboarding_start",
+        )
+    with skip_col:
+        skip_onboarding = st.button(
+            t("onboarding_skip_btn", lang),
+            use_container_width=True,
+            key="onboarding_skip_pending",
         )
 
-    st.session_state.session_id = result.session_id or st.session_state.session_id
-    display_response = _normalize_assistant_markdown(result.response)
-    agent_label = get_agent_label(result.agent, lang)
-    if label_placeholder:
-        label_placeholder.caption(agent_label)
-    if provenance_placeholder:
-        _render_provenance_block(result.provenance, lang, provenance_placeholder)
+    if start_onboarding:
+        st.session_state.show_welcome = False
+        with st.chat_message("assistant", avatar="🧭"):
+            label_placeholder = st.empty()
+            label_placeholder.caption(get_agent_label("ONBOARDING", lang))
+            _full_text, result = _stream_markdown_response(
+                load_chat_service().start_onboarding_stream(
+                    session_id=st.session_state.session_id,
+                    ui_language=lang,
+                )
+            )
+        if isinstance(result, OnboardingTurnResult):
+            st.session_state.session_id = result.session_id
+        st.rerun()
 
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": display_response,
-            "agent": result.agent,
-            "provenance": result.provenance.model_dump(),
-        }
-    )
+    if skip_onboarding:
+        snapshot = load_chat_service().skip_onboarding(
+            session_id=st.session_state.session_id,
+            ui_language=lang,
+        )
+        st.session_state.session_id = snapshot.session_id
+        st.session_state.show_welcome = True
+        st.rerun()
 
-    # Rerun so the script executes top-to-bottom with the fully-updated
-    # message list.  Without this, _render_quick_actions() and the reset
-    # button were already committed to the page before the new messages
-    # were appended — making them invisible until the next user interaction
-    # (e.g. a language switch) happened to trigger its own st.rerun().
-    st.rerun()
+
+# ── Onboarding chat ────────────────────────────────────
+
+elif show_onboarding_chat and session_snapshot is not None:
+    for turn in session_snapshot.onboarding_messages:
+        if turn.role == "user":
+            st.markdown(
+                f'<div class="msg-user">{_safe_user(turn.content)}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            _render_onboarding_message(turn.content, lang)
+
+    _space_col, skip_col = st.columns([6, 2])
+    with skip_col:
+        if st.button(
+            t("onboarding_skip_btn", lang),
+            use_container_width=True,
+            key="onboarding_skip_progress",
+        ):
+            snapshot = load_chat_service().skip_onboarding(
+                session_id=st.session_state.session_id,
+                ui_language=lang,
+            )
+            st.session_state.session_id = snapshot.session_id
+            st.session_state.show_welcome = True
+            st.rerun()
+
+    onboarding_input = st.chat_input(t("onboarding_input_placeholder", lang))
+    if onboarding_input:
+        st.markdown(
+            f'<div class="msg-user">{_safe_user(onboarding_input)}</div>',
+            unsafe_allow_html=True,
+        )
+        with st.chat_message("assistant", avatar="🧭"):
+            label_placeholder = st.empty()
+            label_placeholder.caption(get_agent_label("ONBOARDING", lang))
+            _full_text, result = _stream_markdown_response(
+                load_chat_service().continue_onboarding_stream(
+                    onboarding_input,
+                    session_id=st.session_state.session_id,
+                    ui_language=lang,
+                )
+            )
+        if isinstance(result, OnboardingTurnResult):
+            st.session_state.session_id = result.session_id
+            if result.completed:
+                st.session_state.show_welcome = False
+        st.rerun()
+
+
+# ── Main chat ──────────────────────────────────────────
+
+else:
+    if st.session_state.show_welcome and not st.session_state.messages:
+        _render_welcome_screen(lang)
+
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            st.markdown(
+                f'<div class="msg-user">{_safe_user(msg["content"])}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            label = get_agent_label(msg.get("agent", "COMPASS"), lang)
+            with st.chat_message("assistant", avatar="🧭"):
+                st.caption(label)
+                st.markdown(_normalize_assistant_markdown(msg["content"]))
+                _render_provenance_block(msg.get("provenance"), lang)
+
+    _render_quick_actions(lang, session_snapshot)
+
+    if st.session_state.messages:
+        _space_col, _reset_col = st.columns([6, 2])
+        with _reset_col:
+            if st.button(
+                t("reset_chat", lang),
+                help=t("reset_chat_tooltip", lang),
+                key="_reset_btn",
+                type="primary",
+                use_container_width=True,
+            ):
+                _reset_chat()
+                st.rerun()
+
+    user_input = None
+    if "_pending_msg" in st.session_state:
+        user_input = st.session_state._pending_msg
+        del st.session_state._pending_msg
+
+    chat_input = st.chat_input(t("input_placeholder", lang))
+    if chat_input:
+        user_input = chat_input
+        st.session_state.show_welcome = False
+
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.markdown(
+            f'<div class="msg-user">{_safe_user(user_input)}</div>',
+            unsafe_allow_html=True,
+        )
+
+        stream = get_response_stream(
+            user_input,
+            session_id=st.session_state.session_id,
+            ui_lang=lang,
+        )
+
+        label_placeholder = None
+        provenance_placeholder = None
+
+        with st.chat_message("assistant", avatar="\U0001f9ed"):
+            label_placeholder = st.empty()
+            provenance_placeholder = st.empty()
+            full_text, result = _stream_markdown_response(stream)
+
+        chat_result = result if isinstance(result, ChatTurnResult) else None
+        if chat_result is None:
+            chat_result = ChatTurnResult(
+                session_id=st.session_state.session_id or "",
+                response=full_text,
+                agent="COMPASS",
+                crisis=False,
+                provenance=ResponseProvenance(
+                    mode="model",
+                    source_registry_used=False,
+                    web_grounding_used=False,
+                    sources=(),
+                ),
+            )
+
+        st.session_state.session_id = chat_result.session_id or st.session_state.session_id
+        display_response = _normalize_assistant_markdown(chat_result.response)
+        agent_label = get_agent_label(chat_result.agent, lang)
+        if label_placeholder:
+            label_placeholder.caption(agent_label)
+        if provenance_placeholder:
+            _render_provenance_block(chat_result.provenance, lang, provenance_placeholder)
+
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": display_response,
+                "agent": chat_result.agent,
+                "provenance": chat_result.provenance.model_dump(),
+            }
+        )
+        st.rerun()
 
 
 # ── Footer ─────────────────────────────────────────────

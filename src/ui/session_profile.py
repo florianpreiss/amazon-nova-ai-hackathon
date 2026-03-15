@@ -151,6 +151,11 @@ def _clean_goal_text(text: str) -> str:
     return cleaned
 
 
+def _clean_profile_sentence(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip(" -:;,.")
+    return _ensure_terminal_punctuation(cleaned) if cleaned else ""
+
+
 def _ensure_terminal_punctuation(text: str) -> str:
     if text.endswith((".", "!", "?")):
         return text
@@ -291,6 +296,41 @@ def _extract_age(text: str) -> int | None:
     return None
 
 
+def _parse_onboarding_profile_fields(profile_summary: str | None) -> dict[str, str]:
+    if not profile_summary:
+        return {}
+
+    fields: dict[str, str] = {}
+    for raw_line in profile_summary.splitlines():
+        line = raw_line.strip()
+        if not line or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip().casefold()
+        value = value.strip()
+        if key and value:
+            fields[key] = value
+    return fields
+
+
+def _format_profile_summary_text(profile_summary: str | None) -> str | None:
+    if not profile_summary:
+        return None
+
+    fields = _parse_onboarding_profile_fields(profile_summary)
+    if not fields:
+        cleaned = re.sub(r"\s+", " ", profile_summary).strip()
+        return cleaned or None
+
+    parts = [
+        _clean_profile_sentence(fields[key])
+        for key in ("situation", "main_concern", "context")
+        if fields.get(key)
+    ]
+    formatted = " ".join(part for part in parts if part).strip()
+    return formatted or None
+
+
 def _mentions_school_stage(text: str) -> bool:
     return any(
         token in text
@@ -399,9 +439,7 @@ def build_session_profile_view(
         response_language_label=response_language_label,
         topic_labels=topic_labels,
         goal_summaries=goal_summaries,
-        profile_summary_text=(
-            str(snapshot.profile_summary).strip() if snapshot.profile_summary else None
-        ),
+        profile_summary_text=_format_profile_summary_text(snapshot.profile_summary),
         recognized_facts=recognized_facts,
         conversation_summary_points=_build_conversation_summary_points(
             topic_labels=topic_labels,

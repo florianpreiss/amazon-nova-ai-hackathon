@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from src.core.provenance import ResponseProvenance
 from src.core.session_bundle import SessionBundle
-from src.orchestration import build_default_chat_service
+from src.orchestration import OnboardingTurnResult, build_default_chat_service
 
 # ── App setup ──────────────────────────────────────
 
@@ -78,6 +78,20 @@ class SessionImportResponse(BaseModel):
     message_count: int
 
 
+class OnboardingRequest(BaseModel):
+    session_id: str | None = None
+    language: str = "en"
+
+
+class OnboardingContinueRequest(OnboardingRequest):
+    message: str
+
+
+class OnboardingSkipResponse(BaseModel):
+    session_id: str
+    onboarding_state: str
+
+
 # ── Endpoints ──────────────────────────────────────
 
 
@@ -97,6 +111,38 @@ async def chat(request: ChatRequest):
         crisis_detected=result.crisis,
         crisis_resources=result.crisis_resources,
         provenance=result.provenance,
+    )
+
+
+@app.post("/api/onboarding/start", response_model=OnboardingTurnResult)
+async def start_onboarding(request: OnboardingRequest):
+    """Start the guided onboarding flow for a session."""
+    return chat_service.start_onboarding(
+        session_id=request.session_id,
+        ui_language=request.language,
+    )
+
+
+@app.post("/api/onboarding/continue", response_model=OnboardingTurnResult)
+async def continue_onboarding(request: OnboardingContinueRequest):
+    """Continue the guided onboarding flow with one user answer."""
+    return chat_service.continue_onboarding(
+        request.message,
+        session_id=request.session_id,
+        ui_language=request.language,
+    )
+
+
+@app.post("/api/onboarding/skip", response_model=OnboardingSkipResponse)
+async def skip_onboarding(request: OnboardingRequest):
+    """Skip onboarding and return the updated session state."""
+    snapshot = chat_service.skip_onboarding(
+        session_id=request.session_id,
+        ui_language=request.language,
+    )
+    return OnboardingSkipResponse(
+        session_id=snapshot.session_id,
+        onboarding_state=snapshot.onboarding_state,
     )
 
 

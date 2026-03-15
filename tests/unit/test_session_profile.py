@@ -148,3 +148,26 @@ def test_build_session_profile_view_infers_basic_student_context_from_goals() ->
         "Noch in der Schule",
         "Interesse am Studium",
     )
+
+
+def test_build_session_profile_view_formats_structured_onboarding_profile_text() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-onboarding-profile",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=0,
+        profile_summary=(
+            "situation: Du bist 17 und noch in der Schule.\n"
+            "main_concern: Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt.\n"
+            "context: Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen.\n"
+            "language: de"
+        ),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="de")
+
+    assert view.profile_summary_text == (
+        "Du bist 17 und noch in der Schule. "
+        "Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt. "
+        "Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen."
+    )
