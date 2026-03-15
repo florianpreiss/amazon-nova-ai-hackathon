@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.core.provenance import ResponseProvenance
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 from src.orchestration import ChatTurnResult, build_default_chat_service
+from src.ui import build_session_profile_view
 
 # ── Page config ────────────────────────────────────────
 
@@ -21,7 +22,7 @@ st.set_page_config(
     page_title="KODA — Dein Studienbegleiter | Your Study Companion",
     page_icon="🧭",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ── Session state ──────────────────────────────────────
@@ -43,8 +44,42 @@ st.markdown(
     """
 <style>
     /* Hide Streamlit chrome */
-    #MainMenu, footer, header { visibility: hidden; }
+    #MainMenu, footer { visibility: hidden; }
     .stDeployButton { display: none; }
+    header, [data-testid="stHeader"] {
+        visibility: visible !important;
+        background: transparent !important;
+    }
+    [data-testid="stToolbar"] {
+        background: transparent !important;
+        padding: 0.35rem 0.5rem 0 0.45rem !important;
+    }
+    [data-testid="stExpandSidebarButton"],
+    [data-testid="stSidebarCollapseButton"] button {
+        align-items: center !important;
+        background: rgba(244, 236, 248, 0.94) !important;
+        border: 1px solid rgba(154, 129, 186, 0.24) !important;
+        border-radius: 999px !important;
+        box-shadow: 0 10px 24px rgba(143, 121, 180, 0.2) !important;
+        color: #73619b !important;
+        display: inline-flex !important;
+        justify-content: center !important;
+        transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease !important;
+    }
+    [data-testid="stExpandSidebarButton"] {
+        margin-left: 0.05rem !important;
+    }
+    [data-testid="stExpandSidebarButton"]:hover,
+    [data-testid="stSidebarCollapseButton"] button:hover {
+        background: rgba(251, 244, 253, 0.98) !important;
+        box-shadow: 0 12px 28px rgba(143, 121, 180, 0.26) !important;
+        transform: translateY(-1px) !important;
+    }
+    [data-testid="stExpandSidebarButton"] svg,
+    [data-testid="stSidebarCollapseButton"] svg {
+        color: #73619b !important;
+        fill: currentColor !important;
+    }
 
     /* ── Background images on edges ───────────── */
     .stApp::before, .stApp::after {
@@ -146,6 +181,223 @@ st.markdown(
     .welcome-copy p:first-child,
     .footer-copy p:first-child {
         margin-top: 0;
+    }
+
+    /* ── Sidebar session profile ────────────── */
+    [data-testid="stSidebar"] {
+        background:
+            linear-gradient(180deg, rgba(240, 231, 246, 0.95) 0%, rgba(228, 224, 248, 0.94) 100%);
+        border-right: 1px solid rgba(154, 129, 186, 0.18);
+        overflow: hidden;
+        position: relative;
+    }
+    [data-testid="stSidebar"]::before {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(241, 233, 248, 0.36) 100%),
+            url('app/static/left-bg.jpeg');
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        content: "";
+        inset: 0;
+        opacity: 0.96;
+        pointer-events: none;
+        position: absolute;
+    }
+    [data-testid="stSidebar"]::after {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(192, 181, 241, 0.14) 100%);
+        content: "";
+        inset: 0;
+        opacity: 0.55;
+        pointer-events: none;
+        position: absolute;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        padding-top: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    .sidebar-shell {
+        font-family: 'Nunito', sans-serif;
+        padding-top: 0.2rem;
+    }
+    .sidebar-kicker {
+        color: #876fb2;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+    .sidebar-title {
+        color: #58426d;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 1.45rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin: 0 0 0.55rem 0;
+    }
+    .sidebar-note,
+    .sidebar-empty,
+    .sidebar-alert {
+        border-radius: 16px;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        padding: 0.85rem 0.9rem;
+    }
+    .sidebar-note {
+        background: rgba(255, 255, 255, 0.58);
+        border: 1px solid rgba(154, 129, 186, 0.16);
+        color: #6c5a86;
+        margin-bottom: 0.9rem;
+    }
+    .sidebar-empty {
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px dashed rgba(154, 129, 186, 0.24);
+        color: #6d6188;
+        margin-top: 0.2rem;
+    }
+    .sidebar-alert {
+        background: rgba(214, 48, 49, 0.08);
+        border: 1px solid rgba(214, 48, 49, 0.16);
+        color: #8b2d2d;
+        margin-top: 0.4rem;
+    }
+    .sidebar-stats {
+        display: grid;
+        gap: 0.55rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0.95rem 0 1rem 0;
+    }
+    .sidebar-stat {
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(154, 129, 186, 0.14);
+        border-radius: 14px;
+        padding: 0.62rem 0.72rem;
+    }
+    .sidebar-stat.wide {
+        grid-column: 1 / -1;
+    }
+    .sidebar-stat-label {
+        color: #947aac;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.16rem;
+        text-transform: uppercase;
+    }
+    .sidebar-stat-value {
+        color: #58426d;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+    .sidebar-section {
+        margin-top: 0.9rem;
+    }
+    .sidebar-section-label {
+        color: #7e69a0;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.45rem;
+        text-transform: uppercase;
+    }
+    .sidebar-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.38rem;
+    }
+    .sidebar-chip {
+        background: rgba(154, 129, 186, 0.08);
+        border: 1px solid rgba(154, 129, 186, 0.15);
+        border-radius: 999px;
+        color: #755f96;
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.74rem;
+        font-weight: 700;
+        line-height: 1.25;
+        padding: 0.28rem 0.62rem;
+    }
+    .sidebar-list,
+    .sidebar-source-list {
+        margin: 0;
+        padding-left: 1rem;
+    }
+    .sidebar-list li,
+    .sidebar-source-list li {
+        color: #58426d;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.84rem;
+        line-height: 1.55;
+        margin-bottom: 0.4rem;
+    }
+    .sidebar-list.compact li {
+        margin-bottom: 0.28rem;
+    }
+    .sidebar-gap {
+        height: 0.5rem;
+    }
+    .sidebar-source-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    .sidebar-source-list li {
+        margin-bottom: 0.55rem;
+    }
+    .sidebar-source-tag {
+        border-radius: 999px;
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.64rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        margin-right: 0.35rem;
+        padding: 0.14rem 0.42rem;
+        text-transform: uppercase;
+    }
+    .sidebar-source-tag.registry {
+        background: rgba(0, 184, 148, 0.12);
+        color: #0b7d68;
+    }
+    .sidebar-source-tag.web {
+        background: rgba(9, 132, 227, 0.12);
+        color: #0c6fbe;
+    }
+    .sidebar-source-link {
+        color: #735894;
+        text-decoration: none;
+    }
+    .sidebar-source-link:hover {
+        text-decoration: underline;
+    }
+    .sidebar-source-domain {
+        color: #8b79a9;
+        display: block;
+        font-size: 0.74rem;
+        margin-top: 0.08rem;
+        overflow-wrap: anywhere;
+    }
+    [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.42);
+        border: 1px solid rgba(154, 129, 186, 0.14);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    [data-testid="stExpander"] details summary p {
+        color: #755f96 !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-size: 0.82rem !important;
+        font-weight: 800 !important;
+    }
+    [data-testid="stExpander"] details > div {
+        background: transparent !important;
     }
 
     /* ── Stat boxes ───────────────────────────── */
@@ -570,6 +822,96 @@ st.markdown(
         .footer-copy {
             color: #aeb6c8 !important;
         }
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #31253c 0%, #271f34 100%) !important;
+            border-right-color: rgba(212, 181, 235, 0.18) !important;
+        }
+        [data-testid="stSidebar"]::before {
+            background:
+                linear-gradient(180deg, rgba(38, 27, 50, 0.5) 0%, rgba(47, 34, 63, 0.42) 100%),
+                url('app/static/left-bg.jpeg') !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            background-size: cover !important;
+        }
+        [data-testid="stSidebar"]::after {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(190, 177, 243, 0.08) 100%) !important;
+            opacity: 0.48 !important;
+        }
+        .sidebar-title {
+            color: #f7eefc !important;
+        }
+        .sidebar-note {
+            background: rgba(244, 233, 250, 0.08) !important;
+            border-color: rgba(212, 181, 235, 0.16) !important;
+            color: #ead8f5 !important;
+        }
+        .sidebar-empty {
+            background: rgba(17, 35, 48, 0.78) !important;
+            border-color: rgba(212, 181, 235, 0.22) !important;
+            color: #eedff7 !important;
+        }
+        .sidebar-alert {
+            background: rgba(214, 48, 49, 0.14) !important;
+            border-color: rgba(214, 48, 49, 0.24) !important;
+            color: #ffb3b0 !important;
+        }
+        .sidebar-stat {
+            background: rgba(48, 34, 63, 0.82) !important;
+            border-color: rgba(212, 181, 235, 0.16) !important;
+        }
+        .sidebar-stat-label {
+            color: #ceb4e4 !important;
+        }
+        .sidebar-stat-value,
+        .sidebar-list li,
+        .sidebar-source-list li {
+            color: #f7eefc !important;
+        }
+        .sidebar-section-label {
+            color: #decaef !important;
+        }
+        .sidebar-chip {
+            background: rgba(212, 181, 235, 0.12) !important;
+            border-color: rgba(212, 181, 235, 0.2) !important;
+            color: #f2e2fb !important;
+        }
+        .sidebar-source-tag.registry {
+            background: rgba(0, 184, 148, 0.2) !important;
+            color: #7ce3cb !important;
+        }
+        .sidebar-source-tag.web {
+            background: rgba(9, 132, 227, 0.2) !important;
+            color: #88c7ff !important;
+        }
+        .sidebar-source-link {
+            color: #f2e2fb !important;
+        }
+        .sidebar-source-domain {
+            color: #d2bcdf !important;
+        }
+        [data-testid="stExpander"] {
+            background: rgba(54, 38, 70, 0.54) !important;
+            border-color: rgba(212, 181, 235, 0.14) !important;
+        }
+        [data-testid="stExpander"] details summary p {
+            color: #f2e2fb !important;
+        }
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stSidebarCollapseButton"] button {
+            background: rgba(68, 49, 89, 0.92) !important;
+            border-color: rgba(212, 181, 235, 0.22) !important;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28) !important;
+            color: #f2e2fb !important;
+        }
+        [data-testid="stExpandSidebarButton"]:hover,
+        [data-testid="stSidebarCollapseButton"] button:hover {
+            background: rgba(92, 68, 118, 0.96) !important;
+        }
+        [data-testid="stExpandSidebarButton"] svg,
+        [data-testid="stSidebarCollapseButton"] svg {
+            color: #f2e2fb !important;
+        }
 
         /* ── Stat boxes ───────────────────────── */
         .stat-box {
@@ -764,6 +1106,24 @@ st.markdown(
             margin-bottom: 0.85rem;
             padding: 0.7rem 0.8rem;
         }
+        .sidebar-title {
+            font-size: 1.45rem;
+        }
+        .sidebar-note,
+        .sidebar-empty,
+        .sidebar-alert {
+            font-size: 0.8rem;
+            padding: 0.8rem 0.82rem;
+        }
+        .sidebar-stats {
+            gap: 0.45rem;
+        }
+        .sidebar-stat {
+            padding: 0.7rem 0.75rem;
+        }
+        .sidebar-stat-value {
+            font-size: 0.91rem;
+        }
         .welcome-copy {
             font-size: 0.89rem;
         }
@@ -828,6 +1188,12 @@ st.markdown(
         .block-container {
             padding-left: 0.65rem !important;
             padding-right: 0.65rem !important;
+        }
+        .sidebar-title {
+            font-size: 1.32rem;
+        }
+        .sidebar-stat-value {
+            font-size: 0.9rem;
         }
         .koda-title {
             font-size: 2.35rem;
@@ -1006,6 +1372,142 @@ def _render_provenance_block(
         _render_provenance_contents(normalized, current_lang)
 
 
+def _render_sidebar_section_label(label: str) -> None:
+    st.markdown(
+        f"<div class='sidebar-section'><div class='sidebar-section-label'>{html_lib.escape(label)}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_sidebar_stats(stats: list[tuple[str, str]]) -> None:
+    cards = "".join(
+        f"<div class='sidebar-stat{' wide' if index == 0 else ''}'>"
+        f"<div class='sidebar-stat-label'>{html_lib.escape(label)}</div>"
+        f"<div class='sidebar-stat-value'>{html_lib.escape(value)}</div>"
+        "</div>"
+        for index, (label, value) in enumerate(stats)
+    )
+    st.markdown(f"<div class='sidebar-stats'>{cards}</div>", unsafe_allow_html=True)
+
+
+def _render_sidebar_chip_list(items: tuple[str, ...]) -> None:
+    chips = "".join(f"<span class='sidebar-chip'>{html_lib.escape(item)}</span>" for item in items)
+    st.markdown(f"<div class='sidebar-chip-row'>{chips}</div>", unsafe_allow_html=True)
+
+
+def _render_sidebar_list(items: tuple[str, ...], *, compact: bool = False) -> None:
+    rendered = "".join(f"<li>{html_lib.escape(item)}</li>" for item in items)
+    class_name = "sidebar-list compact" if compact else "sidebar-list"
+    st.markdown(f"<ul class='{class_name}'>{rendered}</ul>", unsafe_allow_html=True)
+
+
+def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
+    items: list[str] = []
+    for source in sources:
+        tag_key = (
+            "source_tag_registry"
+            if source.origin == "source_registry"
+            else "source_tag_web_grounding"
+        )
+        tag_label = html_lib.escape(t(tag_key, current_lang))
+        tag_class = "registry" if source.origin == "source_registry" else "web"
+        title = html_lib.escape(source.title)
+        url = html_lib.escape(source.url, quote=True)
+        domain = html_lib.escape(source.domain)
+        items.append(
+            "<li>"
+            f"<span class='sidebar-source-tag {tag_class}'>{tag_label}</span>"
+            f"<a class='sidebar-source-link' href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            f"<span class='sidebar-source-domain'>{domain}</span>"
+            "</li>"
+        )
+
+    st.markdown(
+        f"<ul class='sidebar-source-list'>{''.join(items)}</ul>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_profile_sidebar(current_lang: str) -> None:
+    session_id = st.session_state.session_id
+    snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
+    profile = build_session_profile_view(snapshot, ui_language=current_lang)
+
+    with st.sidebar:
+        st.markdown(
+            "<div class='sidebar-shell'>"
+            f"<div class='sidebar-kicker'>{html_lib.escape(t('sidebar_kicker', current_lang))}</div>"
+            f"<div class='sidebar-title'>{html_lib.escape(t('sidebar_title', current_lang))}</div>"
+            f"<div class='sidebar-note'>{html_lib.escape(t('sidebar_note', current_lang))}</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        if not profile.has_content:
+            st.markdown(
+                f"<div class='sidebar-empty'>{html_lib.escape(t('sidebar_empty', current_lang))}</div>",
+                unsafe_allow_html=True,
+            )
+            return
+
+        recognized_facts = getattr(
+            profile,
+            "recognized_facts",
+            getattr(profile, "identity_labels", ()),
+        )
+        profile_preview = t("sidebar_profile_pending", current_lang)
+        if recognized_facts:
+            preview_items = list(recognized_facts[:3])
+            if len(recognized_facts) > 3:
+                preview_items.append(f"+{len(recognized_facts) - 3}")
+            profile_preview = " · ".join(preview_items)
+        stats = [
+            (t("sidebar_stat_profile", current_lang), profile_preview),
+            (
+                t("sidebar_stat_language", current_lang),
+                profile.response_language_label or current_lang.upper(),
+            ),
+            (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
+        ]
+        _render_sidebar_stats(stats)
+
+        if profile.crisis_detected:
+            st.markdown(
+                f"<div class='sidebar-alert'>{html_lib.escape(t('sidebar_crisis_note', current_lang))}</div>",
+                unsafe_allow_html=True,
+            )
+
+        if profile.topic_labels:
+            _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
+            _render_sidebar_chip_list(profile.topic_labels)
+            st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+
+        if profile.goal_summaries:
+            with st.expander(
+                t("sidebar_section_goals", current_lang),
+                expanded=False,
+                icon=":material/question_answer:",
+            ):
+                _render_sidebar_list(profile.goal_summaries)
+
+        conversation_summary_points = getattr(profile, "conversation_summary_points", ())
+        if conversation_summary_points:
+            with st.expander(
+                t("sidebar_section_summary", current_lang),
+                expanded=False,
+                icon=":material/notes:",
+            ):
+                _render_sidebar_list(conversation_summary_points)
+
+        if profile.cited_sources:
+            with st.expander(
+                t("sidebar_section_sources", current_lang),
+                expanded=False,
+                icon=":material/library_books:",
+            ):
+                _render_sidebar_sources(profile.cited_sources, current_lang)
+
+
 def get_response_stream(
     user_message: str,
     *,
@@ -1149,6 +1651,9 @@ def _render_quick_actions(current_lang: str) -> None:
             t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
         ):
             _send("quick_rolemodels_msg")
+
+
+_render_profile_sidebar(lang)
 
 
 # ── Title: KODA ──────────────────────────────

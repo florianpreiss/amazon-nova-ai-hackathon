@@ -20,6 +20,7 @@ from src.agents.router import RouterAgent
 from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
 from src.core.conversation import Conversation, ConversationStore, SessionMemorySnapshot
 from src.core.provenance import ResponseProvenance, build_provenance_context
+from src.core.session_summary import NovaSessionSummarizer, SessionSummarizer, SessionSummary
 from src.i18n import t
 
 
@@ -59,11 +60,13 @@ class ChatService:
         crisis_radar: CrisisRadar,
         agents: dict[str, BaseAgent],
         sessions: ConversationStore | None = None,
+        summarizer: SessionSummarizer | None = None,
     ) -> None:
         self.router = router
         self.crisis_radar = crisis_radar
         self.agents = agents
         self.sessions = sessions or ConversationStore()
+        self.summarizer = summarizer
 
     @property
     def agent_keys(self) -> tuple[str, ...]:
@@ -262,8 +265,8 @@ class ChatService:
         lines.append("")
         return "\n".join(lines) + "\n"
 
-    @staticmethod
     def _store_completed_turn(
+        self,
         session: Conversation,
         *,
         user_message: str,
@@ -273,6 +276,10 @@ class ChatService:
         crisis: bool,
         provenance: ResponseProvenance,
     ) -> None:
+        previous_summary = SessionSummary(
+            profile_facts=tuple(session.profile_facts),
+            conversation_overview=tuple(session.conversation_overview),
+        )
         session.add_user_message(user_message, ui_language=ui_language)
         session.add_assistant_message(
             response,
@@ -280,6 +287,13 @@ class ChatService:
             crisis=crisis,
             provenance=provenance,
         )
+        if self.summarizer is not None:
+            summary = self.summarizer.summarize(
+                session.get_messages(),
+                ui_language=ui_language,
+                previous_summary=previous_summary,
+            )
+            session.update_summary(summary)
 
     def end_session(self, session_id: str) -> None:
         """Delete a session explicitly."""
@@ -311,4 +325,5 @@ def build_default_chat_service() -> ChatService:
             "ACADEMIC_BASICS": HiddenCurriculumAgent(),
             "ROLE_MODELS": AntiImpostorAgent(),
         },
+        summarizer=NovaSessionSummarizer(),
     )

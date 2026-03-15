@@ -14,9 +14,9 @@ baseRadius = "lg"
 buttonRadius = "full"
 
 [theme.sidebar]
-backgroundColor = "#1a8a6e"
-textColor = "#ffffff"
-primaryColor = "#e8853a"
+backgroundColor = "#efe6f6"
+textColor = "#58426d"
+primaryColor = "#8d75b4"
 
 [server]
 headless = true
