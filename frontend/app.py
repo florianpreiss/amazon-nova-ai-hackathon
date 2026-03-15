@@ -180,34 +180,55 @@ st.markdown(
         color: rgba(125, 122, 201, 1);
         display: flex;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 4rem;
+        font-size: 5.35rem;
         font-weight: 700;
-        gap: 0.34rem;
-        justify-content: center;
-        letter-spacing: 0.16em;
+        justify-content: space-between;
+        letter-spacing: 0.22em;
         text-align: center;
-        margin: 0.3rem 0 0.15rem 0;
+        margin: 0.22rem auto 0.12rem auto;
         line-height: 1;
+        max-width: 56rem;
+        padding: 0 0.3rem;
+        width: min(100%, 56rem);
     }
     .koda-title-letter {
         align-items: center;
         display: inline-flex;
         justify-content: center;
     }
+    .koda-title-dot {
+        align-items: center;
+        display: inline-flex;
+        font-size: 0.62em;
+        font-weight: 600;
+        justify-content: center;
+        opacity: 0.82;
+        transform: translateY(-0.05em);
+    }
     .koda-title-mark {
         align-items: center;
         display: inline-flex;
-        height: 3.4rem;
+        height: 4.85rem;
         justify-content: center;
-        margin: 0 0.05rem;
-        transform: translateY(0.05rem);
-        width: 3.4rem;
+        margin: 0 0.08rem;
+        transform: translateY(0.09rem);
+        width: 4.85rem;
     }
     .koda-title-mark img {
         filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.22));
         height: 100%;
         object-fit: contain;
         width: 100%;
+    }
+    [data-testid="stChatMessage"] > div:first-child {
+        flex: 0 0 3.35rem !important;
+        width: 3.35rem !important;
+    }
+    [data-testid="stChatMessage"] > div:first-child img {
+        filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.18));
+        height: 3.1rem !important;
+        object-fit: contain !important;
+        width: 3.1rem !important;
     }
     .koda-tagline {
         text-align: center;
@@ -1518,14 +1539,20 @@ st.markdown(
             padding-top: 0.35rem !important;
         }
         .koda-title {
-            font-size: 3rem;
+            font-size: 3.55rem;
             gap: 0.24rem;
+            justify-content: center;
             letter-spacing: 0.12em;
             margin-top: 0.15rem;
+            max-width: none;
+            width: auto;
         }
         .koda-title-mark {
-            height: 2.6rem;
-            width: 2.6rem;
+            height: 3.15rem;
+            width: 3.15rem;
+        }
+        .koda-title-dot {
+            font-size: 0.58em;
         }
         .koda-tagline {
             font-size: 0.93rem;
@@ -1549,6 +1576,14 @@ st.markdown(
         }
         .thinking-mark {
             margin: 0 auto;
+        }
+        [data-testid="stChatMessage"] > div:first-child {
+            flex-basis: 2.9rem !important;
+            width: 2.9rem !important;
+        }
+        [data-testid="stChatMessage"] > div:first-child img {
+            height: 2.72rem !important;
+            width: 2.72rem !important;
         }
         .sidebar-title {
             font-size: 1.45rem;
@@ -1653,8 +1688,12 @@ st.markdown(
             font-size: 0.9rem;
         }
         .koda-title {
-            font-size: 2.35rem;
-            letter-spacing: 0.11em;
+            font-size: 2.65rem;
+            letter-spacing: 0.09em;
+        }
+        .koda-title-mark {
+            height: 2.4rem;
+            width: 2.4rem;
         }
         .koda-tagline {
             font-size: 0.88rem;
@@ -2588,8 +2627,11 @@ st.markdown(
     (
         '<div class="koda-title">'
         '<span class="koda-title-letter">K</span>'
+        '<span class="koda-title-dot">·</span>'
         f'<span class="koda-title-mark"><img src="{html_lib.escape(KODA_MARK_URL)}" alt="O" /></span>'
+        '<span class="koda-title-dot">·</span>'
         '<span class="koda-title-letter">D</span>'
+        '<span class="koda-title-dot">·</span>'
         '<span class="koda-title-letter">A</span>'
         "</div>"
     ),
