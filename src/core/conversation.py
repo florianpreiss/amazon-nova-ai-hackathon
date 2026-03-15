@@ -23,7 +23,6 @@ from src.core.provenance import ResponseProvenance, SourceAttribution
 MAX_SESSION_MESSAGES = 24
 MAX_ACTIVE_GOALS = 4
 MAX_TOPICS = 6
-MAX_CITED_SOURCES = 6
 MAX_GOAL_LENGTH = 140
 
 _AGENT_TOPIC_LABELS = {
@@ -147,7 +146,7 @@ def _remember_source(sources: list[SourceAttribution], source: SourceAttribution
     deduped = [item for item in sources if item.url != source.url]
     deduped.append(source)
     del sources[:]
-    sources.extend(deduped[-MAX_CITED_SOURCES:])
+    sources.extend(deduped)
 
 
 class SessionMemorySnapshot(BaseModel):

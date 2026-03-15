@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from src.core.conversation import SessionMemorySnapshot
@@ -75,6 +76,8 @@ _LANGUAGE_LABELS = {
     "de": {"de": "Deutsch", "en": "Englisch"},
     "en": {"de": "German", "en": "English"},
 }
+_MAX_SUMMARY_POINTS = 3
+_MAX_SUMMARY_LENGTH = 140
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,7 @@ class SessionProfileView:
     topic_labels: tuple[str, ...] = ()
     goal_summaries: tuple[str, ...] = ()
     identity_labels: tuple[str, ...] = ()
+    answer_summary_points: tuple[str, ...] = ()
     cited_sources: tuple[SourceAttribution, ...] = ()
     crisis_detected: bool = False
 
@@ -100,6 +104,7 @@ class SessionProfileView:
                 self.topic_labels,
                 self.goal_summaries,
                 self.identity_labels,
+                self.answer_summary_points,
                 self.cited_sources,
                 self.crisis_detected,
             )
@@ -123,13 +128,58 @@ def _localize_identity(identity_key: str, *, ui_language: str) -> str:
     )
 
 
+def _clean_summary_text(text: str) -> str:
+    cleaned = text.strip()
+    cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", cleaned)
+    cleaned = re.sub(r"^(\d+\.\s+|[-*•]\s+)", "", cleaned)
+    cleaned = cleaned.replace("**", "").replace("__", "").replace("`", "")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" -:;,.")
+    if len(cleaned) > _MAX_SUMMARY_LENGTH:
+        cleaned = cleaned[: _MAX_SUMMARY_LENGTH - 1].rstrip() + "..."
+    return cleaned
+
+
+def _extract_answer_summary_points(response_text: str | None) -> tuple[str, ...]:
+    if not response_text:
+        return ()
+
+    normalized = response_text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.strip() for line in normalized.split("\n")]
+
+    bullet_candidates: list[str] = []
+    for line in lines:
+        if not line or line.startswith("#") or set(line) <= {"-"}:
+            continue
+        if re.match(r"^(\d+\.\s+|[-*•]\s+)", line):
+            cleaned = _clean_summary_text(line)
+            if cleaned and cleaned not in bullet_candidates:
+                bullet_candidates.append(cleaned)
+        if len(bullet_candidates) >= _MAX_SUMMARY_POINTS:
+            return tuple(bullet_candidates[:_MAX_SUMMARY_POINTS])
+
+    prose = " ".join(
+        line for line in lines if line and not line.startswith("#") and set(line) != {"-"}
+    )
+    prose = prose.replace("**", "").replace("__", "")
+    sentence_candidates: list[str] = []
+    for sentence in re.split(r"(?<=[.!?])\s+", prose):
+        cleaned = _clean_summary_text(sentence)
+        if cleaned and cleaned not in sentence_candidates:
+            sentence_candidates.append(cleaned)
+        if len(sentence_candidates) >= _MAX_SUMMARY_POINTS:
+            break
+
+    return tuple(sentence_candidates[:_MAX_SUMMARY_POINTS])
+
+
 def build_session_profile_view(
     snapshot: SessionMemorySnapshot | None,
     *,
     ui_language: str,
+    latest_assistant_response: str | None = None,
     goal_limit: int = 3,
     topic_limit: int = 4,
-    source_limit: int = 4,
+    source_limit: int | None = None,
 ) -> SessionProfileView:
     """Convert the raw session snapshot into a sidebar-friendly summary."""
 
@@ -152,6 +202,11 @@ def build_session_profile_view(
 
     identity_keys = tuple(key for key in _IDENTITY_ORDER if snapshot.identity_context.get(key))
     identity_labels = tuple(_localize_identity(key, ui_language=language) for key in identity_keys)
+    cited_sources = (
+        tuple(reversed(snapshot.cited_sources))
+        if source_limit is None
+        else tuple(reversed(snapshot.cited_sources[-source_limit:]))
+    )
 
     return SessionProfileView(
         message_count=snapshot.message_count,
@@ -160,6 +215,7 @@ def build_session_profile_view(
         topic_labels=topic_labels,
         goal_summaries=goal_summaries,
         identity_labels=identity_labels,
-        cited_sources=tuple(reversed(snapshot.cited_sources[-source_limit:])),
+        answer_summary_points=_extract_answer_summary_points(latest_assistant_response),
+        cited_sources=cited_sources,
         crisis_detected=snapshot.crisis_detected,
     )

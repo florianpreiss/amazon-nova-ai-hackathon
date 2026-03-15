@@ -151,8 +151,8 @@ st.markdown(
 
     /* ── Sidebar session profile ────────────── */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, rgba(249, 246, 241, 0.98) 0%, rgba(243, 237, 230, 0.98) 100%);
-        border-right: 1px solid rgba(125, 122, 201, 0.14);
+        background: linear-gradient(180deg, rgba(226, 238, 244, 0.99) 0%, rgba(188, 213, 227, 0.99) 100%);
+        border-right: 1px solid rgba(69, 102, 128, 0.18);
     }
     [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
         padding-top: 1rem;
@@ -162,7 +162,7 @@ st.markdown(
         padding-top: 0.2rem;
     }
     .sidebar-kicker {
-        color: rgba(125, 122, 201, 0.82);
+        color: #355e79;
         font-size: 0.72rem;
         font-weight: 800;
         letter-spacing: 0.08em;
@@ -170,9 +170,9 @@ st.markdown(
         text-transform: uppercase;
     }
     .sidebar-title {
-        color: #2d3436;
+        color: #20384b;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 1.6rem;
+        font-size: 1.45rem;
         font-weight: 700;
         line-height: 1.1;
         margin: 0 0 0.55rem 0;
@@ -187,15 +187,15 @@ st.markdown(
         padding: 0.85rem 0.9rem;
     }
     .sidebar-note {
-        background: rgba(125, 122, 201, 0.08);
-        border: 1px solid rgba(125, 122, 201, 0.16);
-        color: #5f6470;
+        background: rgba(255, 255, 255, 0.58);
+        border: 1px solid rgba(69, 102, 128, 0.14);
+        color: #37576d;
         margin-bottom: 0.9rem;
     }
     .sidebar-empty {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px dashed rgba(125, 122, 201, 0.22);
-        color: #636e72;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px dashed rgba(69, 102, 128, 0.22);
+        color: #45627a;
         margin-top: 0.2rem;
     }
     .sidebar-alert {
@@ -211,32 +211,35 @@ st.markdown(
         margin: 0.95rem 0 1rem 0;
     }
     .sidebar-stat {
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(125, 122, 201, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(69, 102, 128, 0.14);
         border-radius: 14px;
-        padding: 0.75rem 0.8rem;
+        padding: 0.62rem 0.72rem;
+    }
+    .sidebar-stat.wide {
+        grid-column: 1 / -1;
     }
     .sidebar-stat-label {
-        color: #7a8388;
+        color: #547185;
         font-family: 'Nunito', sans-serif;
-        font-size: 0.68rem;
+        font-size: 0.64rem;
         font-weight: 700;
         letter-spacing: 0.04em;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.16rem;
         text-transform: uppercase;
     }
     .sidebar-stat-value {
-        color: #2d3436;
+        color: #20384b;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 1.05rem;
+        font-size: 0.95rem;
         font-weight: 700;
-        line-height: 1.3;
+        line-height: 1.25;
     }
     .sidebar-section {
-        margin-top: 1rem;
+        margin-top: 0.9rem;
     }
     .sidebar-section-label {
-        color: #636e72;
+        color: #44627b;
         font-family: 'Nunito', sans-serif;
         font-size: 0.74rem;
         font-weight: 800;
@@ -250,10 +253,10 @@ st.markdown(
         gap: 0.38rem;
     }
     .sidebar-chip {
-        background: rgba(125, 122, 201, 0.08);
-        border: 1px solid rgba(125, 122, 201, 0.16);
+        background: rgba(53, 94, 121, 0.08);
+        border: 1px solid rgba(53, 94, 121, 0.16);
         border-radius: 999px;
-        color: rgba(96, 88, 185, 1);
+        color: #2f5872;
         display: inline-block;
         font-family: 'Nunito', sans-serif;
         font-size: 0.74rem;
@@ -268,11 +271,14 @@ st.markdown(
     }
     .sidebar-list li,
     .sidebar-source-list li {
-        color: #2d3436;
+        color: #20384b;
         font-family: 'Nunito', sans-serif;
         font-size: 0.84rem;
         line-height: 1.55;
         margin-bottom: 0.4rem;
+    }
+    .sidebar-list.compact li {
+        margin-bottom: 0.28rem;
     }
     .sidebar-source-list {
         list-style: none;
@@ -301,18 +307,33 @@ st.markdown(
         color: #0c6fbe;
     }
     .sidebar-source-link {
-        color: rgba(96, 88, 185, 1);
+        color: #244f69;
         text-decoration: none;
     }
     .sidebar-source-link:hover {
         text-decoration: underline;
     }
     .sidebar-source-domain {
-        color: #7a8388;
+        color: #5b7487;
         display: block;
         font-size: 0.74rem;
         margin-top: 0.08rem;
         overflow-wrap: anywhere;
+    }
+    [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.42);
+        border: 1px solid rgba(69, 102, 128, 0.12);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    [data-testid="stExpander"] details summary p {
+        color: #2f5872 !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-size: 0.82rem !important;
+        font-weight: 800 !important;
+    }
+    [data-testid="stExpander"] details > div {
+        background: transparent !important;
     }
 
     /* ── Stat boxes ───────────────────────────── */
@@ -738,21 +759,21 @@ st.markdown(
             color: #aeb6c8 !important;
         }
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #1d1d34 0%, #18182b 100%) !important;
-            border-right-color: rgba(125, 122, 201, 0.2) !important;
+            background: linear-gradient(180deg, #183040 0%, #112330 100%) !important;
+            border-right-color: rgba(140, 183, 208, 0.2) !important;
         }
         .sidebar-title {
-            color: #f1edf8 !important;
+            color: #eef7fb !important;
         }
         .sidebar-note {
-            background: rgba(125, 122, 201, 0.16) !important;
-            border-color: rgba(125, 122, 201, 0.24) !important;
-            color: #b7bec8 !important;
+            background: rgba(188, 213, 227, 0.14) !important;
+            border-color: rgba(188, 213, 227, 0.2) !important;
+            color: #cfe0ea !important;
         }
         .sidebar-empty {
-            background: rgba(37, 37, 64, 0.9) !important;
-            border-color: rgba(125, 122, 201, 0.28) !important;
-            color: #c8c4e8 !important;
+            background: rgba(17, 35, 48, 0.78) !important;
+            border-color: rgba(188, 213, 227, 0.24) !important;
+            color: #d2e4ee !important;
         }
         .sidebar-alert {
             background: rgba(214, 48, 49, 0.14) !important;
@@ -760,24 +781,24 @@ st.markdown(
             color: #ffb3b0 !important;
         }
         .sidebar-stat {
-            background: rgba(37, 37, 64, 0.92) !important;
-            border-color: rgba(125, 122, 201, 0.24) !important;
+            background: rgba(16, 29, 39, 0.8) !important;
+            border-color: rgba(140, 183, 208, 0.18) !important;
         }
         .sidebar-stat-label {
-            color: #9ea8b4 !important;
+            color: #98b7c8 !important;
         }
         .sidebar-stat-value,
         .sidebar-list li,
         .sidebar-source-list li {
-            color: #f1edf8 !important;
+            color: #eef7fb !important;
         }
         .sidebar-section-label {
-            color: #c8c4e8 !important;
+            color: #cfe0ea !important;
         }
         .sidebar-chip {
-            background: rgba(125, 122, 201, 0.18) !important;
-            border-color: rgba(125, 122, 201, 0.26) !important;
-            color: #d8d3ff !important;
+            background: rgba(140, 183, 208, 0.14) !important;
+            border-color: rgba(140, 183, 208, 0.24) !important;
+            color: #d9edf7 !important;
         }
         .sidebar-source-tag.registry {
             background: rgba(0, 184, 148, 0.2) !important;
@@ -788,10 +809,17 @@ st.markdown(
             color: #88c7ff !important;
         }
         .sidebar-source-link {
-            color: #d8d3ff !important;
+            color: #d7edf8 !important;
         }
         .sidebar-source-domain {
-            color: #9ea8b4 !important;
+            color: #9dbacb !important;
+        }
+        [data-testid="stExpander"] {
+            background: rgba(16, 29, 39, 0.55) !important;
+            border-color: rgba(140, 183, 208, 0.16) !important;
+        }
+        [data-testid="stExpander"] details summary p {
+            color: #d7edf8 !important;
         }
 
         /* ── Stat boxes ───────────────────────── */
@@ -1002,6 +1030,9 @@ st.markdown(
         .sidebar-stat {
             padding: 0.7rem 0.75rem;
         }
+        .sidebar-stat-value {
+            font-size: 0.91rem;
+        }
         .welcome-copy {
             font-size: 0.89rem;
         }
@@ -1071,7 +1102,7 @@ st.markdown(
             font-size: 1.32rem;
         }
         .sidebar-stat-value {
-            font-size: 0.96rem;
+            font-size: 0.9rem;
         }
         .koda-title {
             font-size: 2.35rem;
@@ -1259,11 +1290,11 @@ def _render_sidebar_section_label(label: str) -> None:
 
 def _render_sidebar_stats(stats: list[tuple[str, str]]) -> None:
     cards = "".join(
-        "<div class='sidebar-stat'>"
+        f"<div class='sidebar-stat{' wide' if index == 0 else ''}'>"
         f"<div class='sidebar-stat-label'>{html_lib.escape(label)}</div>"
         f"<div class='sidebar-stat-value'>{html_lib.escape(value)}</div>"
         "</div>"
-        for label, value in stats
+        for index, (label, value) in enumerate(stats)
     )
     st.markdown(f"<div class='sidebar-stats'>{cards}</div>", unsafe_allow_html=True)
 
@@ -1273,9 +1304,10 @@ def _render_sidebar_chip_list(items: tuple[str, ...]) -> None:
     st.markdown(f"<div class='sidebar-chip-row'>{chips}</div>", unsafe_allow_html=True)
 
 
-def _render_sidebar_list(items: tuple[str, ...]) -> None:
+def _render_sidebar_list(items: tuple[str, ...], *, compact: bool = False) -> None:
     rendered = "".join(f"<li>{html_lib.escape(item)}</li>" for item in items)
-    st.markdown(f"<ul class='sidebar-list'>{rendered}</ul>", unsafe_allow_html=True)
+    class_name = "sidebar-list compact" if compact else "sidebar-list"
+    st.markdown(f"<ul class='{class_name}'>{rendered}</ul>", unsafe_allow_html=True)
 
 
 def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
@@ -1308,7 +1340,19 @@ def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
     snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
-    profile = build_session_profile_view(snapshot, ui_language=current_lang)
+    latest_assistant_response = next(
+        (
+            str(message.get("content", ""))
+            for message in reversed(st.session_state.messages)
+            if message.get("role") == "assistant"
+        ),
+        None,
+    )
+    profile = build_session_profile_view(
+        snapshot,
+        ui_language=current_lang,
+        latest_assistant_response=latest_assistant_response,
+    )
 
     with st.sidebar:
         st.markdown(
@@ -1334,12 +1378,11 @@ def _render_profile_sidebar(current_lang: str) -> None:
         )
         stats = [
             (t("sidebar_stat_agent", current_lang), agent_value),
-            (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
             (
                 t("sidebar_stat_language", current_lang),
                 profile.response_language_label or current_lang.upper(),
             ),
-            (t("sidebar_stat_sources", current_lang), str(len(profile.cited_sources))),
+            (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
         ]
         _render_sidebar_stats(stats)
 
@@ -1353,29 +1396,33 @@ def _render_profile_sidebar(current_lang: str) -> None:
             _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
             _render_sidebar_chip_list(profile.topic_labels)
 
+        if profile.answer_summary_points:
+            _render_sidebar_section_label(t("sidebar_section_summary", current_lang))
+            _render_sidebar_list(profile.answer_summary_points, compact=True)
+
         if profile.goal_summaries:
-            _render_sidebar_section_label(t("sidebar_section_goals", current_lang))
-            _render_sidebar_list(profile.goal_summaries)
+            with st.expander(
+                t("sidebar_section_goals", current_lang),
+                expanded=False,
+                icon=":material/question_answer:",
+            ):
+                _render_sidebar_list(profile.goal_summaries)
 
         if profile.identity_labels:
-            _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
-            st.caption(t("sidebar_identity_hint", current_lang))
-            _render_sidebar_list(profile.identity_labels)
+            with st.expander(
+                t("sidebar_section_identity", current_lang),
+                expanded=False,
+                icon=":material/person_search:",
+            ):
+                _render_sidebar_list(profile.identity_labels)
 
         if profile.cited_sources:
-            _render_sidebar_section_label(t("sidebar_section_sources", current_lang))
-            _render_sidebar_sources(profile.cited_sources, current_lang)
-
-        st.divider()
-        if st.button(
-            t("reset_chat", current_lang),
-            help=t("reset_chat_tooltip", current_lang),
-            key="_sidebar_reset_btn",
-            type="primary",
-            use_container_width=True,
-        ):
-            _reset_chat()
-            st.rerun()
+            with st.expander(
+                t("sidebar_section_sources", current_lang),
+                expanded=False,
+                icon=":material/library_books:",
+            ):
+                _render_sidebar_sources(profile.cited_sources, current_lang)
 
 
 def get_response_stream(

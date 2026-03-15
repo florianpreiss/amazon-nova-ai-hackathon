@@ -74,6 +74,51 @@ class TestConversation:
         assert "Topics already discussed: BAfoeG, scholarships" in addendum
         assert "BAfoeG Amt (bafoeg.de)" in addendum
 
+    def test_conversation_keeps_all_unique_sources_for_session(self):
+        conversation = Conversation(session_id="session-2", now=lambda: 100.0)
+
+        for index in range(8):
+            conversation.add_assistant_message(
+                f"Antwort {index}",
+                agent_key="FINANCING",
+                provenance=ResponseProvenance(
+                    mode="source_registry",
+                    source_registry_used=True,
+                    web_grounding_used=False,
+                    sources=(
+                        SourceAttribution(
+                            title=f"Quelle {index}",
+                            url=f"https://example.org/source-{index}",
+                            domain="example.org",
+                            origin="source_registry",
+                        ),
+                    ),
+                ),
+            )
+
+        conversation.add_assistant_message(
+            "Antwort mit Duplikat",
+            agent_key="FINANCING",
+            provenance=ResponseProvenance(
+                mode="source_registry",
+                source_registry_used=True,
+                web_grounding_used=False,
+                sources=(
+                    SourceAttribution(
+                        title="Quelle 3 aktualisiert",
+                        url="https://example.org/source-3",
+                        domain="example.org",
+                        origin="source_registry",
+                    ),
+                ),
+            ),
+        )
+
+        snapshot = conversation.snapshot()
+
+        assert len(snapshot.cited_sources) == 8
+        assert snapshot.cited_sources[-1].title == "Quelle 3 aktualisiert"
+
 
 class TestConversationStore:
     def test_store_purges_expired_sessions(self):
