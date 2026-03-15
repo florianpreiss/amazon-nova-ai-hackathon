@@ -18,7 +18,7 @@ from src.core.provenance import ResponseProvenance
 from src.core.session_bundle import serialize_session_bundle
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 from src.orchestration import ChatTurnResult, OnboardingTurnResult, build_default_chat_service
-from src.ui import build_session_profile_view
+from src.ui import build_quick_action_prompts, build_session_profile_view
 
 # ── Page config ────────────────────────────────────────
 
@@ -599,7 +599,7 @@ st.markdown(
         background: #ffffff;
         border: 1px solid #e8e4df;
         border-radius: 16px 16px 16px 4px;
-        padding: 0.8rem 1.1rem;
+        padding: 0.8rem 1.1rem 1rem 1.1rem;
         margin: 0.4rem 4rem 0.4rem 0;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         color: #2d3436;
@@ -624,7 +624,7 @@ st.markdown(
     [data-testid="stChatMessage"] ol:last-child,
     [data-testid="stChatMessage"] pre:last-child,
     [data-testid="stChatMessage"] blockquote:last-child {
-        margin-bottom: 0 !important;
+        margin-bottom: 0.12rem !important;
     }
     [data-testid="stChatMessage"] h1,
     [data-testid="stChatMessage"] h2,
@@ -1241,7 +1241,7 @@ st.markdown(
         .msg-koda {
             font-size: 0.88rem;
             margin-right: 1.35rem;
-            padding: 0.78rem 0.95rem;
+            padding: 0.78rem 0.95rem 0.92rem 0.95rem;
         }
         [data-testid="stChatMessage"] h1 {
             font-size: 1.08rem !important;
@@ -1959,7 +1959,7 @@ def _render_personalized_quick_actions(current_lang: str, prompts) -> None:
 
 
 def _render_quick_actions(current_lang: str, snapshot) -> None:
-    prompts = getattr(snapshot, "personalized_prompts", ()) if snapshot is not None else ()
+    prompts = build_quick_action_prompts(snapshot, ui_language=current_lang)
     if prompts:
         _render_personalized_quick_actions(current_lang, prompts)
         return
@@ -2061,6 +2061,7 @@ if show_onboarding_landing:
         ),
         unsafe_allow_html=True,
     )
+    st.markdown("<div style='height: 0.65rem;'></div>", unsafe_allow_html=True)
 
     start_col, skip_col = st.columns([3, 2])
     with start_col:
