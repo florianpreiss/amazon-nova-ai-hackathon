@@ -5,13 +5,16 @@ KODA — Streamlit Chat Interface.
 import html as html_lib
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.provenance import ResponseProvenance
+from src.core.session_bundle import serialize_session_bundle
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 from src.orchestration import ChatTurnResult, build_default_chat_service
 from src.ui import build_session_profile_view
@@ -35,6 +38,8 @@ if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
 if "lang" not in st.session_state:
     st.session_state.lang = DEFAULT_LANGUAGE
+if "memory_import_revision" not in st.session_state:
+    st.session_state.memory_import_revision = 0
 
 lang = st.session_state.lang
 
@@ -81,13 +86,39 @@ st.markdown(
         fill: currentColor !important;
     }
 
+    /* ── Sidebar language toggle — green selected pill ── */
+    [data-testid="stSidebar"] [aria-checked="true"],
+    [data-testid="stSidebar"] [data-baseweb="segmented-control"] [aria-selected="true"],
+    [data-testid="stSidebar"] [role="radio"][aria-checked="true"],
+    [data-testid="stSidebar"] [role="tab"][aria-selected="true"],
+    [data-testid="stSidebar"] button[kind="segmentedControlActive"],
+    [data-testid="stSidebar"] .st-emotion-cache-segmented button[aria-pressed="true"] {
+        background-color: #00b894 !important;
+        background: #00b894 !important;
+        color: #fff !important;
+        border-color: #00b894 !important;
+    }
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stSidebar"] [aria-checked="true"],
+        [data-testid="stSidebar"] [data-baseweb="segmented-control"] [aria-selected="true"],
+        [data-testid="stSidebar"] [role="radio"][aria-checked="true"],
+        [data-testid="stSidebar"] [role="tab"][aria-selected="true"],
+        [data-testid="stSidebar"] button[kind="segmentedControlActive"],
+        [data-testid="stSidebar"] .st-emotion-cache-segmented button[aria-pressed="true"] {
+            background-color: rgba(0, 184, 148, 0.85) !important;
+            background: rgba(0, 184, 148, 0.85) !important;
+            color: #fff !important;
+            border-color: rgba(0, 184, 148, 0.85) !important;
+        }
+    }
+
     /* ── Background images on edges ───────────── */
     .stApp::before, .stApp::after {
         content: '';
         position: fixed;
         top: 0;
         bottom: 0;
-        width: 280px;
+        width: 180px;
         background-size: cover;
         background-repeat: no-repeat;
         pointer-events: none;
@@ -98,15 +129,16 @@ st.markdown(
         left: 0;
         background-image: url('app/static/left-bg.jpeg');
         background-position: right center;
-        -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
-        mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
     }
     .stApp::after {
         right: 0;
+        width: 180px;
         background-image: url('app/static/right-bg.jpeg');
         background-position: left center;
-        -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
-        mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
     }
     @media (max-width: 1024px) {
         .stApp::before, .stApp::after { display: none; }
@@ -1228,12 +1260,47 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ── Scroll to top + sidebar green pill injection ───────
+components.html(
+    """
+    <script>
+        // Scroll to top
+        window.parent.document.querySelector('section.main').scrollTop = 0;
+
+        // Inject green-pill CSS into parent doc for sidebar segmented control
+        const STYLE_ID = 'koda-lang-toggle-green';
+        const doc = window.parent.document;
+        if (!doc.getElementById(STYLE_ID)) {
+            const style = doc.createElement('style');
+            style.id = STYLE_ID;
+            style.textContent = `
+                [data-testid="stSidebar"] [data-baseweb="segmented-control"] button[aria-checked="true"],
+                [data-testid="stSidebar"] [data-testid="stSegmentedControlOption"][aria-checked="true"],
+                [data-testid="stSidebar"] [role="radio"][aria-checked="true"],
+                [data-testid="stSidebar"] [role="tab"][aria-selected="true"] {
+                    background-color: #00b894 !important;
+                    background: #00b894 !important;
+                    color: #fff !important;
+                    border-color: #00b894 !important;
+                }
+            `;
+            doc.head.appendChild(style);
+        }
+    </script>
+    """,
+    height=0,
+)
+
 
 # ── Language toggle ───────────
 
 
-def _set_lang(new_lang: str):
-    st.session_state.lang = new_lang
+def _lang_label_for_code(code: str) -> str:
+    return "🇩🇪 Deutsch" if code == "de" else "🇬🇧 English"
+
+
+def _format_lang_option(code: str) -> str:
+    return _lang_label_for_code(code)
 
 
 def _reset_chat() -> None:
@@ -1256,23 +1323,6 @@ def _reset_chat() -> None:
     st.session_state.show_welcome = True
     # Clear any pending quick-action message
     st.session_state.pop("_pending_msg", None)
-
-
-# ── Language toggle ─────────────────────────────────────
-st.pills(
-    label="Language",
-    options=["🇩🇪 Deutsch", "🇬🇧 English"],
-    default="🇩🇪 Deutsch" if lang == "de" else "🇬🇧 English",
-    on_change=lambda: _set_lang("de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"),
-    key="_lang_pills",
-    label_visibility="collapsed",
-)
-# Apply the language if changed via pills
-if "_lang_pills" in st.session_state:
-    new = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
-    if new != lang:
-        st.session_state.lang = new
-        st.rerun()
 
 
 # ── Shared chat service ────────────────────────────────
@@ -1428,12 +1478,126 @@ def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
     )
 
 
+def _history_message_to_ui(message: dict) -> dict[str, str | dict]:
+    role = str(message.get("role", "user")).strip().lower()
+    content = message.get("content", "")
+    if isinstance(content, list):
+        text = " ".join(
+            str(block.get("text", "")).strip() for block in content if isinstance(block, dict)
+        )
+    else:
+        text = str(content).strip()
+
+    if role == "assistant":
+        entry: dict[str, str | dict] = {
+            "role": "assistant",
+            "content": _normalize_assistant_markdown(text),
+        }
+        agent = message.get("agent")
+        if isinstance(agent, str) and agent.strip():
+            entry["agent"] = agent.strip()
+        provenance = _normalize_provenance(message.get("provenance"))
+        if provenance is not None:
+            entry["provenance"] = provenance.model_dump(mode="python")
+        return entry
+
+    return {
+        "role": "user",
+        "content": text,
+    }
+
+
+def _apply_imported_session(imported_session, current_lang: str) -> None:
+    existing_session_id = st.session_state.session_id
+    if existing_session_id and existing_session_id != imported_session.session_id:
+        load_chat_service().end_session(existing_session_id)
+
+    next_lang = imported_session.ui_language or current_lang
+    st.session_state.session_id = imported_session.session_id
+    st.session_state.messages = [
+        _history_message_to_ui(message) for message in imported_session.messages
+    ]
+    st.session_state.show_welcome = False
+    st.session_state.lang = next_lang
+    st.session_state._lang_toggle = next_lang
+    st.session_state.memory_import_revision += 1
+
+
+def _render_session_portability(current_lang: str, session_id: str | None) -> None:
+    bundle = load_chat_service().export_session_bundle(session_id) if session_id else None
+    upload_key = f"session_bundle_upload_{st.session_state.memory_import_revision}"
+
+    with st.expander(
+        t("sidebar_portability", current_lang),
+        expanded=False,
+        icon=":material/save:",
+    ):
+        st.caption(t("sidebar_portability_note", current_lang))
+
+        if bundle is not None:
+            filename = f"koda-session-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}.json"
+            st.download_button(
+                label=t("session_download", current_lang),
+                data=serialize_session_bundle(bundle),
+                file_name=filename,
+                mime="application/json",
+                use_container_width=True,
+            )
+
+        uploaded = st.file_uploader(
+            t("session_import_label", current_lang),
+            type=["json"],
+            key=upload_key,
+            help=t("session_import_help", current_lang),
+        )
+        if st.button(
+            t("session_import_button", current_lang),
+            key=f"session_import_button_{st.session_state.memory_import_revision}",
+            use_container_width=True,
+        ):
+            if uploaded is None:
+                st.warning(t("session_import_missing", current_lang))
+                return
+
+            try:
+                imported = load_chat_service().import_session_bundle(
+                    uploaded.getvalue(),
+                    ui_language=current_lang,
+                )
+            except ValueError as exc:
+                st.error(f"{t('session_import_error', current_lang)} {exc}")
+                return
+
+            _apply_imported_session(imported, current_lang)
+            st.toast(t("session_import_success", st.session_state.lang))
+            st.rerun()
+
+
+def _on_lang_change():
+    st.session_state.lang = st.session_state._lang_toggle
+
+
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
     snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
     profile = build_session_profile_view(snapshot, ui_language=current_lang)
 
     with st.sidebar:
+        # ── Language toggle (top of sidebar) ────────────
+        if "_lang_toggle" not in st.session_state:
+            st.session_state._lang_toggle = current_lang
+
+        st.segmented_control(
+            label="Language",
+            options=["de", "en"],
+            key="_lang_toggle",
+            format_func=_format_lang_option,
+            label_visibility="collapsed",
+            on_change=_on_lang_change,
+        )
+
+        st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+
         st.markdown(
             "<div class='sidebar-shell'>"
             f"<div class='sidebar-kicker'>{html_lib.escape(t('sidebar_kicker', current_lang))}</div>"
@@ -1448,64 +1612,66 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 f"<div class='sidebar-empty'>{html_lib.escape(t('sidebar_empty', current_lang))}</div>",
                 unsafe_allow_html=True,
             )
-            return
-
-        recognized_facts = getattr(
-            profile,
-            "recognized_facts",
-            getattr(profile, "identity_labels", ()),
-        )
-        profile_preview = t("sidebar_profile_pending", current_lang)
-        if recognized_facts:
-            preview_items = list(recognized_facts[:3])
-            if len(recognized_facts) > 3:
-                preview_items.append(f"+{len(recognized_facts) - 3}")
-            profile_preview = " · ".join(preview_items)
-        stats = [
-            (t("sidebar_stat_profile", current_lang), profile_preview),
-            (
-                t("sidebar_stat_language", current_lang),
-                profile.response_language_label or current_lang.upper(),
-            ),
-            (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
-        ]
-        _render_sidebar_stats(stats)
-
-        if profile.crisis_detected:
-            st.markdown(
-                f"<div class='sidebar-alert'>{html_lib.escape(t('sidebar_crisis_note', current_lang))}</div>",
-                unsafe_allow_html=True,
+        else:
+            recognized_facts = getattr(
+                profile,
+                "recognized_facts",
+                getattr(profile, "identity_labels", ()),
             )
+            profile_preview = t("sidebar_profile_pending", current_lang)
+            if recognized_facts:
+                preview_items = list(recognized_facts[:3])
+                if len(recognized_facts) > 3:
+                    preview_items.append(f"+{len(recognized_facts) - 3}")
+                profile_preview = " · ".join(preview_items)
+            stats = [
+                (t("sidebar_stat_profile", current_lang), profile_preview),
+                (
+                    t("sidebar_stat_language", current_lang),
+                    profile.response_language_label or current_lang.upper(),
+                ),
+                (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
+            ]
+            _render_sidebar_stats(stats)
 
-        if profile.topic_labels:
-            _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
-            _render_sidebar_chip_list(profile.topic_labels)
-            st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+            if profile.crisis_detected:
+                st.markdown(
+                    f"<div class='sidebar-alert'>{html_lib.escape(t('sidebar_crisis_note', current_lang))}</div>",
+                    unsafe_allow_html=True,
+                )
 
-        if profile.goal_summaries:
-            with st.expander(
-                t("sidebar_section_goals", current_lang),
-                expanded=False,
-                icon=":material/question_answer:",
-            ):
-                _render_sidebar_list(profile.goal_summaries)
+            if profile.topic_labels:
+                _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
+                _render_sidebar_chip_list(profile.topic_labels)
+                st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
 
-        conversation_summary_points = getattr(profile, "conversation_summary_points", ())
-        if conversation_summary_points:
-            with st.expander(
-                t("sidebar_section_summary", current_lang),
-                expanded=False,
-                icon=":material/notes:",
-            ):
-                _render_sidebar_list(conversation_summary_points)
+            if profile.goal_summaries:
+                with st.expander(
+                    t("sidebar_section_goals", current_lang),
+                    expanded=False,
+                    icon=":material/question_answer:",
+                ):
+                    _render_sidebar_list(profile.goal_summaries)
 
-        if profile.cited_sources:
-            with st.expander(
-                t("sidebar_section_sources", current_lang),
-                expanded=False,
-                icon=":material/library_books:",
-            ):
-                _render_sidebar_sources(profile.cited_sources, current_lang)
+            conversation_summary_points = getattr(profile, "conversation_summary_points", ())
+            if conversation_summary_points:
+                with st.expander(
+                    t("sidebar_section_summary", current_lang),
+                    expanded=False,
+                    icon=":material/notes:",
+                ):
+                    _render_sidebar_list(conversation_summary_points)
+
+            if profile.cited_sources:
+                with st.expander(
+                    t("sidebar_section_sources", current_lang),
+                    expanded=False,
+                    icon=":material/library_books:",
+                ):
+                    _render_sidebar_sources(profile.cited_sources, current_lang)
+
+        st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+        _render_session_portability(current_lang, session_id)
 
 
 def get_response_stream(

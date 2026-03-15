@@ -309,25 +309,39 @@ class Conversation:
         if not normalized:
             return
 
+        normalized_provenance = _coerce_provenance(provenance)
+        message_payload: dict[str, Any] = {
+            "role": "assistant",
+            "content": [{"text": normalized}],
+            "agent": agent_key,
+        }
+        if normalized_provenance is not None:
+            message_payload["provenance"] = normalized_provenance.model_dump(mode="python")
+
         with self._lock:
-            self.messages.append({"role": "assistant", "content": [{"text": normalized}]})
+            self.messages.append(message_payload)
             self.current_agent = agent_key
             self.crisis_detected = crisis
             self._remember_agent_topic(agent_key)
-            self._remember_sources(_coerce_provenance(provenance))
+            self._remember_sources(normalized_provenance)
             self._trim_messages()
             self._touch()
 
     def get_messages(self, last_n: int | None = None) -> list[dict[str, Any]]:
         with self._lock:
             messages = self.messages[-last_n:] if last_n else self.messages
-            return [
-                {
+            copied: list[dict[str, Any]] = []
+            for message in messages:
+                entry: dict[str, Any] = {
                     "role": message["role"],
                     "content": [dict(block) for block in message["content"]],
                 }
-                for message in messages
-            ]
+                if "agent" in message:
+                    entry["agent"] = message["agent"]
+                if "provenance" in message:
+                    entry["provenance"] = message["provenance"]
+                copied.append(entry)
+            return copied
 
     def snapshot(self) -> SessionMemorySnapshot:
         with self._lock:
@@ -399,6 +413,54 @@ class Conversation:
             self.conversation_overview = [
                 item.strip() for item in summary.conversation_overview if item.strip()
             ]
+            self._touch()
+
+    def restore_portable_state(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        session_memory: dict[str, Any],
+        ui_language: str = "en",
+    ) -> None:
+        """Load a user-owned export bundle into this fresh in-memory session."""
+
+        self.sync_history(messages, ui_language=ui_language)
+
+        with self._lock:
+            current_agent = str(session_memory.get("current_agent", "")).strip() or None
+            self.current_agent = current_agent
+            self.crisis_detected = bool(session_memory.get("crisis_detected", False))
+            self.topics = [
+                str(item).strip() for item in session_memory.get("topics", ()) if str(item).strip()
+            ][-MAX_TOPICS:]
+            self.identity_context = {
+                str(key): value
+                for key, value in dict(session_memory.get("identity_context", {})).items()
+                if str(key).strip()
+            }
+            self.preferences = {
+                str(key).strip(): str(value).strip()
+                for key, value in dict(session_memory.get("preferences", {})).items()
+                if str(key).strip() and str(value).strip()
+            }
+            self.preferences.setdefault("response_language", ui_language)
+            self.active_goals = [
+                str(item).strip()
+                for item in session_memory.get("active_goals", ())
+                if str(item).strip()
+            ][-MAX_ACTIVE_GOALS:]
+            self.cited_sources = list(_coerce_sources(session_memory.get("cited_sources", ())))
+            self.profile_facts = [
+                str(item).strip()
+                for item in session_memory.get("profile_facts", ())
+                if str(item).strip()
+            ]
+            self.conversation_overview = [
+                str(item).strip()
+                for item in session_memory.get("conversation_overview", ())
+                if str(item).strip()
+            ]
+            self._trim_messages()
             self._touch()
 
     def _trim_messages(self) -> None:

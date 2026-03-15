@@ -8,11 +8,12 @@ Sessions are ephemeral. No persistent user data.
 from contextlib import asynccontextmanager
 
 from config.settings import CORS_ALLOWED_ORIGINS, validate_cors_origins
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.core.provenance import ResponseProvenance
+from src.core.session_bundle import SessionBundle
 from src.orchestration import build_default_chat_service
 
 # ── App setup ──────────────────────────────────────
@@ -71,6 +72,12 @@ class ChatResponse(BaseModel):
     provenance: ResponseProvenance
 
 
+class SessionImportResponse(BaseModel):
+    session_id: str
+    language: str
+    message_count: int
+
+
 # ── Endpoints ──────────────────────────────────────
 
 
@@ -98,6 +105,30 @@ async def end_session(session_id: str):
     """Destroy a session explicitly."""
     chat_service.end_session(session_id)
     return {"status": "deleted"}
+
+
+@app.get("/api/session/{session_id}/export", response_model=SessionBundle)
+async def export_session(session_id: str):
+    """Export a user-owned session bundle for later continuation."""
+    bundle = chat_service.export_session_bundle(session_id)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    return bundle
+
+
+@app.post("/api/session/import", response_model=SessionImportResponse)
+async def import_session(bundle: SessionBundle):
+    """Import a previously downloaded user-owned session bundle."""
+    try:
+        imported = chat_service.import_session_bundle(bundle)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return SessionImportResponse(
+        session_id=imported.session_id,
+        language=imported.ui_language,
+        message_count=imported.snapshot.message_count,
+    )
 
 
 @app.get("/api/health")
