@@ -2,11 +2,13 @@
 
 import pytest
 from src.core.provenance import (
+    build_document_source,
     build_provenance_context,
     build_sourcing_addendum,
     build_web_source,
     infer_request_language,
     merge_provenance,
+    with_document_sources,
 )
 
 pytestmark = pytest.mark.unit
@@ -105,6 +107,20 @@ class TestProvenanceMerging:
         assert merged.mode == "source_registry_and_web"
         assert len(merged.sources) >= 2
         assert {source.origin for source in merged.sources} == {"source_registry", "web_grounding"}
+
+    def test_document_provenance_marks_uploaded_documents_explicitly(self):
+        base = build_provenance_context(
+            agent_key="FINANCING",
+            user_message="Erklaere mir diesen BAfoeG-Bescheid.",
+            ui_language="de",
+            tool_mode=None,
+        )["provenance"]
+
+        merged = with_document_sources(base, (build_document_source("BAfoeG-Bescheid.pdf"),))
+
+        assert merged.mode == "document"
+        assert merged.document_used is True
+        assert merged.sources[-1].origin == "document_upload"
 
 
 class TestLanguageInference:

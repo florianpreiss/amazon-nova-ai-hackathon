@@ -25,10 +25,13 @@ from src.core.conversation import (
     PersonalizedPrompt,
     SessionMemorySnapshot,
 )
+from src.core.documents import DocumentUploadInput, UploadedDocument, validate_document_uploads
 from src.core.provenance import (
     ResponseProvenance,
     build_default_provenance,
+    build_document_source,
     build_provenance_context,
+    with_document_sources,
 )
 from src.core.session_bundle import (
     SessionBundle,
@@ -160,6 +163,57 @@ class ChatService:
             crisis=turn.crisis["is_crisis"],
             crisis_resources=turn.crisis.get("resources"),
             provenance=reply.provenance,
+        )
+
+    def respond_with_documents(
+        self,
+        user_message: str,
+        documents: list[DocumentUploadInput] | tuple[DocumentUploadInput, ...],
+        history: list[dict[str, Any]] | None = None,
+        *,
+        session_id: str | None = None,
+        ui_language: str = "en",
+        conversation_metadata: dict[str, Any] | None = None,
+    ) -> ChatTurnResult:
+        """Return a complete reply for a turn that includes uploaded documents."""
+
+        validated_documents = validate_document_uploads(list(documents))
+        effective_message = user_message.strip() or self._default_document_message(ui_language)
+        turn = self._prepare_turn(
+            effective_message,
+            history=history or [],
+            session_id=session_id,
+            ui_language=ui_language,
+            conversation_metadata=conversation_metadata,
+            documents=validated_documents,
+        )
+        reply = turn.agent.respond_with_details(turn.bedrock_messages, turn.metadata)
+        document_sources = tuple(
+            build_document_source(document.name) for document in validated_documents
+        )
+        provenance = (
+            reply.provenance
+            if reply.provenance.document_used
+            else with_document_sources(reply.provenance, document_sources)
+        )
+        full_response = turn.crisis_prefix + reply.text
+        self._store_completed_turn(
+            turn.session,
+            user_message=effective_message,
+            response=full_response,
+            agent_key=turn.agent_key,
+            ui_language=ui_language,
+            crisis=turn.crisis["is_crisis"],
+            provenance=provenance,
+            documents=validated_documents,
+        )
+        return ChatTurnResult(
+            session_id=turn.session.session_id,
+            response=full_response,
+            agent=turn.agent_key,
+            crisis=turn.crisis["is_crisis"],
+            crisis_resources=turn.crisis.get("resources"),
+            provenance=provenance,
         )
 
     def respond_stream(
@@ -327,25 +381,52 @@ class ChatService:
         session_id: str | None,
         ui_language: str,
         conversation_metadata: dict[str, Any] | None,
+        documents: tuple[UploadedDocument, ...] = (),
     ) -> PreparedChatTurn:
         session = self.sessions.get_or_create(session_id, ui_language=ui_language)
         if history:
             session.sync_history(history, ui_language=ui_language)
 
         metadata = self._merge_conversation_metadata(session.metadata, conversation_metadata)
-        bedrock_messages = self._build_bedrock_messages(session.get_messages(), user_message)
+        bedrock_messages = self._build_bedrock_messages(
+            session.get_messages(),
+            user_message,
+            documents=documents,
+        )
         crisis = self.crisis_radar.scan(user_message)
-        agent_key = self.router.route(user_message)
+        agent_key = self.router.route(self._build_route_message(user_message, documents))
         agent = self.agents.get(agent_key, self.agents["COMPASS"])
 
         metadata.update(
             build_provenance_context(
                 agent_key=agent_key,
-                user_message=user_message,
+                user_message=self._build_route_message(user_message, documents),
                 ui_language=ui_language,
                 tool_mode=agent.tool_mode,
             )
         )
+
+        remembered_documents = tuple(
+            document.display_label for document in session.snapshot().document_memories
+        )
+        if documents or remembered_documents:
+            metadata["document_context"] = {
+                "attached": tuple(document.short_label for document in documents),
+                "remembered": remembered_documents,
+            }
+
+        if documents:
+            document_sources = tuple(build_document_source(document.name) for document in documents)
+            metadata["provenance"] = with_document_sources(
+                metadata.get("provenance")
+                if isinstance(metadata.get("provenance"), ResponseProvenance)
+                else (
+                    ResponseProvenance.model_validate(metadata["provenance"])
+                    if isinstance(metadata.get("provenance"), dict)
+                    else None
+                ),
+                document_sources,
+            )
 
         return PreparedChatTurn(
             session=session,
@@ -473,6 +554,8 @@ class ChatService:
     def _build_bedrock_messages(
         history: list[dict[str, Any]],
         user_message: str,
+        *,
+        documents: tuple[UploadedDocument, ...] = (),
     ) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []
         for message in history:
@@ -489,8 +572,26 @@ class ChatService:
 
             raise TypeError(f"Unsupported message content type: {type(content).__name__}")
 
-        normalized.append({"role": "user", "content": [{"text": user_message}]})
+        final_content: list[dict[str, Any]] = [{"text": user_message}]
+        final_content.extend(document.to_bedrock_block() for document in documents)
+        normalized.append({"role": "user", "content": final_content})
         return normalized
+
+    @staticmethod
+    def _build_route_message(
+        user_message: str,
+        documents: tuple[UploadedDocument, ...] = (),
+    ) -> str:
+        if not documents:
+            return user_message
+        names = ", ".join(document.name for document in documents)
+        return f"{user_message}\n\nAttached documents: {names}"
+
+    @staticmethod
+    def _default_document_message(ui_language: str) -> str:
+        if ui_language == "de":
+            return "Bitte erkläre mir dieses Dokument in einfacher Sprache und sage mir, was jetzt wichtig ist."
+        return "Please explain this document in plain language and tell me what matters now."
 
     @staticmethod
     def _build_onboarding_messages(
@@ -548,6 +649,7 @@ class ChatService:
         ui_language: str,
         crisis: bool,
         provenance: ResponseProvenance,
+        documents: tuple[UploadedDocument, ...] = (),
     ) -> None:
         previous_summary = SessionSummary(
             profile_facts=tuple(session.profile_facts),
@@ -567,6 +669,8 @@ class ChatService:
                 previous_summary=previous_summary,
             )
             session.update_summary(summary)
+        if documents:
+            session.set_active_documents(documents, summary_text=response)
 
     def end_session(self, session_id: str) -> None:
         """Delete a session explicitly."""
