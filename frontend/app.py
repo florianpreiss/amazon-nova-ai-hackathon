@@ -180,16 +180,17 @@ st.markdown(
         color: rgba(125, 122, 201, 1);
         display: flex;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 5.05rem;
+        font-size: 4.8rem;
         font-weight: 700;
-        justify-content: space-between;
-        letter-spacing: 0.19em;
+        gap: 0.12rem;
+        justify-content: center;
+        letter-spacing: 0.14em;
         text-align: center;
         margin: 0.22rem auto 0.12rem auto;
         line-height: 1;
-        max-width: 53rem;
-        padding: 0 0.3rem;
-        width: min(100%, 53rem);
+        max-width: 48rem;
+        padding: 0 0.2rem;
+        width: min(100%, 48rem);
     }
     .koda-title-letter {
         align-items: center;
@@ -199,7 +200,7 @@ st.markdown(
     .koda-title-dot {
         align-items: center;
         display: inline-flex;
-        font-size: 0.62em;
+        font-size: 0.52em;
         font-weight: 600;
         justify-content: center;
         opacity: 0.82;
@@ -208,11 +209,11 @@ st.markdown(
     .koda-title-mark {
         align-items: center;
         display: inline-flex;
-        height: 5.45rem;
+        height: 6.25rem;
         justify-content: center;
-        margin: 0 0.08rem;
+        margin: 0 0.02rem;
         transform: translateY(0.09rem);
-        width: 5.45rem;
+        width: 6.25rem;
     }
     .koda-title-mark img {
         filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.22));
@@ -221,14 +222,14 @@ st.markdown(
         width: 100%;
     }
     [data-testid="stChatMessage"] > div:first-child {
-        flex: 0 0 3.85rem !important;
-        width: 3.85rem !important;
+        flex: 0 0 4.35rem !important;
+        width: 4.35rem !important;
     }
     [data-testid="stChatMessage"] > div:first-child img {
         filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.18));
-        height: 3.55rem !important;
+        height: 4.05rem !important;
         object-fit: contain !important;
-        width: 3.55rem !important;
+        width: 4.05rem !important;
     }
     .koda-tagline {
         text-align: center;
@@ -1539,20 +1540,20 @@ st.markdown(
             padding-top: 0.35rem !important;
         }
         .koda-title {
-            font-size: 3.35rem;
-            gap: 0.24rem;
+            font-size: 3.15rem;
+            gap: 0.08rem;
             justify-content: center;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.08em;
             margin-top: 0.15rem;
             max-width: none;
             width: auto;
         }
         .koda-title-mark {
-            height: 3.65rem;
-            width: 3.65rem;
+            height: 4.15rem;
+            width: 4.15rem;
         }
         .koda-title-dot {
-            font-size: 0.58em;
+            font-size: 0.5em;
         }
         .koda-tagline {
             font-size: 0.93rem;
@@ -1578,12 +1579,12 @@ st.markdown(
             margin: 0 auto;
         }
         [data-testid="stChatMessage"] > div:first-child {
-            flex-basis: 3.2rem !important;
-            width: 3.2rem !important;
+            flex-basis: 3.45rem !important;
+            width: 3.45rem !important;
         }
         [data-testid="stChatMessage"] > div:first-child img {
-            height: 3rem !important;
-            width: 3rem !important;
+            height: 3.2rem !important;
+            width: 3.2rem !important;
         }
         .sidebar-title {
             font-size: 1.45rem;
@@ -1688,12 +1689,12 @@ st.markdown(
             font-size: 0.9rem;
         }
         .koda-title {
-            font-size: 2.5rem;
-            letter-spacing: 0.08em;
+            font-size: 2.35rem;
+            letter-spacing: 0.06em;
         }
         .koda-title-mark {
-            height: 2.7rem;
-            width: 2.7rem;
+            height: 3rem;
+            width: 3rem;
         }
         .koda-tagline {
             font-size: 0.88rem;
