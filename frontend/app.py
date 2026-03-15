@@ -3,6 +3,7 @@ KODA — Streamlit Chat Interface.
 """
 
 import html as html_lib
+import re
 import sys
 from pathlib import Path
 
@@ -1037,6 +1038,29 @@ def _paragraph_block(text: str, css_class: str) -> str:
     return f"<div class='{css_class}'>{body}</div>"
 
 
+def _normalize_assistant_markdown(text: str) -> str:
+    """Repair common markdown formatting issues before rendering assistant text."""
+
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").replace("\\n", "\n")
+
+    for marker in ("**", "__"):
+        if normalized.count(marker) % 2 == 1:
+            if normalized.startswith(marker):
+                normalized = normalized[len(marker) :]
+            elif normalized.endswith(marker):
+                normalized = normalized[: -len(marker)]
+            else:
+                normalized = normalized.replace(marker, "")
+
+    normalized = re.sub(r"\s*---\s*", "\n\n---\n\n", normalized)
+    normalized = re.sub(r"(?<!\n)(#{1,6}\s+)", r"\n\n\1", normalized)
+    normalized = re.sub(r"(?<!\n)(?<!\d)(\d+\.\s+)", r"\n\1", normalized)
+    normalized = re.sub(r"(?<!\n)-\s+", r"\n- ", normalized)
+    normalized = re.sub(r"[ \t]+\n", "\n", normalized)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized.strip()
+
+
 def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | None]:
     """Render streamed assistant chunks as markdown instead of plain text."""
 
@@ -1050,9 +1074,9 @@ def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | None]:
             continue
 
         chunks.append(item)
-        content_placeholder.markdown("".join(chunks))
+        content_placeholder.markdown(_normalize_assistant_markdown("".join(chunks)))
 
-    full_text = "".join(chunks)
+    full_text = _normalize_assistant_markdown("".join(chunks))
     if full_text:
         content_placeholder.markdown(full_text)
 
@@ -1210,7 +1234,7 @@ for msg in st.session_state.messages:
         label = get_agent_label(msg.get("agent", "COMPASS"), lang)
         with st.chat_message("assistant", avatar="🧭"):
             st.caption(label)
-            st.markdown(msg["content"])
+            st.markdown(_normalize_assistant_markdown(msg["content"]))
             _render_provenance_block(msg.get("provenance"), lang)
 
 
@@ -1288,6 +1312,7 @@ if user_input:
         )
 
     st.session_state.session_id = result.session_id or st.session_state.session_id
+    display_response = _normalize_assistant_markdown(result.response)
     agent_label = get_agent_label(result.agent, lang)
     if label_placeholder:
         label_placeholder.caption(agent_label)
@@ -1297,7 +1322,7 @@ if user_input:
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": result.response,
+            "content": display_response,
             "agent": result.agent,
             "provenance": result.provenance.model_dump(),
         }
