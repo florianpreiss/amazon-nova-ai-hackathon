@@ -159,3 +159,57 @@ class TestSessionEndpoint:
         """DELETE on an unknown session_id must still return 200 (idempotent)."""
         response = client.delete("/api/session/00000000-0000-0000-0000-000000000000")
         assert response.status_code == 200
+
+    def test_export_and_import_session_bundle(self, client: "TestClient") -> None:
+        """A user can export a session bundle and load it into a fresh session."""
+        first = client.post(
+            "/api/chat",
+            json={"message": "Ich brauche Hilfe bei BAföG.", "language": "de"},
+        )
+        session_id = first.json()["session_id"]
+
+        export_response = client.get(f"/api/session/{session_id}/export")
+
+        assert export_response.status_code == 200
+        bundle = export_response.json()
+        assert bundle["bundle_type"] == "koda_session_memory"
+        assert bundle["session"]["preferences"]["response_language"] == "de"
+        assert len(bundle["session"]["messages"]) == 2
+
+        import_response = client.post("/api/session/import", json=bundle)
+
+        assert import_response.status_code == 200
+        imported = import_response.json()
+        assert imported["session_id"] != session_id
+        assert imported["language"] == "de"
+        assert imported["message_count"] == 2
+
+        continued = client.post(
+            "/api/chat",
+            json={
+                "message": "Und wie geht es jetzt weiter?",
+                "session_id": imported["session_id"],
+                "language": "de",
+            },
+        )
+
+        assert continued.status_code == 200
+        assert continued.json()["session_id"] == imported["session_id"]
+
+    def test_export_missing_session_returns_404(self, client: "TestClient") -> None:
+        """Exporting an unknown session should fail clearly."""
+        response = client.get("/api/session/00000000-0000-0000-0000-000000000000/export")
+
+        assert response.status_code == 404
+
+    def test_import_rejects_tampered_session_bundle(self, client: "TestClient") -> None:
+        """Checksum validation should still happen on the API import path."""
+        first = client.post("/api/chat", json={"message": "Hello", "language": "en"})
+        session_id = first.json()["session_id"]
+        bundle = client.get(f"/api/session/{session_id}/export").json()
+        bundle["session"]["active_goals"] = ["This payload was tampered with."]
+
+        response = client.post("/api/session/import", json=bundle)
+
+        assert response.status_code == 400
+        assert "checksum" in response.json()["detail"].lower()

@@ -5,6 +5,7 @@ KODA — Streamlit Chat Interface.
 import html as html_lib
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import streamlit as st
@@ -12,6 +13,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.provenance import ResponseProvenance
+from src.core.session_bundle import serialize_session_bundle
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 from src.orchestration import ChatTurnResult, build_default_chat_service
 from src.ui import build_session_profile_view
@@ -35,6 +37,8 @@ if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
 if "lang" not in st.session_state:
     st.session_state.lang = DEFAULT_LANGUAGE
+if "memory_import_revision" not in st.session_state:
+    st.session_state.memory_import_revision = 0
 
 lang = st.session_state.lang
 
@@ -1428,6 +1432,99 @@ def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
     )
 
 
+def _history_message_to_ui(message: dict) -> dict[str, str | dict]:
+    role = str(message.get("role", "user")).strip().lower()
+    content = message.get("content", "")
+    if isinstance(content, list):
+        text = " ".join(
+            str(block.get("text", "")).strip() for block in content if isinstance(block, dict)
+        )
+    else:
+        text = str(content).strip()
+
+    if role == "assistant":
+        entry: dict[str, str | dict] = {
+            "role": "assistant",
+            "content": _normalize_assistant_markdown(text),
+        }
+        agent = message.get("agent")
+        if isinstance(agent, str) and agent.strip():
+            entry["agent"] = agent.strip()
+        provenance = _normalize_provenance(message.get("provenance"))
+        if provenance is not None:
+            entry["provenance"] = provenance.model_dump(mode="python")
+        return entry
+
+    return {
+        "role": "user",
+        "content": text,
+    }
+
+
+def _apply_imported_session(imported_session, current_lang: str) -> None:
+    existing_session_id = st.session_state.session_id
+    if existing_session_id and existing_session_id != imported_session.session_id:
+        load_chat_service().end_session(existing_session_id)
+
+    st.session_state.session_id = imported_session.session_id
+    st.session_state.messages = [
+        _history_message_to_ui(message) for message in imported_session.messages
+    ]
+    st.session_state.show_welcome = False
+    st.session_state.lang = imported_session.ui_language or current_lang
+    st.session_state.memory_import_revision += 1
+
+
+def _render_session_portability(current_lang: str, session_id: str | None) -> None:
+    bundle = load_chat_service().export_session_bundle(session_id) if session_id else None
+    upload_key = f"session_bundle_upload_{st.session_state.memory_import_revision}"
+
+    with st.expander(
+        t("sidebar_portability", current_lang),
+        expanded=False,
+        icon=":material/save:",
+    ):
+        st.caption(t("sidebar_portability_note", current_lang))
+
+        if bundle is not None:
+            filename = f"koda-session-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}.json"
+            st.download_button(
+                label=t("session_download", current_lang),
+                data=serialize_session_bundle(bundle),
+                file_name=filename,
+                mime="application/json",
+                use_container_width=True,
+            )
+
+        uploaded = st.file_uploader(
+            t("session_import_label", current_lang),
+            type=["json"],
+            key=upload_key,
+            help=t("session_import_help", current_lang),
+        )
+        if st.button(
+            t("session_import_button", current_lang),
+            key=f"session_import_button_{st.session_state.memory_import_revision}",
+            use_container_width=True,
+        ):
+            if uploaded is None:
+                st.warning(t("session_import_missing", current_lang))
+                return
+
+            try:
+                imported = load_chat_service().import_session_bundle(
+                    uploaded.getvalue(),
+                    ui_language=current_lang,
+                )
+            except ValueError as exc:
+                st.error(f"{t('session_import_error', current_lang)} {exc}")
+                return
+
+            _apply_imported_session(imported, current_lang)
+            st.toast(t("session_import_success", st.session_state.lang))
+            st.rerun()
+
+
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
     snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
@@ -1442,6 +1539,8 @@ def _render_profile_sidebar(current_lang: str) -> None:
             "</div>",
             unsafe_allow_html=True,
         )
+
+        _render_session_portability(current_lang, session_id)
 
         if not profile.has_content:
             st.markdown(
