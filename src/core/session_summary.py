@@ -30,7 +30,7 @@ Rules:
   - Capture durable facts, constraints, preferences, and context that matter for future guidance.
   - Prefer explicit or strongly supported facts from the conversation.
   - Do not guess or invent traits.
-  - Good examples: "Erstakademikerin", "Arbeitet 20h/Woche", "Interessiert sich für BAföG und Stipendien".
+  - Good examples: "Erstakademikerin", "17 Jahre alt", "Noch in der Schule", "Abi steht bald an", "Arbeitet 20h/Woche", "Interessiert sich für BAföG und Stipendien".
 - conversation_overview:
   - 2 to 5 bullets when possible.
   - Summarize the whole conversation so far, not just the last answer.

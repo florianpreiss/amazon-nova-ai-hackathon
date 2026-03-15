@@ -118,3 +118,27 @@ def test_build_session_profile_view_falls_back_to_structured_memory_without_llm_
         "So far, the conversation is mainly about Scholarships, Financing.",
         "Your current focus is: What funding options fit around my 20h job?",
     )
+
+
+def test_build_session_profile_view_infers_basic_student_context_from_goals() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-789",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=2,
+        current_agent="COMPASS",
+        crisis_detected=False,
+        topics=("study choice", "general guidance"),
+        preferences={"response_language": "de"},
+        active_goals=(
+            "Hallo, ich bin 17, bin noch in der Schule und interessiere mich fürs Studium.",
+        ),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="de")
+
+    assert view.recognized_facts == (
+        "17 Jahre alt",
+        "Noch in der Schule",
+        "Interesse am Studium",
+    )

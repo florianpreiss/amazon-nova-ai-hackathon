@@ -78,6 +78,10 @@ _LANGUAGE_LABELS = {
 }
 _MAX_SUMMARY_POINTS = 5
 _MAX_GOAL_LENGTH = 180
+_AGE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\bich bin\s+(\d{1,2})\b"),
+    re.compile(r"\bi am\s+(\d{1,2})\b"),
+)
 
 
 @dataclass(frozen=True)
@@ -181,11 +185,12 @@ def _build_identity_labels(
 def _merge_recognized_facts(
     *,
     summary_profile_facts: tuple[str, ...],
+    contextual_facts: tuple[str, ...],
     structured_facts: tuple[str, ...],
 ) -> tuple[str, ...]:
     deduped: list[str] = []
     seen: set[str] = set()
-    for fact in (*summary_profile_facts, *structured_facts):
+    for fact in (*summary_profile_facts, *contextual_facts, *structured_facts):
         normalized = _normalize_fact_for_dedupe(fact)
         if not normalized or normalized in seen:
             continue
@@ -229,6 +234,89 @@ def _format_goal_sentence(goals: tuple[str, ...], *, ui_language: str) -> str | 
     if ui_language == "de":
         return f"Dein aktuelles Anliegen ist: {_ensure_terminal_punctuation(latest_goal)}"
     return f"Your current focus is: {_ensure_terminal_punctuation(latest_goal)}"
+
+
+def _build_contextual_facts(goals: tuple[str, ...], *, ui_language: str) -> tuple[str, ...]:
+    if not goals:
+        return ()
+
+    text = " ".join(goals).casefold()
+    facts: list[str] = []
+
+    age = _extract_age(text)
+    if age is not None:
+        if ui_language == "de":
+            facts.append(f"{age} Jahre alt")
+        else:
+            facts.append(f"{age} years old")
+
+    if _mentions_school_stage(text):
+        if ui_language == "de":
+            facts.append("Noch in der Schule")
+        else:
+            facts.append("Still in school")
+
+    if _mentions_abitur(text):
+        if ui_language == "de":
+            facts.append("Abi steht bald an")
+        else:
+            facts.append("Finishing school soon")
+
+    if _mentions_study_interest(text):
+        if ui_language == "de":
+            facts.append("Interesse am Studium")
+        else:
+            facts.append("Interested in studying")
+
+    return tuple(facts)
+
+
+def _extract_age(text: str) -> int | None:
+    for pattern in _AGE_PATTERNS:
+        match = pattern.search(text)
+        if not match:
+            continue
+        age = int(match.group(1))
+        if 13 <= age <= 99:
+            return age
+    return None
+
+
+def _mentions_school_stage(text: str) -> bool:
+    return any(
+        token in text
+        for token in (
+            "noch in der schule",
+            "bin in der schule",
+            "school",
+            "high school",
+            "secondary school",
+            "gymnasium",
+        )
+    )
+
+
+def _mentions_abitur(text: str) -> bool:
+    return any(token in text for token in ("abi", "abitur", "a-level", "a levels"))
+
+
+def _mentions_study_interest(text: str) -> bool:
+    return any(
+        token in text
+        for token in (
+            "interessiere mich fürs studium",
+            "interessiere mich fuer studium",
+            "interessiere mich für studium",
+            "interessiere mich für ein studium",
+            "interessiere mich fuer ein studium",
+            "studieren",
+            "studium",
+            "interested in studying",
+            "interested in university",
+            "thinking about studying",
+            "want to study",
+        )
+    )
 
 
 def _build_conversation_summary_points(
@@ -278,11 +366,13 @@ def build_session_profile_view(
     )
     goal_summaries = tuple(reversed(snapshot.active_goals[-goal_limit:]))
     structured_facts = _build_identity_labels(snapshot.identity_context, ui_language=language)
+    contextual_facts = _build_contextual_facts(snapshot.active_goals, ui_language=language)
     summary_profile_facts = tuple(
         str(item).strip() for item in snapshot.profile_facts if str(item).strip()
     )
     recognized_facts = _merge_recognized_facts(
         summary_profile_facts=summary_profile_facts,
+        contextual_facts=contextual_facts,
         structured_facts=structured_facts,
     )
     summary_points = tuple(
