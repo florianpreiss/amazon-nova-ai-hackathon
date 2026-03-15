@@ -1267,9 +1267,7 @@ def _reset_chat() -> None:
 
 
 # ── Language toggle ─────────────────────────────────────
-if "_lang_pills" not in st.session_state or st.session_state._lang_pills != _lang_option_for_code(
-    lang
-):
+if "_lang_pills" not in st.session_state:
     st.session_state._lang_pills = _lang_option_for_code(lang)
 
 selected_lang_option = st.pills(
@@ -1278,7 +1276,7 @@ selected_lang_option = st.pills(
     key="_lang_pills",
     label_visibility="collapsed",
 )
-selected_lang = _lang_code_for_option(selected_lang_option)
+selected_lang = _lang_code_for_option(selected_lang_option or st.session_state._lang_pills)
 if selected_lang != st.session_state.lang:
     st.session_state.lang = selected_lang
     st.rerun()
