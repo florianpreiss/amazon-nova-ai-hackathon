@@ -12,7 +12,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.core.conversation import Conversation
 from src.core.provenance import ResponseProvenance
 from src.orchestration import build_default_chat_service
 
@@ -54,10 +53,6 @@ app.add_middleware(
 
 chat_service = build_default_chat_service()
 
-# ── Session store (in-memory, ephemeral) ───────────
-
-sessions: dict[str, Conversation] = {}
-
 # ── Request / Response schemas ─────────────────────
 
 
@@ -82,20 +77,14 @@ class ChatResponse(BaseModel):
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Main chat endpoint."""
-    conv = _get_or_create_session(request.session_id)
     result = chat_service.respond(
         request.message,
-        conv.get_messages(),
+        session_id=request.session_id,
         ui_language=request.language,
-        conversation_metadata=conv.metadata,
     )
-    conv.add_user_message(request.message)
-    conv.add_assistant_message(result.response)
-    conv.metadata["current_agent"] = result.agent
-    conv.metadata["crisis_detected"] = result.crisis
 
     return ChatResponse(
-        session_id=conv.session_id,
+        session_id=result.session_id,
         response=result.response,
         agent_used=result.agent,
         crisis_detected=result.crisis,
@@ -107,21 +96,10 @@ async def chat(request: ChatRequest):
 @app.delete("/api/session/{session_id}")
 async def end_session(session_id: str):
     """Destroy a session explicitly."""
-    sessions.pop(session_id, None)
+    chat_service.end_session(session_id)
     return {"status": "deleted"}
 
 
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "agents": list(chat_service.agent_keys)}
-
-
-def _get_or_create_session(session_id: str | None) -> Conversation:
-    if session_id and session_id in sessions:
-        conv = sessions[session_id]
-        if not conv.is_expired():
-            return conv
-        del sessions[session_id]
-    conv = Conversation()
-    sessions[conv.session_id] = conv
-    return conv
