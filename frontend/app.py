@@ -873,14 +873,17 @@ def _reset_chat() -> None:
     """
     Clear all conversation state and return to the welcome screen.
 
-    Resets messages, session ID, and welcome flag.  The next chat turn will
-    receive a fresh ephemeral server-side session.  The language preference is
-    intentionally preserved — the user should not have to re-select it after
-    resetting.
+    Deletes the active in-memory session, resets local messages and session ID,
+    and returns to the welcome screen. The next chat turn will receive a fresh
+    ephemeral server-side session. The language preference is intentionally
+    preserved — the user should not have to re-select it after resetting.
 
     Privacy note: no persistent storage exists, so "reset" is purely
     in-memory.  Compliant with the ephemeral-session guarantee in the footer.
     """
+    session_id = st.session_state.session_id
+    if session_id:
+        load_chat_service().end_session(session_id)
     st.session_state.messages = []
     st.session_state.session_id = None
     st.session_state.show_welcome = True

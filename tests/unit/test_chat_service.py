@@ -190,3 +190,18 @@ class TestChatService:
         assert snapshot.identity_context["first_generation_student"] is True
         assert snapshot.topics[-1] == "role models"
         assert snapshot.preferences["response_language"] == "de"
+
+    def test_end_session_removes_ephemeral_memory_immediately(self):
+        service = ChatService(
+            router=StubRouter("COMPASS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(text="Alles klar.")},
+        )
+
+        result = service.respond("Ich brauche Orientierung.", ui_language="de")
+
+        assert service.get_session_snapshot(result.session_id) is not None
+
+        service.end_session(result.session_id)
+
+        assert service.get_session_snapshot(result.session_id) is None
