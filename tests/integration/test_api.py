@@ -14,6 +14,7 @@ Mark: ``pytest.mark.integration``
 Run with: pytest -m integration
 """
 
+import base64
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -137,6 +138,48 @@ class TestChatEndpoint:
         valid_agents = {"COMPASS", "FINANCING", "STUDY_CHOICE", "ACADEMIC_BASICS", "ROLE_MODELS"}
         response = client.post("/api/chat", json={"message": "What is a Semesterbeitrag?"})
         assert response.json()["agent_used"] in valid_agents
+
+    def test_chat_with_documents_accepts_base64_payload(self, client: "TestClient") -> None:
+        """Document-backed chat requests should accept JSON-encoded document payloads."""
+        response = client.post(
+            "/api/chat/documents",
+            json={
+                "language": "de",
+                "message": "Bitte erklaere mir dieses Dokument.",
+                "documents": [
+                    {
+                        "name": "BAfoeG-Bescheid.pdf",
+                        "media_type": "application/pdf",
+                        "content_base64": base64.b64encode(
+                            b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n"
+                        ).decode("ascii"),
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["session_id"]
+        assert body["provenance"]["document_used"] is True
+
+    def test_chat_with_documents_rejects_invalid_payload(self, client: "TestClient") -> None:
+        """Malformed document payloads should fail clearly."""
+        response = client.post(
+            "/api/chat/documents",
+            json={
+                "language": "de",
+                "documents": [
+                    {
+                        "name": "broken.pdf",
+                        "content_base64": "not-valid-base64",
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 400
+        assert "Invalid document payload" in response.json()["detail"]
 
 
 # ---------------------------------------------------------------------------

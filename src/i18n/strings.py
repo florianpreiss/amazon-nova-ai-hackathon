@@ -32,9 +32,11 @@ STRINGS = {
         "provenance_source_registry_and_web": "Verified Sources + Web",
         "provenance_web_grounding": "Web Search",
         "provenance_model": "AI knowledge",
+        "provenance_document": "Your document",
         "sources_label": "Sources",
         "source_tag_registry": "Verified",
         "source_tag_web_grounding": "Web",
+        "source_tag_document": "Document",
         "quick_actions_label": "Quick questions",
         "quick_actions_heading": "What would you like to explore?",
         "quick_actions_sub": "Pick a topic to get started — or type your own question",
@@ -51,6 +53,7 @@ STRINGS = {
         "sidebar_section_summary": "Conversation summary",
         "sidebar_section_goals": "Your questions so far",
         "sidebar_section_identity": "About you",
+        "sidebar_section_documents": "Documents in this session",
         "sidebar_section_sources": "Sources used this session",
         "sidebar_portability": "Save or continue chat",
         "sidebar_portability_note": "Download a chat file or continue from one you saved earlier.",
@@ -71,7 +74,26 @@ STRINGS = {
         "onboarding_skip_btn": "Skip for now",
         "onboarding_skip_hint": "You can jump straight into the chat if you prefer.",
         "onboarding_input_placeholder": "Your answer...",
-        "reset_chat": "↺  New chat",
+        "document_hint": "Optional: use the plus sign in the chat field to upload a document.",
+        "document_popover_button": "Documents",
+        "document_popover_help": "Supported formats, limits, and privacy note for document uploads.",
+        "document_popover_title": "Use documents in chat",
+        "document_popover_body": (
+            "Attach a document directly in the chat field. KODA can explain it in plain language "
+            "and help you understand what matters next."
+        ),
+        "document_popover_limits": (
+            "Supported: PDF, DOCX, TXT, MD, CSV, XLSX. Up to 5 documents per message. "
+            "Text files up to 4.5 MB each. Uploaded media documents must stay within 25 MB total."
+        ),
+        "document_popover_privacy": (
+            "Documents are only used in the current session unless you explicitly export your session memory."
+        ),
+        "document_popover_disclaimer": (
+            "AI can make mistakes. Please check important decisions with official offices and cited sources."
+        ),
+        "document_uploaded_placeholder": "Uploaded document for explanation.",
+        "reset_chat": "Restart chat",
         "reset_chat_tooltip": "Clear the conversation and start fresh",
         "footer": "KODA provides orientation, not legal or financial advice.\n\nNo data is stored. Your session is private and ephemeral.",
         "lang_toggle": "🇩🇪 Deutsch",
@@ -102,9 +124,11 @@ STRINGS = {
         "provenance_source_registry_and_web": "Mit verifizierten Quellen + Web aufbereitet",
         "provenance_web_grounding": "Web-Suche",
         "provenance_model": "KI-Wissen",
+        "provenance_document": "Aus deinem Dokument erklärt",
         "sources_label": "Quellen",
         "source_tag_registry": "Geprüft",
         "source_tag_web_grounding": "Web",
+        "source_tag_document": "Dokument",
         "quick_actions_label": "Schnellfragen",
         "quick_actions_heading": "Was möchtest du erkunden?",
         "quick_actions_sub": "Wähle ein Thema zum Starten — oder stelle deine eigene Frage",
@@ -121,6 +145,7 @@ STRINGS = {
         "sidebar_section_summary": "Gesprächszusammenfassung",
         "sidebar_section_goals": "Deine bisherigen Fragen",
         "sidebar_section_identity": "Über dich",
+        "sidebar_section_documents": "Dokumente in dieser Sitzung",
         "sidebar_section_sources": "Quellen dieser Sitzung",
         "sidebar_portability": "Chat speichern oder fortsetzen",
         "sidebar_portability_note": "Lade eine Chat-Datei herunter oder setze ein früheres Gespräch mit einer gespeicherten Datei fort.",
@@ -141,7 +166,26 @@ STRINGS = {
         "onboarding_skip_btn": "Vorerst überspringen",
         "onboarding_skip_hint": "Wenn du möchtest, kannst du auch direkt in den Chat gehen.",
         "onboarding_input_placeholder": "Deine Antwort...",
-        "reset_chat": "↺  Neu starten",
+        "document_hint": "Optional: Über das Plus im Chatfeld kannst du ein Dokument hochladen.",
+        "document_popover_button": "Dokumente",
+        "document_popover_help": "Unterstützte Formate, Limits und Datenschutzhinweis für Dokument-Uploads.",
+        "document_popover_title": "Dokumente im Chat nutzen",
+        "document_popover_body": (
+            "Hänge ein Dokument direkt im Chatfeld an. KODA kann es in einfacher Sprache erklären "
+            "und dir sagen, was als Nächstes wichtig ist."
+        ),
+        "document_popover_limits": (
+            "Unterstützt: PDF, DOCX, TXT, MD, CSV, XLSX. Bis zu 5 Dokumente pro Nachricht. "
+            "Textdateien bis 4,5 MB pro Datei. Hochgeladene Mediendokumente zusammen bis 25 MB."
+        ),
+        "document_popover_privacy": (
+            "Dokumente werden nur in der aktuellen Sitzung verwendet, außer du exportierst deine Sitzung ausdrücklich."
+        ),
+        "document_popover_disclaimer": (
+            "KI kann Fehler machen. Bitte prüfe wichtige Entscheidungen mit offiziellen Stellen und zitierten Quellen."
+        ),
+        "document_uploaded_placeholder": "Dokument zur Erklärung hochgeladen.",
+        "reset_chat": "Chat neustarten",
         "reset_chat_tooltip": "Gespräch löschen und neu beginnen",
         "footer": "KODA bietet Orientierung, keine Rechts- oder Finanzberatung.\n\nEs werden keine Daten gespeichert. Deine Sitzung ist privat.",
         "lang_toggle": "🇬🇧 English",

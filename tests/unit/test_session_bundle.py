@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 from src.core.conversation import PersonalizedPrompt, SessionMemorySnapshot, SessionTextTurn
+from src.core.documents import DocumentMemory
 from src.core.provenance import ResponseProvenance, SourceAttribution
 from src.core.session_bundle import (
     MAX_SESSION_BUNDLE_BYTES,
@@ -64,6 +65,17 @@ def _build_snapshot() -> SessionMemorySnapshot:
                 message="Wie nutze ich Tage der offenen Tür, um mich besser zu orientieren?",
             ),
         ),
+        document_memories=(
+            DocumentMemory(
+                document_id="doc-1",
+                name="BAfoeG-Bescheid.pdf",
+                extension="pdf",
+                kind="media",
+                size_bytes=2048,
+                sha256="a" * 64,
+                summary="Ein BAföG-Bescheid wurde in einfacher Sprache erklärt.",
+            ),
+        ),
     )
 
 
@@ -110,6 +122,7 @@ def test_session_bundle_round_trips_portable_memory() -> None:
     assert parsed.session.onboarding_messages[0].content == "Wo stehst du gerade?"
     assert parsed.session.profile_summary is not None
     assert parsed.session.personalized_prompts[0].label == "Studium oder Ausbildung"
+    assert parsed.session.document_memories[0].name == "BAfoeG-Bescheid.pdf"
     assert history[0]["role"] == "user"
     assert history[1]["agent"] == "FINANCING"
     assert history[1]["provenance"]["mode"] == "source_registry"

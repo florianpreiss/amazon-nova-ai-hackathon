@@ -1,4 +1,5 @@
 from src.core.conversation import SessionMemorySnapshot, SessionTextTurn
+from src.core.documents import DocumentMemory
 from src.core.provenance import SourceAttribution
 from src.ui import build_session_profile_view
 
@@ -199,3 +200,27 @@ def test_build_session_profile_view_counts_onboarding_turns_in_messages() -> Non
     view = build_session_profile_view(snapshot, ui_language="de")
 
     assert view.message_count == 3
+
+
+def test_build_session_profile_view_exposes_document_labels() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-documents",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=2,
+        document_memories=(
+            DocumentMemory(
+                document_id="doc-1",
+                name="BAfoeG-Bescheid.pdf",
+                extension="pdf",
+                kind="media",
+                size_bytes=2048,
+                sha256="a" * 64,
+                summary="Ein BAföG-Bescheid wurde erklärt.",
+            ),
+        ),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="de")
+
+    assert view.document_labels == ("BAfoeG-Bescheid.pdf",)
