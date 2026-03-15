@@ -838,7 +838,7 @@ st.markdown(
         font-family: 'Nunito', sans-serif;
         font-size: 0.79rem;
         line-height: 1.45;
-        margin: 0.35rem auto 0.55rem auto;
+        margin: 0.8rem auto 0.55rem auto;
         max-width: 38rem;
         text-align: center;
     }
@@ -882,10 +882,19 @@ st.markdown(
         box-shadow: 0 3px 10px rgba(125, 122, 201, 0.16) !important;
     }
     .st-key-composer_reset_chat_button button {
+        background: rgba(0, 184, 148, 0.12) !important;
+        border: 1px solid rgba(0, 184, 148, 0.28) !important;
+        color: #0b7d68 !important;
         font-size: 0.84rem !important;
         min-height: 3rem !important;
         padding: 0.45rem 1.05rem !important;
         width: 100% !important;
+    }
+    .st-key-composer_reset_chat_button button:hover {
+        background: rgba(0, 184, 148, 0.18) !important;
+        border-color: rgba(0, 184, 148, 0.38) !important;
+        color: #096c5d !important;
+        box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
     }
     .st-key-quick_actions_panel [data-testid="stButton"] {
         display: flex;
@@ -1176,6 +1185,17 @@ st.markdown(
             background: rgba(244, 233, 250, 0.18) !important;
             border-color: rgba(212, 181, 235, 0.26) !important;
             color: #f2e2fb !important;
+        }
+        .st-key-composer_reset_chat_button button {
+            background: rgba(0, 184, 148, 0.18) !important;
+            border-color: rgba(0, 184, 148, 0.32) !important;
+            color: #9af0d9 !important;
+        }
+        .st-key-composer_reset_chat_button button:hover {
+            background: rgba(0, 184, 148, 0.24) !important;
+            border-color: rgba(0, 184, 148, 0.4) !important;
+            color: #b8fff0 !important;
+            box-shadow: 0 3px 10px rgba(0, 184, 148, 0.18) !important;
         }
 
         /* ── KODA assistant bubble ────────────── */
@@ -2053,7 +2073,6 @@ def _render_document_input_hint(current_lang: str) -> None:
             st.popover(
                 t("document_popover_button", current_lang),
                 icon=":material/add:",
-                help=t("document_popover_help", current_lang),
                 width="stretch",
             ),
         ):
