@@ -434,6 +434,8 @@ class TestChatService:
         assert onboarding_agent.messages_seen == [
             {"role": "user", "content": [{"text": "[START_ONBOARDING]"}]}
         ]
+        assert onboarding_agent.metadata_seen is not None
+        assert onboarding_agent.metadata_seen["ui_language"] == "de"
         assert snapshot is not None
         assert snapshot.onboarding_state == "in_progress"
         assert snapshot.onboarding_messages[0].content == result.response
@@ -508,5 +510,6 @@ class TestChatService:
         )
 
         assert onboarding_agent.metadata_seen is not None
+        assert onboarding_agent.metadata_seen["ui_language"] == "de"
         assert onboarding_agent.metadata_seen["onboarding_user_turn_count"] == 4
         assert onboarding_agent.metadata_seen["force_onboarding_completion"] is True

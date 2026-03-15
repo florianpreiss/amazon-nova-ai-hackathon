@@ -10,6 +10,7 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -27,9 +28,21 @@ from src.ui import build_quick_action_prompts, build_session_profile_view
 
 # ── Page config ────────────────────────────────────────
 
+APP_DIR = Path(__file__).parent
+STATIC_DIR = APP_DIR / "static"
+KODA_MARK_PATH = STATIC_DIR / "koda-mark.png"
+KODA_MARK_URL = "app/static/koda-mark.png"
+if KODA_MARK_PATH.exists():
+    with Image.open(KODA_MARK_PATH) as _page_icon_image:
+        KODA_PAGE_ICON = _page_icon_image.copy()
+    KODA_AVATAR = str(KODA_MARK_PATH)
+else:
+    KODA_PAGE_ICON = "🧭"
+    KODA_AVATAR = "🧭"
+
 st.set_page_config(
-    page_title="KODA — Dein Studienbegleiter | Your Study Companion",
-    page_icon="🧭",
+    page_title="KODA | Your Companion",
+    page_icon=KODA_PAGE_ICON,
     layout="centered",
     initial_sidebar_state="expanded",
 )
@@ -64,6 +77,11 @@ st.markdown(
     [data-testid="stToolbar"] {
         background: transparent !important;
         padding: 0.35rem 0.5rem 0 0.45rem !important;
+    }
+    [data-testid="stToolbar"] [data-testid="stStatusWidget"],
+    [data-testid="stToolbar"] [role="status"],
+    [data-testid="stToolbar"] .stStatusWidget {
+        display: none !important;
     }
     [data-testid="stExpandSidebarButton"],
     [data-testid="stSidebarCollapseButton"] button {
@@ -156,16 +174,65 @@ st.markdown(
         padding-top: 0.5rem !important;
     }
 
-    /* ── K · O · D · A title ──────────────────── */
+    /* ── KODA wordmark ────────────────────────── */
     .koda-title {
-        font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 4rem;
-        font-weight: 700;
-        letter-spacing: 0.22em;
-        text-align: center;
+        align-items: center;
         color: rgba(125, 122, 201, 1);
-        margin: 0.3rem 0 0.15rem 0;
+        display: grid;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 4.6rem;
+        font-weight: 700;
+        gap: 2.0rem;
+        grid-auto-columns: max-content;
+        grid-auto-flow: column;
+        justify-content: center;
+        letter-spacing: 0;
+        text-align: center;
+        margin: 0.22rem auto 0.12rem auto;
         line-height: 1;
+        max-width: 52rem;
+        padding: 0 0.2rem;
+        width: 100%;
+    }
+    .koda-title-letter {
+        align-items: center;
+        display: inline-flex;
+        justify-content: center;
+        letter-spacing: 0.03em;
+    }
+    .koda-title-dot {
+        align-items: center;
+        display: inline-flex;
+        font-size: 0.5em;
+        font-weight: 600;
+        justify-content: center;
+        opacity: 0.82;
+        transform: translateY(-0.05em);
+    }
+    .koda-title-mark {
+        align-items: center;
+        display: inline-flex;
+        height: 8.15rem;
+        justify-content: center;
+        margin: 0;
+        transform: translateY(0.09rem);
+        width: 8.15rem;
+    }
+    .koda-title-mark img {
+        filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.22));
+        height: 100%;
+        object-fit: contain;
+        width: 100%;
+    }
+    [data-testid="stChatMessage"] > div:first-child {
+        flex: 0 0 4.85rem !important;
+        width: 4.85rem !important;
+    }
+    [data-testid="stChatMessage"] > div:first-child img {
+        filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.18));
+        height: 4.55rem !important;
+        object-fit: contain !important;
+        width: 4.55rem !important;
     }
     .koda-tagline {
         text-align: center;
@@ -928,6 +995,87 @@ st.markdown(
         font-size: 0.7rem; color: rgba(125, 122, 201, 0.8); font-weight: 700;
         letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem;
     }
+    .thinking-shell {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.76);
+        border: 1px solid rgba(154, 129, 186, 0.18);
+        border-radius: 18px;
+        display: grid;
+        gap: 0.95rem;
+        grid-template-columns: auto 1fr;
+        margin: 0.15rem 0 0;
+        padding: 0.95rem 1rem;
+    }
+    .thinking-mark {
+        height: 3.7rem;
+        position: relative;
+        width: 3.7rem;
+    }
+    .thinking-mark::before,
+    .thinking-mark::after {
+        border: 1px solid rgba(125, 122, 201, 0.22);
+        border-radius: 999px;
+        content: "";
+        inset: -0.22rem;
+        position: absolute;
+    }
+    .thinking-mark::before {
+        animation: thinking-pulse 1.8s ease-in-out infinite;
+    }
+    .thinking-mark::after {
+        animation: thinking-pulse 1.8s ease-in-out 0.35s infinite;
+    }
+    .thinking-mark img {
+        border-radius: 999px;
+        height: 100%;
+        object-fit: contain;
+        position: relative;
+        width: 100%;
+        z-index: 1;
+    }
+    .thinking-copy {
+        min-width: 0;
+    }
+    .thinking-title {
+        color: #625b86;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.25;
+        margin: 0 0 0.2rem;
+    }
+    .thinking-body {
+        color: #636e72;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.85rem;
+        line-height: 1.55;
+        margin: 0;
+    }
+    .thinking-dots {
+        display: inline-flex;
+        gap: 0.26rem;
+        margin-left: 0.28rem;
+        vertical-align: middle;
+    }
+    .thinking-dots span {
+        animation: thinking-bounce 1.1s ease-in-out infinite;
+        background: rgba(125, 122, 201, 0.72);
+        border-radius: 999px;
+        display: inline-block;
+        height: 0.34rem;
+        width: 0.34rem;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.14s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.28s; }
+    @keyframes thinking-pulse {
+        0% { opacity: 0.18; transform: scale(0.94); }
+        70% { opacity: 0.46; transform: scale(1.05); }
+        100% { opacity: 0.08; transform: scale(1.14); }
+    }
+    @keyframes thinking-bounce {
+        0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-0.16rem); }
+    }
 
     /* ── Quick-action section header ────────────── */
     .qa-header {
@@ -1030,6 +1178,9 @@ st.markdown(
         }
 
         /* ── Text colours ─────────────────────── */
+        .koda-title-mark img {
+            filter: drop-shadow(0 8px 24px rgba(172, 153, 255, 0.24)) !important;
+        }
         .koda-tagline {
             color: #a0a8b8 !important;
         }
@@ -1166,6 +1317,23 @@ st.markdown(
             background: rgba(255, 159, 67, 0.18) !important;
             border-color: rgba(255, 159, 67, 0.28) !important;
             color: #ffd394 !important;
+        }
+        .thinking-shell {
+            background: rgba(34, 34, 48, 0.74) !important;
+            border-color: rgba(125, 122, 201, 0.18) !important;
+        }
+        .thinking-title {
+            color: #f4ebff !important;
+        }
+        .thinking-body {
+            color: #cfd5e2 !important;
+        }
+        .thinking-mark::before,
+        .thinking-mark::after {
+            border-color: rgba(212, 181, 235, 0.26) !important;
+        }
+        .thinking-dots span {
+            background: rgba(212, 181, 235, 0.84) !important;
         }
         .document-input-note {
             color: #d7c4e6 !important;
@@ -1376,8 +1544,18 @@ st.markdown(
         }
         .koda-title {
             font-size: 3rem;
-            letter-spacing: 0.16em;
+            gap: 0.34rem;
+            justify-content: center;
             margin-top: 0.15rem;
+            max-width: none;
+            width: 100%;
+        }
+        .koda-title-mark {
+            height: 4.75rem;
+            width: 4.75rem;
+        }
+        .koda-title-dot {
+            font-size: 0.46em;
         }
         .koda-tagline {
             font-size: 0.93rem;
@@ -1392,6 +1570,23 @@ st.markdown(
             font-size: 0.74rem;
             margin-bottom: 0.85rem;
             padding: 0.7rem 0.8rem;
+        }
+        .thinking-shell {
+            gap: 0.8rem;
+            grid-template-columns: 1fr;
+            padding: 0.9rem;
+            text-align: center;
+        }
+        .thinking-mark {
+            margin: 0 auto;
+        }
+        [data-testid="stChatMessage"] > div:first-child {
+            flex-basis: 3.8rem !important;
+            width: 3.8rem !important;
+        }
+        [data-testid="stChatMessage"] > div:first-child img {
+            height: 3.55rem !important;
+            width: 3.55rem !important;
         }
         .sidebar-title {
             font-size: 1.45rem;
@@ -1496,8 +1691,12 @@ st.markdown(
             font-size: 0.9rem;
         }
         .koda-title {
-            font-size: 2.35rem;
-            letter-spacing: 0.11em;
+            font-size: 2.2rem;
+            gap: 0.24rem;
+        }
+        .koda-title-mark {
+            height: 3.4rem;
+            width: 3.4rem;
         }
         .koda-tagline {
             font-size: 0.88rem;
@@ -2094,6 +2293,23 @@ def _render_document_input_hint(current_lang: str) -> None:
                 st.rerun()
 
 
+def _render_thinking_state(target, current_lang: str) -> None:
+    thinking_html = (
+        "<div class='thinking-shell'>"
+        "<div class='thinking-mark'>"
+        f"<img src='{html_lib.escape(KODA_MARK_URL)}' alt='KODA' />"
+        "</div>"
+        "<div class='thinking-copy'>"
+        f"<div class='thinking-title'>{html_lib.escape(t('thinking_title', current_lang))}"
+        "<span class='thinking-dots'><span></span><span></span><span></span></span>"
+        "</div>"
+        f"<p class='thinking-body'>{html_lib.escape(t('thinking_body', current_lang))}</p>"
+        "</div>"
+        "</div>"
+    )
+    target.markdown(thinking_html, unsafe_allow_html=True)
+
+
 def _paragraph_block(text: str, css_class: str) -> str:
     """Render plain text as a paragraph block with consistent styling hooks."""
 
@@ -2187,10 +2403,14 @@ def _normalize_inline_numbered_lists(text: str) -> str:
     return normalized
 
 
-def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | OnboardingTurnResult | None]:
+def _stream_markdown_response(
+    stream,
+    current_lang: str,
+) -> tuple[str, ChatTurnResult | OnboardingTurnResult | None]:
     """Render streamed assistant chunks as markdown instead of plain text."""
 
     content_placeholder = st.empty()
+    _render_thinking_state(content_placeholder, current_lang)
     chunks: list[str] = []
     result: ChatTurnResult | OnboardingTurnResult | None = None
 
@@ -2315,17 +2535,17 @@ def _render_quick_actions(current_lang: str, snapshot) -> None:
 def _render_welcome_screen(current_lang: str) -> None:
     if current_lang == "de":
         left_label = "Nicht-Akademikerkinder"
-        left_value = "27 von 100"
+        left_value = "25 von 100"
         left_delta = "beginnen ein Studium"
         right_label = "Akademikerkinder"
-        right_value = "79 von 100"
+        right_value = "78 von 100"
         right_delta = "beginnen ein Studium"
     else:
         left_label = "Non-academic families"
-        left_value = "27 of 100"
+        left_value = "25 of 100"
         left_delta = "start university"
         right_label = "Academic families"
-        right_value = "79 of 100"
+        right_value = "78 of 100"
         right_delta = "start university"
 
     col_left, col_right = st.columns(2)
@@ -2361,7 +2581,7 @@ def _render_welcome_screen(current_lang: str) -> None:
 
 
 def _render_onboarding_message(text: str, current_lang: str) -> None:
-    with st.chat_message("assistant", avatar="🧭"):
+    with st.chat_message("assistant", avatar=KODA_AVATAR):
         st.caption(get_agent_label("ONBOARDING", current_lang))
         st.markdown(_normalize_assistant_markdown(text))
 
@@ -2407,7 +2627,17 @@ else:
     )
 
 st.markdown(
-    """<div class="koda-title">K\u2009\u00b7\u2009O\u2009\u00b7\u2009D\u2009\u00b7\u2009A</div>""",
+    (
+        '<div class="koda-title">'
+        '<span class="koda-title-letter">K</span>'
+        '<span class="koda-title-dot">·</span>'
+        f'<span class="koda-title-mark"><img src="{html_lib.escape(KODA_MARK_URL)}" alt="O" /></span>'
+        '<span class="koda-title-dot">·</span>'
+        '<span class="koda-title-letter">D</span>'
+        '<span class="koda-title-dot">·</span>'
+        '<span class="koda-title-letter">A</span>'
+        "</div>"
+    ),
     unsafe_allow_html=True,
 )
 st.markdown(f"""<div class="koda-tagline">{t("subtitle", lang)}</div>""", unsafe_allow_html=True)
@@ -2453,14 +2683,15 @@ if show_onboarding_landing:
 
     if start_onboarding:
         st.session_state.show_welcome = False
-        with st.chat_message("assistant", avatar="🧭"):
+        with st.chat_message("assistant", avatar=KODA_AVATAR):
             label_placeholder = st.empty()
             label_placeholder.caption(get_agent_label("ONBOARDING", lang))
             _full_text, result = _stream_markdown_response(
                 load_chat_service().start_onboarding_stream(
                     session_id=st.session_state.session_id,
                     ui_language=lang,
-                )
+                ),
+                lang,
             )
         if isinstance(result, OnboardingTurnResult):
             st.session_state.session_id = result.session_id
@@ -2509,7 +2740,7 @@ elif show_onboarding_chat and session_snapshot is not None:
             f'<div class="msg-user">{_safe_user(onboarding_input)}</div>',
             unsafe_allow_html=True,
         )
-        with st.chat_message("assistant", avatar="🧭"):
+        with st.chat_message("assistant", avatar=KODA_AVATAR):
             label_placeholder = st.empty()
             label_placeholder.caption(get_agent_label("ONBOARDING", lang))
             _full_text, result = _stream_markdown_response(
@@ -2517,7 +2748,8 @@ elif show_onboarding_chat and session_snapshot is not None:
                     onboarding_input,
                     session_id=st.session_state.session_id,
                     ui_language=lang,
-                )
+                ),
+                lang,
             )
         if isinstance(result, OnboardingTurnResult):
             st.session_state.session_id = result.session_id
@@ -2542,7 +2774,7 @@ else:
             )
         else:
             label = get_agent_label(msg.get("agent", "COMPASS"), lang)
-            with st.chat_message("assistant", avatar="🧭"):
+            with st.chat_message("assistant", avatar=KODA_AVATAR):
                 st.caption(label)
                 st.markdown(_normalize_assistant_markdown(msg["content"]))
                 _render_provenance_block(msg.get("provenance"), lang)
@@ -2599,20 +2831,23 @@ else:
                 for uploaded_file in attached_files
             ]
 
-            with st.chat_message("assistant", avatar="\U0001f9ed"):
+            with st.chat_message("assistant", avatar=KODA_AVATAR):
+                waiting_placeholder = st.empty()
+                _render_thinking_state(waiting_placeholder, lang)
                 try:
-                    with st.spinner(t("thinking", lang)):
-                        chat_result = load_chat_service().respond_with_documents(
-                            user_input,
-                            document_inputs,
-                            session_id=st.session_state.session_id,
-                            ui_language=lang,
-                        )
+                    chat_result = load_chat_service().respond_with_documents(
+                        user_input,
+                        document_inputs,
+                        session_id=st.session_state.session_id,
+                        ui_language=lang,
+                    )
                 except DocumentValidationError as exc:
+                    waiting_placeholder.empty()
                     st.error(str(exc))
                     chat_result = None
 
                 if chat_result is not None:
+                    waiting_placeholder.empty()
                     agent_label = get_agent_label(chat_result.agent, lang)
                     st.caption(agent_label)
                     display_response = _normalize_assistant_markdown(chat_result.response)
@@ -2651,10 +2886,10 @@ else:
             label_placeholder = None
             provenance_placeholder = None
 
-            with st.chat_message("assistant", avatar="\U0001f9ed"):
+            with st.chat_message("assistant", avatar=KODA_AVATAR):
                 label_placeholder = st.empty()
                 provenance_placeholder = st.empty()
-                full_text, result = _stream_markdown_response(stream)
+                full_text, result = _stream_markdown_response(stream, lang)
 
             chat_result = result if isinstance(result, ChatTurnResult) else None
             if chat_result is None:

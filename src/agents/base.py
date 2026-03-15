@@ -52,6 +52,26 @@ FALLBACK_MESSAGES = {
 }
 
 
+def build_ui_language_addendum(metadata: dict | None) -> str:
+    """Add a strong UI-language preference for ambiguous or trigger turns."""
+
+    if not metadata:
+        return ""
+
+    ui_language = str(metadata.get("ui_language", "")).strip().lower()
+    if ui_language not in {"de", "en"}:
+        return ""
+
+    language_name = "German" if ui_language == "de" else "English"
+    return (
+        "\n\n"
+        "UI LANGUAGE PREFERENCE (CRITICAL):\n"
+        f"- The app UI language for this turn is {language_name} ({ui_language}).\n"
+        "- If the latest message is ambiguous, very short, or a system trigger, prefer this UI language.\n"
+        f"- Do not switch away from {language_name} unless the user clearly writes in another language.\n"
+    )
+
+
 class BaseAgent:
     """Base class for all domain agents."""
 
@@ -187,6 +207,7 @@ class BaseAgent:
     def _build_prompt(self, metadata: dict | None) -> str:
         """Build the system prompt with optional metadata enrichment."""
         prompt = self._base_prompt
+        prompt += build_ui_language_addendum(metadata)
         if metadata and metadata.get("identity_context"):
             prompt += build_identity_addendum(metadata["identity_context"])
         if metadata and metadata.get("session_memory"):

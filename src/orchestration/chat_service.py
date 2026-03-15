@@ -388,6 +388,7 @@ class ChatService:
             session.sync_history(history, ui_language=ui_language)
 
         metadata = self._merge_conversation_metadata(session.metadata, conversation_metadata)
+        metadata["ui_language"] = ui_language
         bedrock_messages = self._build_bedrock_messages(
             session.get_messages(),
             user_message,
@@ -448,6 +449,7 @@ class ChatService:
         session.set_onboarding_state("in_progress")
         session.set_preference("response_language", ui_language)
         metadata = self._merge_conversation_metadata(session.metadata, None)
+        metadata["ui_language"] = ui_language
         metadata["onboarding_user_turn_count"] = 0
         metadata["force_onboarding_completion"] = False
         bedrock_messages = [{"role": "user", "content": [{"text": START_TRIGGER}]}]
@@ -468,6 +470,7 @@ class ChatService:
         session.set_onboarding_state("in_progress")
         session.set_preference("response_language", ui_language)
         metadata = self._merge_conversation_metadata(session.metadata, None)
+        metadata["ui_language"] = ui_language
         existing_user_turns = sum(
             1 for turn in session.snapshot().onboarding_messages if turn.role == "user"
         )
