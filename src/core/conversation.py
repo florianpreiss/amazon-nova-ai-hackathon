@@ -12,7 +12,7 @@ import re
 import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, Literal, cast
 
 from config.settings import SESSION_TIMEOUT_MINUTES
@@ -392,7 +392,7 @@ class Conversation:
 
     def set_personalized_prompts(
         self,
-        prompts: list[PersonalizedPrompt | dict[str, Any]],
+        prompts: Sequence[PersonalizedPrompt | dict[str, Any]],
     ) -> None:
         normalized = _coerce_personalized_prompts(prompts)
         with self._lock:
@@ -403,7 +403,7 @@ class Conversation:
         self,
         *,
         profile_summary: str,
-        personalized_prompts: list[PersonalizedPrompt | dict[str, Any]] | None = None,
+        personalized_prompts: Sequence[PersonalizedPrompt | dict[str, Any]] | None = None,
         ui_language: str | None = None,
     ) -> None:
         with self._lock:

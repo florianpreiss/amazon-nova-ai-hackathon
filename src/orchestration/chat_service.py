@@ -15,11 +15,21 @@ from src.agents.base import BaseAgent
 from src.agents.compass import CompassAgent
 from src.agents.crisis import CrisisRadar
 from src.agents.financing.student_aid import StudentAidAgent
+from src.agents.onboarding import START_TRIGGER, OnboardingAgent
 from src.agents.role_models.anti_impostor import AntiImpostorAgent
 from src.agents.router import RouterAgent
 from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
-from src.core.conversation import Conversation, ConversationStore, SessionMemorySnapshot
-from src.core.provenance import ResponseProvenance, build_provenance_context
+from src.core.conversation import (
+    Conversation,
+    ConversationStore,
+    PersonalizedPrompt,
+    SessionMemorySnapshot,
+)
+from src.core.provenance import (
+    ResponseProvenance,
+    build_default_provenance,
+    build_provenance_context,
+)
 from src.core.session_bundle import (
     SessionBundle,
     build_session_bundle,
@@ -43,6 +53,20 @@ class ChatTurnResult(BaseModel):
     provenance: ResponseProvenance
 
 
+class OnboardingTurnResult(BaseModel):
+    """Structured output for a single onboarding turn."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    session_id: str
+    response: str
+    onboarding_state: str
+    completed: bool
+    profile_summary: str | None = None
+    personalized_prompts: tuple[PersonalizedPrompt, ...] = ()
+    provenance: ResponseProvenance
+
+
 @dataclass(frozen=True)
 class PreparedChatTurn:
     """The shared context computed before generating a reply."""
@@ -54,6 +78,15 @@ class PreparedChatTurn:
     agent: BaseAgent
     metadata: dict[str, Any]
     crisis_prefix: str
+
+
+@dataclass(frozen=True)
+class PreparedOnboardingTurn:
+    """Computed onboarding context before generating the next onboarding reply."""
+
+    session: Conversation
+    bedrock_messages: list[dict[str, Any]]
+    metadata: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -75,12 +108,14 @@ class ChatService:
         router: RouterAgent,
         crisis_radar: CrisisRadar,
         agents: dict[str, BaseAgent],
+        onboarding_agent: OnboardingAgent | None = None,
         sessions: ConversationStore | None = None,
         summarizer: SessionSummarizer | None = None,
     ) -> None:
         self.router = router
         self.crisis_radar = crisis_radar
         self.agents = agents
+        self.onboarding_agent = onboarding_agent or OnboardingAgent()
         self.sessions = sessions or ConversationStore()
         self.summarizer = summarizer
 
@@ -187,6 +222,103 @@ class ChatService:
             provenance=provenance,
         )
 
+    def start_onboarding(
+        self,
+        *,
+        session_id: str | None = None,
+        ui_language: str = "en",
+    ) -> OnboardingTurnResult:
+        """Start onboarding and return the first assistant greeting/question."""
+
+        prepared = self._prepare_onboarding_start(session_id=session_id, ui_language=ui_language)
+        reply = self.onboarding_agent.respond_with_details(
+            prepared.bedrock_messages,
+            prepared.metadata,
+        )
+        return self._finalize_onboarding_reply(
+            prepared.session,
+            response_text=reply.text,
+            ui_language=ui_language,
+            provenance=reply.provenance,
+        )
+
+    def start_onboarding_stream(
+        self,
+        *,
+        session_id: str | None = None,
+        ui_language: str = "en",
+    ) -> Generator[str | OnboardingTurnResult, None, None]:
+        """Stream the initial onboarding greeting and finish with structured metadata."""
+
+        prepared = self._prepare_onboarding_start(session_id=session_id, ui_language=ui_language)
+        yield from self._stream_onboarding_reply(
+            prepared.session,
+            bedrock_messages=prepared.bedrock_messages,
+            metadata=prepared.metadata,
+            ui_language=ui_language,
+        )
+
+    def continue_onboarding(
+        self,
+        user_message: str,
+        *,
+        session_id: str | None = None,
+        ui_language: str = "en",
+    ) -> OnboardingTurnResult:
+        """Continue onboarding with one user answer."""
+
+        prepared = self._prepare_onboarding_turn(
+            user_message,
+            session_id=session_id,
+            ui_language=ui_language,
+        )
+        reply = self.onboarding_agent.respond_with_details(
+            prepared.bedrock_messages,
+            prepared.metadata,
+        )
+        return self._finalize_onboarding_reply(
+            prepared.session,
+            response_text=reply.text,
+            ui_language=ui_language,
+            provenance=reply.provenance,
+            user_message=user_message,
+        )
+
+    def continue_onboarding_stream(
+        self,
+        user_message: str,
+        *,
+        session_id: str | None = None,
+        ui_language: str = "en",
+    ) -> Generator[str | OnboardingTurnResult, None, None]:
+        """Stream one onboarding turn and finish with structured metadata."""
+
+        prepared = self._prepare_onboarding_turn(
+            user_message,
+            session_id=session_id,
+            ui_language=ui_language,
+        )
+        yield from self._stream_onboarding_reply(
+            prepared.session,
+            bedrock_messages=prepared.bedrock_messages,
+            metadata=prepared.metadata,
+            ui_language=ui_language,
+            user_message=user_message,
+        )
+
+    def skip_onboarding(
+        self,
+        *,
+        session_id: str | None = None,
+        ui_language: str = "en",
+    ) -> SessionMemorySnapshot:
+        """Mark onboarding as skipped for the current session."""
+
+        session = self.sessions.get_or_create(session_id, ui_language=ui_language)
+        session.skip_onboarding()
+        session.set_preference("response_language", ui_language)
+        return session.snapshot()
+
     def _prepare_turn(
         self,
         user_message: str,
@@ -225,6 +357,110 @@ class ChatService:
             crisis_prefix=self._format_crisis_prefix(crisis, ui_language),
         )
 
+    def _prepare_onboarding_start(
+        self,
+        *,
+        session_id: str | None,
+        ui_language: str,
+    ) -> PreparedOnboardingTurn:
+        session = self.sessions.get_or_create(session_id, ui_language=ui_language)
+        session.set_onboarding_state("in_progress")
+        session.set_preference("response_language", ui_language)
+        metadata = self._merge_conversation_metadata(session.metadata, None)
+        bedrock_messages = [{"role": "user", "content": [{"text": START_TRIGGER}]}]
+        return PreparedOnboardingTurn(
+            session=session,
+            bedrock_messages=bedrock_messages,
+            metadata=metadata,
+        )
+
+    def _prepare_onboarding_turn(
+        self,
+        user_message: str,
+        *,
+        session_id: str | None,
+        ui_language: str,
+    ) -> PreparedOnboardingTurn:
+        session = self.sessions.get_or_create(session_id, ui_language=ui_language)
+        session.set_onboarding_state("in_progress")
+        session.set_preference("response_language", ui_language)
+        metadata = self._merge_conversation_metadata(session.metadata, None)
+        bedrock_messages = self._build_onboarding_messages(session, user_message=user_message)
+        return PreparedOnboardingTurn(
+            session=session,
+            bedrock_messages=bedrock_messages,
+            metadata=metadata,
+        )
+
+    def _stream_onboarding_reply(
+        self,
+        session: Conversation,
+        *,
+        bedrock_messages: list[dict[str, Any]],
+        metadata: dict[str, Any],
+        ui_language: str,
+        user_message: str | None = None,
+    ) -> Generator[str | OnboardingTurnResult, None, None]:
+        collected: list[str] = []
+        replace_text: str | None = None
+
+        for chunk in self.onboarding_agent.respond_stream(bedrock_messages, metadata):
+            if chunk.startswith("\x00REPLACE\x00"):
+                replace_text = chunk.removeprefix("\x00REPLACE\x00")
+                continue
+            collected.append(chunk)
+            yield chunk
+
+        full_response = replace_text if replace_text is not None else "".join(collected)
+        yield self._finalize_onboarding_reply(
+            session,
+            response_text=full_response,
+            ui_language=ui_language,
+            provenance=metadata.get("provenance") or build_default_provenance(),
+            user_message=user_message,
+        )
+
+    def _finalize_onboarding_reply(
+        self,
+        session: Conversation,
+        *,
+        response_text: str,
+        ui_language: str,
+        provenance: ResponseProvenance,
+        user_message: str | None = None,
+    ) -> OnboardingTurnResult:
+        if user_message:
+            session.add_onboarding_message("user", user_message)
+
+        profile_summary = self.onboarding_agent.extract_profile(response_text)
+        prompt_payload = self.onboarding_agent.extract_prompts(response_text) or []
+        display_text = self.onboarding_agent.clean_for_display(response_text)
+        session.add_onboarding_message("assistant", display_text)
+
+        if profile_summary:
+            session.complete_onboarding(
+                profile_summary=profile_summary,
+                personalized_prompts=prompt_payload,
+                ui_language=ui_language,
+            )
+        else:
+            session.set_onboarding_state("in_progress")
+
+        snapshot = session.snapshot()
+        return OnboardingTurnResult(
+            session_id=session.session_id,
+            response=display_text,
+            onboarding_state=snapshot.onboarding_state,
+            completed=snapshot.onboarding_state == "complete",
+            profile_summary=snapshot.profile_summary,
+            personalized_prompts=snapshot.personalized_prompts,
+            provenance=(
+                provenance
+                if isinstance(provenance, ResponseProvenance)
+                else ResponseProvenance.model_validate(provenance)
+            ),
+        )
+
     @staticmethod
     def _build_bedrock_messages(
         history: list[dict[str, Any]],
@@ -246,6 +482,19 @@ class ChatService:
             raise TypeError(f"Unsupported message content type: {type(content).__name__}")
 
         normalized.append({"role": "user", "content": [{"text": user_message}]})
+        return normalized
+
+    @staticmethod
+    def _build_onboarding_messages(
+        session: Conversation,
+        *,
+        user_message: str | None = None,
+    ) -> list[dict[str, Any]]:
+        normalized: list[dict[str, Any]] = [{"role": "user", "content": [{"text": START_TRIGGER}]}]
+        for turn in session.snapshot().onboarding_messages:
+            normalized.append({"role": turn.role, "content": [{"text": turn.content}]})
+        if user_message is not None:
+            normalized.append({"role": "user", "content": [{"text": user_message}]})
         return normalized
 
     @staticmethod
@@ -383,5 +632,6 @@ def build_default_chat_service() -> ChatService:
             "ACADEMIC_BASICS": HiddenCurriculumAgent(),
             "ROLE_MODELS": AntiImpostorAgent(),
         },
+        onboarding_agent=OnboardingAgent(),
         summarizer=NovaSessionSummarizer(),
     )

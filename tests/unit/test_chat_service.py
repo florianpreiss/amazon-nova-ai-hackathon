@@ -86,6 +86,73 @@ class StubSummarizer:
         )
 
 
+class StubOnboardingAgent:
+    def __init__(
+        self,
+        *,
+        text: str = "Hallo! Erzaehl mir kurz, wo du gerade stehst.",
+        stream_chunks: list[str] | None = None,
+    ) -> None:
+        self.text = text
+        self.stream_chunks = stream_chunks or []
+        self.messages_seen: list[dict] | None = None
+        self.metadata_seen: dict | None = None
+
+    def respond_with_details(
+        self, messages: list[dict], metadata: dict | None = None
+    ) -> AgentReply:
+        self.messages_seen = messages
+        self.metadata_seen = metadata or {}
+        return AgentReply(text=self.text, provenance=build_default_provenance())
+
+    def respond_stream(
+        self,
+        messages: list[dict],
+        metadata: dict | None = None,
+    ) -> Generator[str, None, None]:
+        self.messages_seen = messages
+        self.metadata_seen = metadata or {}
+        yield from self.stream_chunks
+
+    @staticmethod
+    def extract_profile(text: str) -> str | None:
+        start = "[PROFILE_START]"
+        end = "[PROFILE_END]"
+        if start not in text or end not in text:
+            return None
+        return text.split(start, 1)[1].split(end, 1)[0].strip()
+
+    @staticmethod
+    def extract_prompts(text: str) -> list[dict[str, str]] | None:
+        start = "[PROMPTS_START]"
+        end = "[PROMPTS_END]"
+        if start not in text or end not in text:
+            return None
+        block = text.split(start, 1)[1].split(end, 1)[0].strip()
+        prompts: list[dict[str, str]] = []
+        for line in block.splitlines():
+            line = line.lstrip("- ").strip()
+            if "|" not in line:
+                continue
+            label, message = line.split("|", 1)
+            prompts.append({"label": label.strip(), "message": message.strip()})
+        return prompts or None
+
+    @staticmethod
+    def clean_for_display(text: str) -> str:
+        markers = (
+            ("[PROFILE_START]", "[PROFILE_END]"),
+            ("[PROMPTS_START]", "[PROMPTS_END]"),
+        )
+        cleaned = text
+        for start, end in markers:
+            if start in cleaned and end in cleaned:
+                before, rest = cleaned.split(start, 1)
+                _, after = rest.split(end, 1)
+                cleaned = before + after
+        return cleaned.strip()
+
+
 class TestChatService:
     def test_respond_normalizes_history_and_passes_metadata(self):
         agent = StubAgent(text="Antwort")
@@ -317,3 +384,70 @@ class TestChatService:
 
         with pytest.raises(ValueError, match="Invalid session bundle checksum"):
             service.import_session_bundle(tampered_bundle)
+
+    def test_start_onboarding_stores_initial_assistant_message(self):
+        onboarding_agent = StubOnboardingAgent(text="Hallo! Erzaehl mir kurz, wo du gerade stehst.")
+        service = ChatService(
+            router=StubRouter("COMPASS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(text="Antwort")},
+            onboarding_agent=onboarding_agent,
+        )
+
+        result = service.start_onboarding(ui_language="de")
+        snapshot = service.get_session_snapshot(result.session_id)
+
+        assert result.onboarding_state == "in_progress"
+        assert result.completed is False
+        assert result.response == "Hallo! Erzaehl mir kurz, wo du gerade stehst."
+        assert onboarding_agent.messages_seen == [
+            {"role": "user", "content": [{"text": "[START_ONBOARDING]"}]}
+        ]
+        assert snapshot is not None
+        assert snapshot.onboarding_state == "in_progress"
+        assert snapshot.onboarding_messages[0].content == result.response
+
+    def test_continue_onboarding_completes_profile_and_prompts(self):
+        onboarding_agent = StubOnboardingAgent(
+            text=(
+                "Danke, das hilft mir weiter.\n\n"
+                "[PROFILE_START]\n"
+                "situation: Du bist 17 und noch in der Schule.\n"
+                "main_concern: Du bist unsicher, ob ein Studium zu dir passt.\n"
+                "context: Du moechtest dich besser orientieren und moegliche Wege vergleichen.\n"
+                "language: de\n"
+                "[PROFILE_END]\n\n"
+                "[PROMPTS_START]\n"
+                "- Studium oder Ausbildung | Wie finde ich heraus, ob Studium oder Ausbildung besser zu mir passt?\n"
+                "- Offene Tage | Welche offenen Tage oder Schnupperangebote sollte ich nutzen?\n"
+                "[PROMPTS_END]"
+            )
+        )
+        service = ChatService(
+            router=StubRouter("COMPASS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(text="Antwort")},
+            onboarding_agent=onboarding_agent,
+        )
+
+        start = service.start_onboarding(ui_language="de")
+        result = service.continue_onboarding(
+            "Ich bin 17, noch in der Schule und unsicher, ob ich studieren soll.",
+            session_id=start.session_id,
+            ui_language="de",
+        )
+        snapshot = service.get_session_snapshot(start.session_id)
+
+        assert result.completed is True
+        assert result.onboarding_state == "complete"
+        assert "Danke, das hilft mir weiter." in result.response
+        assert result.profile_summary is not None
+        assert "Du bist 17 und noch in der Schule." in result.profile_summary
+        assert result.personalized_prompts[0].label == "Studium oder Ausbildung"
+        assert snapshot is not None
+        assert snapshot.onboarding_state == "complete"
+        assert snapshot.profile_summary == result.profile_summary
+        assert snapshot.personalized_prompts[0].label == "Studium oder Ausbildung"
+        assert snapshot.onboarding_messages[1].content == (
+            "Ich bin 17, noch in der Schule und unsicher, ob ich studieren soll."
+        )
