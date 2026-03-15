@@ -93,6 +93,7 @@ class SessionProfileView:
     response_language_label: str | None = None
     topic_labels: tuple[str, ...] = ()
     goal_summaries: tuple[str, ...] = ()
+    profile_summary_text: str | None = None
     recognized_facts: tuple[str, ...] = ()
     conversation_summary_points: tuple[str, ...] = ()
     cited_sources: tuple[SourceAttribution, ...] = ()
@@ -113,6 +114,7 @@ class SessionProfileView:
                 self.response_language_label,
                 self.topic_labels,
                 self.goal_summaries,
+                self.profile_summary_text,
                 self.recognized_facts,
                 self.conversation_summary_points,
                 self.cited_sources,
@@ -397,6 +399,9 @@ def build_session_profile_view(
         response_language_label=response_language_label,
         topic_labels=topic_labels,
         goal_summaries=goal_summaries,
+        profile_summary_text=(
+            str(snapshot.profile_summary).strip() if snapshot.profile_summary else None
+        ),
         recognized_facts=recognized_facts,
         conversation_summary_points=_build_conversation_summary_points(
             topic_labels=topic_labels,

@@ -24,6 +24,10 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
             "Was sollte ich zuerst beantragen?",
             "Wie plane ich das Semester finanziell?",
         ),
+        profile_summary=(
+            "Du bist Erstakademikerin, arbeitest 20h/Woche und suchst gerade nach "
+            "einer guten Finanzierungsstrategie."
+        ),
         cited_sources=(
             SourceAttribution(
                 title="BAföG",
@@ -61,6 +65,8 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
         "Was sollte ich zuerst beantragen?",
         "Welche Stipendien passen zu mir?",
     )
+    assert view.profile_summary_text is not None
+    assert "arbeitest 20h/Woche" in view.profile_summary_text
     assert view.recognized_facts == (
         "Erstakademikerin",
         "Arbeitet 20h/Woche",

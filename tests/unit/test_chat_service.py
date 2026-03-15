@@ -257,6 +257,23 @@ class TestChatService:
             session_id=first.session_id,
             ui_language="de",
         )
+        session = service.sessions.get(first.session_id)
+        assert session is not None
+        session.add_onboarding_message("assistant", "Wo stehst du gerade?")
+        session.add_onboarding_message("user", "Ich bin 17 und noch in der Schule.")
+        session.complete_onboarding(
+            profile_summary=(
+                "Du bist 17, noch in der Schule und willst herausfinden, "
+                "ob ein Studium zu dir passt."
+            ),
+            personalized_prompts=[
+                {
+                    "label": "Studium oder Ausbildung",
+                    "message": "Wie finde ich heraus, ob Studium oder Ausbildung besser zu mir passt?",
+                }
+            ],
+            ui_language="de",
+        )
 
         bundle = service.export_session_bundle(first.session_id)
 
@@ -277,6 +294,10 @@ class TestChatService:
             "Du fragst nach Finanzierung und Studienalltag.",
             "Die Arbeit mit 20h/Woche beeinflusst deine Optionen.",
         )
+        assert snapshot.onboarding_state == "complete"
+        assert snapshot.profile_summary is not None
+        assert snapshot.onboarding_messages[0].content == "Wo stehst du gerade?"
+        assert snapshot.personalized_prompts[0].label == "Studium oder Ausbildung"
 
     def test_import_session_bundle_revalidates_checksum_for_models(self):
         service = ChatService(

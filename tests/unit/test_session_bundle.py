@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
-from src.core.conversation import SessionMemorySnapshot
+from src.core.conversation import PersonalizedPrompt, SessionMemorySnapshot, SessionTextTurn
 from src.core.provenance import ResponseProvenance, SourceAttribution
 from src.core.session_bundle import (
     MAX_SESSION_BUNDLE_BYTES,
@@ -45,6 +45,24 @@ def _build_snapshot() -> SessionMemorySnapshot:
         conversation_overview=(
             "Du vergleichst BAfoeG und Stipendien.",
             "Wichtig ist deine Arbeitszeit neben dem Studium.",
+        ),
+        onboarding_state="complete",
+        onboarding_messages=(
+            SessionTextTurn(role="assistant", content="Wo stehst du gerade?"),
+            SessionTextTurn(role="user", content="Ich bin 17 und noch in der Schule."),
+        ),
+        profile_summary=(
+            "Du bist 17, noch in der Schule und willst herausfinden, ob ein Studium zu dir passt."
+        ),
+        personalized_prompts=(
+            PersonalizedPrompt(
+                label="Studium oder Ausbildung",
+                message="Wie finde ich heraus, ob Studium oder Ausbildung besser zu mir passt?",
+            ),
+            PersonalizedPrompt(
+                label="Tage der offenen Tür",
+                message="Wie nutze ich Tage der offenen Tür, um mich besser zu orientieren?",
+            ),
         ),
     )
 
@@ -88,6 +106,10 @@ def test_session_bundle_round_trips_portable_memory() -> None:
     assert parsed.schema_version == "1.0"
     assert parsed.session.preferences["response_language"] == "de"
     assert parsed.session.profile_facts == ("Erstakademikerin", "Arbeitet 20h/Woche")
+    assert parsed.session.onboarding_state == "complete"
+    assert parsed.session.onboarding_messages[0].content == "Wo stehst du gerade?"
+    assert parsed.session.profile_summary is not None
+    assert parsed.session.personalized_prompts[0].label == "Studium oder Ausbildung"
     assert history[0]["role"] == "user"
     assert history[1]["agent"] == "FINANCING"
     assert history[1]["provenance"]["mode"] == "source_registry"
