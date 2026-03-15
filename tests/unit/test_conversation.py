@@ -74,6 +74,19 @@ class TestConversation:
         assert "Topics already discussed: BAfoeG, scholarships" in addendum
         assert "BAfoeG Amt (bafoeg.de)" in addendum
 
+    def test_conversation_extracts_work_hours_from_user_context(self):
+        conversation = Conversation(session_id="session-hours", now=lambda: 100.0)
+
+        conversation.add_user_message(
+            "Ich arbeite 20h pro Woche und brauche Hilfe bei BAfoeG.",
+            ui_language="de",
+        )
+
+        snapshot = conversation.snapshot()
+
+        assert snapshot.identity_context["working_student"] is True
+        assert snapshot.identity_context["weekly_work_hours"] == "20h"
+
     def test_conversation_keeps_all_unique_sources_for_session(self):
         conversation = Conversation(session_id="session-2", now=lambda: 100.0)
 

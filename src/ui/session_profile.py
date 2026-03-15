@@ -77,7 +77,7 @@ _LANGUAGE_LABELS = {
     "en": {"de": "German", "en": "English"},
 }
 _MAX_SUMMARY_POINTS = 3
-_MAX_SUMMARY_LENGTH = 140
+_MAX_GOAL_LENGTH = 180
 
 
 @dataclass(frozen=True)
@@ -90,7 +90,7 @@ class SessionProfileView:
     topic_labels: tuple[str, ...] = ()
     goal_summaries: tuple[str, ...] = ()
     identity_labels: tuple[str, ...] = ()
-    answer_summary_points: tuple[str, ...] = ()
+    conversation_summary_points: tuple[str, ...] = ()
     cited_sources: tuple[SourceAttribution, ...] = ()
     crisis_detected: bool = False
 
@@ -104,7 +104,7 @@ class SessionProfileView:
                 self.topic_labels,
                 self.goal_summaries,
                 self.identity_labels,
-                self.answer_summary_points,
+                self.conversation_summary_points,
                 self.cited_sources,
                 self.crisis_detected,
             )
@@ -128,55 +128,99 @@ def _localize_identity(identity_key: str, *, ui_language: str) -> str:
     )
 
 
-def _clean_summary_text(text: str) -> str:
+def _clean_goal_text(text: str) -> str:
     cleaned = text.strip()
     cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", cleaned)
     cleaned = re.sub(r"^(\d+\.\s+|[-*•]\s+)", "", cleaned)
     cleaned = cleaned.replace("**", "").replace("__", "").replace("`", "")
     cleaned = re.sub(r"\s+", " ", cleaned).strip(" -:;,.")
-    if len(cleaned) > _MAX_SUMMARY_LENGTH:
-        cleaned = cleaned[: _MAX_SUMMARY_LENGTH - 1].rstrip() + "..."
+    if len(cleaned) > _MAX_GOAL_LENGTH:
+        cleaned = cleaned[: _MAX_GOAL_LENGTH - 1].rstrip() + "..."
     return cleaned
 
 
-def _extract_answer_summary_points(response_text: str | None) -> tuple[str, ...]:
-    if not response_text:
-        return ()
+def _ensure_terminal_punctuation(text: str) -> str:
+    if text.endswith((".", "!", "?")):
+        return text
+    return f"{text}."
 
-    normalized = response_text.replace("\r\n", "\n").replace("\r", "\n")
-    lines = [line.strip() for line in normalized.split("\n")]
 
-    bullet_candidates: list[str] = []
-    for line in lines:
-        if not line or line.startswith("#") or set(line) <= {"-"}:
+def _format_work_hours_label(hours: str, *, ui_language: str) -> str:
+    if ui_language == "de":
+        return f"Arbeitet etwa {hours}/Woche"
+    return f"Works about {hours}/week"
+
+
+def _build_identity_labels(
+    identity_context: dict[str, bool | str], *, ui_language: str
+) -> tuple[str, ...]:
+    labels: list[str] = []
+    has_work_hours = isinstance(identity_context.get("weekly_work_hours"), str)
+
+    for key in _IDENTITY_ORDER:
+        value = identity_context.get(key)
+        if not value:
             continue
-        if re.match(r"^(\d+\.\s+|[-*•]\s+)", line):
-            cleaned = _clean_summary_text(line)
-            if cleaned and cleaned not in bullet_candidates:
-                bullet_candidates.append(cleaned)
-        if len(bullet_candidates) >= _MAX_SUMMARY_POINTS:
-            return tuple(bullet_candidates[:_MAX_SUMMARY_POINTS])
+        if key == "working_student" and has_work_hours:
+            continue
+        labels.append(_localize_identity(key, ui_language=ui_language))
 
-    prose = " ".join(
-        line for line in lines if line and not line.startswith("#") and set(line) != {"-"}
+    work_hours = identity_context.get("weekly_work_hours")
+    if isinstance(work_hours, str) and work_hours:
+        labels.append(_format_work_hours_label(work_hours, ui_language=ui_language))
+
+    return tuple(labels)
+
+
+def _format_topic_sentence(topic_labels: tuple[str, ...], *, ui_language: str) -> str | None:
+    if not topic_labels:
+        return None
+    preview = ", ".join(topic_labels[:3])
+    if ui_language == "de":
+        return f"Im Gespräch geht es bisher vor allem um {preview}."
+    return f"So far, the conversation is mainly about {preview}."
+
+
+def _format_identity_sentence(identity_labels: tuple[str, ...], *, ui_language: str) -> str | None:
+    if not identity_labels:
+        return None
+    preview = ", ".join(identity_labels[:3])
+    if ui_language == "de":
+        return f"Wichtiger Kontext aus dem Gespräch: {preview}."
+    return f"Important context from the chat: {preview}."
+
+
+def _format_goal_sentence(goals: tuple[str, ...], *, ui_language: str) -> str | None:
+    if not goals:
+        return None
+    latest_goal = _clean_goal_text(goals[0])
+    if not latest_goal:
+        return None
+    if ui_language == "de":
+        return f"Dein aktuelles Anliegen ist: {_ensure_terminal_punctuation(latest_goal)}"
+    return f"Your current focus is: {_ensure_terminal_punctuation(latest_goal)}"
+
+
+def _build_conversation_summary_points(
+    *,
+    topic_labels: tuple[str, ...],
+    goal_summaries: tuple[str, ...],
+    identity_labels: tuple[str, ...],
+    ui_language: str,
+) -> tuple[str, ...]:
+    candidates = (
+        _format_identity_sentence(identity_labels, ui_language=ui_language),
+        _format_topic_sentence(topic_labels, ui_language=ui_language),
+        _format_goal_sentence(goal_summaries, ui_language=ui_language),
     )
-    prose = prose.replace("**", "").replace("__", "")
-    sentence_candidates: list[str] = []
-    for sentence in re.split(r"(?<=[.!?])\s+", prose):
-        cleaned = _clean_summary_text(sentence)
-        if cleaned and cleaned not in sentence_candidates:
-            sentence_candidates.append(cleaned)
-        if len(sentence_candidates) >= _MAX_SUMMARY_POINTS:
-            break
-
-    return tuple(sentence_candidates[:_MAX_SUMMARY_POINTS])
+    points = [item for item in candidates if item]
+    return tuple(points[:_MAX_SUMMARY_POINTS])
 
 
 def build_session_profile_view(
     snapshot: SessionMemorySnapshot | None,
     *,
     ui_language: str,
-    latest_assistant_response: str | None = None,
     goal_limit: int = 3,
     topic_limit: int = 4,
     source_limit: int | None = None,
@@ -199,9 +243,7 @@ def build_session_profile_view(
         for topic in reversed(snapshot.topics[-topic_limit:])
     )
     goal_summaries = tuple(reversed(snapshot.active_goals[-goal_limit:]))
-
-    identity_keys = tuple(key for key in _IDENTITY_ORDER if snapshot.identity_context.get(key))
-    identity_labels = tuple(_localize_identity(key, ui_language=language) for key in identity_keys)
+    identity_labels = _build_identity_labels(snapshot.identity_context, ui_language=language)
     cited_sources = (
         tuple(reversed(snapshot.cited_sources))
         if source_limit is None
@@ -215,7 +257,12 @@ def build_session_profile_view(
         topic_labels=topic_labels,
         goal_summaries=goal_summaries,
         identity_labels=identity_labels,
-        answer_summary_points=_extract_answer_summary_points(latest_assistant_response),
+        conversation_summary_points=_build_conversation_summary_points(
+            topic_labels=topic_labels,
+            goal_summaries=goal_summaries,
+            identity_labels=identity_labels,
+            ui_language=language,
+        ),
         cited_sources=cited_sources,
         crisis_detected=snapshot.crisis_detected,
     )

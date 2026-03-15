@@ -89,6 +89,21 @@ _IDENTITY_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+_WORK_CONTEXT_KEYWORDS = (
+    "arbeite",
+    "arbeit",
+    "job",
+    "nebenjob",
+    "werkstudent",
+    "work",
+    "working",
+    "part-time",
+    "part time",
+)
+_WORK_HOURS_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\b(\d{1,2})\s*(?:h|std)\b"),
+    re.compile(r"\b(\d{1,2})\s*(?:stunden|hours?|hrs?)\b"),
+)
 
 
 def _normalize_text(text: str) -> str:
@@ -347,6 +362,17 @@ class Conversation:
         for key, patterns in _IDENTITY_PATTERNS:
             if any(pattern in lowered for pattern in patterns):
                 self.identity_context[key] = True
+
+        has_work_context = any(keyword in lowered for keyword in _WORK_CONTEXT_KEYWORDS)
+        for pattern in _WORK_HOURS_PATTERNS:
+            match = pattern.search(lowered)
+            if not match:
+                continue
+            if has_work_context or "pro woche" in lowered or "per week" in lowered:
+                hours = match.group(1)
+                self.identity_context["working_student"] = True
+                self.identity_context["weekly_work_hours"] = f"{hours}h"
+                break
 
     def _remember_sources(self, provenance: ResponseProvenance | None) -> None:
         if provenance is None:

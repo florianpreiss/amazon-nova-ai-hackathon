@@ -1428,19 +1428,7 @@ def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
     snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
-    latest_assistant_response = next(
-        (
-            str(message.get("content", ""))
-            for message in reversed(st.session_state.messages)
-            if message.get("role") == "assistant"
-        ),
-        None,
-    )
-    profile = build_session_profile_view(
-        snapshot,
-        ui_language=current_lang,
-        latest_assistant_response=latest_assistant_response,
-    )
+    profile = build_session_profile_view(snapshot, ui_language=current_lang)
 
     with st.sidebar:
         st.markdown(
@@ -1484,9 +1472,9 @@ def _render_profile_sidebar(current_lang: str) -> None:
             _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
             _render_sidebar_chip_list(profile.topic_labels)
 
-        if profile.answer_summary_points:
+        if profile.conversation_summary_points:
             _render_sidebar_section_label(t("sidebar_section_summary", current_lang))
-            _render_sidebar_list(profile.answer_summary_points, compact=True)
+            _render_sidebar_list(profile.conversation_summary_points, compact=True)
 
         if profile.goal_summaries:
             with st.expander(
@@ -1497,12 +1485,8 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 _render_sidebar_list(profile.goal_summaries)
 
         if profile.identity_labels:
-            with st.expander(
-                t("sidebar_section_identity", current_lang),
-                expanded=False,
-                icon=":material/person_search:",
-            ):
-                _render_sidebar_list(profile.identity_labels)
+            _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
+            _render_sidebar_list(profile.identity_labels, compact=True)
 
         if profile.cited_sources:
             with st.expander(

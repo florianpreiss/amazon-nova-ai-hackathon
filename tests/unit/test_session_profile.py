@@ -15,6 +15,7 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
         identity_context={
             "working_student": True,
             "first_generation_student": True,
+            "weekly_work_hours": "20h",
         },
         preferences={"response_language": "de"},
         active_goals=(
@@ -39,13 +40,7 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
         ),
     )
 
-    view = build_session_profile_view(
-        snapshot,
-        ui_language="de",
-        latest_assistant_response=(
-            "1. BAföG prüfen\n2. Passende Stipendien suchen\n3. Fristen früh notieren"
-        ),
-    )
+    view = build_session_profile_view(snapshot, ui_language="de")
 
     assert view.has_content is True
     assert view.message_count == 6
@@ -59,12 +54,12 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
     )
     assert view.identity_labels == (
         "Erstakademiker*in",
-        "Arbeitet neben dem Studium",
+        "Arbeitet etwa 20h/Woche",
     )
-    assert view.answer_summary_points == (
-        "BAföG prüfen",
-        "Passende Stipendien suchen",
-        "Fristen früh notieren",
+    assert view.conversation_summary_points == (
+        "Wichtiger Kontext aus dem Gespräch: Erstakademiker*in, Arbeitet etwa 20h/Woche.",
+        "Im Gespräch geht es bisher vor allem um Fristen, Finanzierung, Studienwahl.",
+        "Dein aktuelles Anliegen ist: Wie plane ich das Semester finanziell?",
     )
     assert [source.domain for source in view.cited_sources] == [
         "arbeiterkind.de",
@@ -81,5 +76,5 @@ def test_build_session_profile_view_returns_empty_view_without_snapshot() -> Non
     assert view.topic_labels == ()
     assert view.goal_summaries == ()
     assert view.identity_labels == ()
-    assert view.answer_summary_points == ()
+    assert view.conversation_summary_points == ()
     assert view.cited_sources == ()
