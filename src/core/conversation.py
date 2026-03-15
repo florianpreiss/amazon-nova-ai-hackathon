@@ -12,11 +12,11 @@ import re
 import threading
 import time
 import uuid
-from collections.abc import Callable
-from typing import Any
+from collections.abc import Callable, Sequence
+from typing import Any, Literal, cast
 
 from config.settings import SESSION_TIMEOUT_MINUTES
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.core.provenance import ResponseProvenance, SourceAttribution
 from src.core.session_summary import SessionSummary
@@ -25,6 +25,11 @@ MAX_SESSION_MESSAGES = 24
 MAX_ACTIVE_GOALS = 4
 MAX_TOPICS = 6
 MAX_GOAL_LENGTH = 140
+MAX_ONBOARDING_MESSAGES = 12
+MAX_PERSONALIZED_PROMPTS = 5
+MAX_PROFILE_SUMMARY_LENGTH = 1200
+MAX_PROMPT_LABEL_LENGTH = 80
+MAX_PROMPT_MESSAGE_LENGTH = 240
 
 _AGENT_TOPIC_LABELS = {
     "COMPASS": "general guidance",
@@ -117,6 +122,14 @@ def _truncate_text(text: str, *, limit: int = MAX_GOAL_LENGTH) -> str:
     return text[: limit - 1].rstrip() + "..."
 
 
+def _truncate_multiline_text(text: str, *, limit: int) -> str:
+    normalized = re.sub(r"\r\n?", "\n", text).strip()
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[: limit - 1].rstrip() + "..."
+
+
 def _normalize_content(content: Any) -> list[dict[str, str]]:
     if isinstance(content, list):
         normalized: list[dict[str, str]] = []
@@ -183,6 +196,55 @@ class SessionMemorySnapshot(BaseModel):
     cited_sources: tuple[SourceAttribution, ...] = ()
     profile_facts: tuple[str, ...] = ()
     conversation_overview: tuple[str, ...] = ()
+    onboarding_state: Literal["pending", "in_progress", "complete", "skipped"] = "pending"
+    onboarding_messages: tuple[SessionTextTurn, ...] = ()
+    profile_summary: str | None = None
+    personalized_prompts: tuple[PersonalizedPrompt, ...] = ()
+
+
+class SessionTextTurn(BaseModel):
+    """Compact session-owned text turn used for onboarding transcripts."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    role: Literal["user", "assistant"]
+    content: str
+
+    @field_validator("content")
+    @classmethod
+    def _content_must_not_be_blank(cls, value: str) -> str:
+        value = _normalize_text(value)
+        if not value:
+            raise ValueError("content must not be blank")
+        return value
+
+
+class PersonalizedPrompt(BaseModel):
+    """Profile-aware quick action suggested for the current session."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    label: str
+    message: str
+
+    @field_validator("label")
+    @classmethod
+    def _label_must_not_be_blank(cls, value: str) -> str:
+        value = _truncate_text(_normalize_text(value), limit=MAX_PROMPT_LABEL_LENGTH)
+        if not value:
+            raise ValueError("label must not be blank")
+        return value
+
+    @field_validator("message")
+    @classmethod
+    def _message_must_not_be_blank(cls, value: str) -> str:
+        value = _truncate_multiline_text(value, limit=MAX_PROMPT_MESSAGE_LENGTH)
+        if not value:
+            raise ValueError("message must not be blank")
+        return value
+
+
+SessionMemorySnapshot.model_rebuild()
 
 
 class Conversation:
@@ -210,6 +272,10 @@ class Conversation:
         self.cited_sources: list[SourceAttribution] = []
         self.profile_facts: list[str] = []
         self.conversation_overview: list[str] = []
+        self.onboarding_state: Literal["pending", "in_progress", "complete", "skipped"] = "pending"
+        self.onboarding_messages: list[SessionTextTurn] = []
+        self.profile_summary: str | None = None
+        self.personalized_prompts: list[PersonalizedPrompt] = []
         self.crisis_detected = False
 
     @property
@@ -226,6 +292,14 @@ class Conversation:
             "crisis_detected": snapshot.crisis_detected,
             "profile_facts": list(snapshot.profile_facts),
             "conversation_overview": list(snapshot.conversation_overview),
+            "onboarding_state": snapshot.onboarding_state,
+            "onboarding_messages": [
+                message.model_dump(mode="python") for message in snapshot.onboarding_messages
+            ],
+            "profile_summary": snapshot.profile_summary,
+            "personalized_prompts": [
+                prompt.model_dump(mode="python") for prompt in snapshot.personalized_prompts
+            ],
             "session_memory": snapshot.model_dump(mode="python"),
         }
 
@@ -256,6 +330,10 @@ class Conversation:
             self.cited_sources = []
             self.profile_facts = []
             self.conversation_overview = []
+            self.onboarding_state = "pending"
+            self.onboarding_messages = []
+            self.profile_summary = None
+            self.personalized_prompts = []
             self.crisis_detected = False
             self.preferences["response_language"] = ui_language
 
@@ -281,6 +359,68 @@ class Conversation:
                     self._remember_sources(_coerce_provenance(provenance))
 
             self._trim_messages()
+            self._touch()
+
+    def set_onboarding_state(
+        self,
+        state: Literal["pending", "in_progress", "complete", "skipped"],
+    ) -> None:
+        with self._lock:
+            self.onboarding_state = state
+            self._touch()
+
+    def add_onboarding_message(
+        self,
+        role: Literal["user", "assistant"],
+        text: str,
+    ) -> None:
+        normalized = _normalize_text(text)
+        if not normalized:
+            return
+
+        with self._lock:
+            self.onboarding_messages.append(SessionTextTurn(role=role, content=normalized))
+            if len(self.onboarding_messages) > MAX_ONBOARDING_MESSAGES:
+                self.onboarding_messages = self.onboarding_messages[-MAX_ONBOARDING_MESSAGES:]
+            self._touch()
+
+    def set_profile_summary(self, summary: str | None) -> None:
+        normalized = _truncate_multiline_text(summary or "", limit=MAX_PROFILE_SUMMARY_LENGTH)
+        with self._lock:
+            self.profile_summary = normalized or None
+            self._touch()
+
+    def set_personalized_prompts(
+        self,
+        prompts: Sequence[PersonalizedPrompt | dict[str, Any]],
+    ) -> None:
+        normalized = _coerce_personalized_prompts(prompts)
+        with self._lock:
+            self.personalized_prompts = list(normalized)
+            self._touch()
+
+    def complete_onboarding(
+        self,
+        *,
+        profile_summary: str,
+        personalized_prompts: Sequence[PersonalizedPrompt | dict[str, Any]] | None = None,
+        ui_language: str | None = None,
+    ) -> None:
+        with self._lock:
+            self.onboarding_state = "complete"
+            if ui_language:
+                self.preferences["response_language"] = ui_language
+            self.profile_summary = (
+                _truncate_multiline_text(profile_summary, limit=MAX_PROFILE_SUMMARY_LENGTH) or None
+            )
+            self.personalized_prompts = list(
+                _coerce_personalized_prompts(personalized_prompts or [])
+            )
+            self._touch()
+
+    def skip_onboarding(self) -> None:
+        with self._lock:
+            self.onboarding_state = "skipped"
             self._touch()
 
     def add_user_message(self, text: str, *, ui_language: str = "en") -> None:
@@ -359,6 +499,10 @@ class Conversation:
                 cited_sources=tuple(self.cited_sources),
                 profile_facts=tuple(self.profile_facts),
                 conversation_overview=tuple(self.conversation_overview),
+                onboarding_state=self.onboarding_state,
+                onboarding_messages=tuple(self.onboarding_messages),
+                profile_summary=self.profile_summary,
+                personalized_prompts=tuple(self.personalized_prompts),
             )
 
     def is_expired(self) -> bool:
@@ -460,6 +604,25 @@ class Conversation:
                 for item in session_memory.get("conversation_overview", ())
                 if str(item).strip()
             ]
+            onboarding_state = str(session_memory.get("onboarding_state", "pending")).strip()
+            if onboarding_state in {"pending", "in_progress", "complete", "skipped"}:
+                self.onboarding_state = cast(
+                    Literal["pending", "in_progress", "complete", "skipped"],
+                    onboarding_state,
+                )
+            else:
+                self.onboarding_state = "pending"
+            self.onboarding_messages = list(
+                _coerce_onboarding_messages(session_memory.get("onboarding_messages", ()))
+            )
+            profile_summary = _truncate_multiline_text(
+                str(session_memory.get("profile_summary", "")).strip(),
+                limit=MAX_PROFILE_SUMMARY_LENGTH,
+            )
+            self.profile_summary = profile_summary or None
+            self.personalized_prompts = list(
+                _coerce_personalized_prompts(session_memory.get("personalized_prompts", ()))
+            )
             self._trim_messages()
             self._touch()
 
@@ -554,6 +717,12 @@ def build_session_memory_addendum(
         for item in raw_memory.get("conversation_overview", ())
         if str(item).strip()
     )
+    onboarding_state = str(raw_memory.get("onboarding_state", "")).strip()
+    profile_summary = _truncate_multiline_text(
+        str(raw_memory.get("profile_summary", "")).strip(),
+        limit=MAX_PROFILE_SUMMARY_LENGTH,
+    )
+    personalized_prompts = _coerce_personalized_prompts(raw_memory.get("personalized_prompts", ()))
 
     if not any(
         (
@@ -565,6 +734,9 @@ def build_session_memory_addendum(
             cited_sources,
             profile_facts,
             conversation_overview,
+            onboarding_state,
+            profile_summary,
+            personalized_prompts,
         )
     ):
         return ""
@@ -592,9 +764,22 @@ def build_session_memory_addendum(
         lines.append("- Recent user requests:")
         lines.extend(f"  - {goal}" for goal in active_goals)
 
+    if onboarding_state and onboarding_state != "pending":
+        lines.append(f"- Onboarding status in this session: {onboarding_state}")
+
+    if profile_summary:
+        lines.append("- Narrative profile summary gathered in this session:")
+        lines.extend(
+            f"  - {line.strip()}" for line in re.split(r"\n+", profile_summary) if line.strip()
+        )
+
     if profile_facts:
         lines.append("- Dynamic context recognized in this session:")
         lines.extend(f"  - {fact}" for fact in profile_facts[:6])
+
+    if personalized_prompts:
+        labels = ", ".join(prompt.label for prompt in personalized_prompts[:4])
+        lines.append(f"- Tailored follow-up prompts already prepared: {labels}")
 
     if conversation_overview:
         lines.append("- Session summary so far:")
@@ -636,3 +821,32 @@ def _coerce_sources(raw_sources: Any) -> tuple[SourceAttribution, ...]:
             sources.append(SourceAttribution.model_validate(raw))
 
     return tuple(sources)
+
+
+def _coerce_onboarding_messages(values: Any) -> tuple[SessionTextTurn, ...]:
+    messages: list[SessionTextTurn] = []
+    for item in values or ():
+        if isinstance(item, SessionTextTurn):
+            messages.append(item)
+            continue
+        if isinstance(item, dict):
+            messages.append(SessionTextTurn.model_validate(item))
+    return tuple(messages[-MAX_ONBOARDING_MESSAGES:])
+
+
+def _coerce_personalized_prompts(values: Any) -> tuple[PersonalizedPrompt, ...]:
+    prompts: list[PersonalizedPrompt] = []
+    seen: set[tuple[str, str]] = set()
+    for item in values or ():
+        if isinstance(item, PersonalizedPrompt):
+            prompt = item
+        elif isinstance(item, dict):
+            prompt = PersonalizedPrompt.model_validate(item)
+        else:
+            continue
+        key = (prompt.label.casefold(), prompt.message.casefold())
+        if key in seen:
+            continue
+        seen.add(key)
+        prompts.append(prompt)
+    return tuple(prompts[:MAX_PERSONALIZED_PROMPTS])

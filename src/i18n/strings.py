@@ -43,7 +43,7 @@ STRINGS = {
         "sidebar_note": "This summary exists only during the current chat session. Reset any time to clear it.",
         "sidebar_empty": "Start chatting and KODA will summarize your goals, context, and sources here.",
         "sidebar_stat_profile": "Your profile",
-        "sidebar_stat_messages": "Messages",
+        "sidebar_stat_messages": "Chat history",
         "sidebar_stat_language": "Language",
         "sidebar_pending": "Listening",
         "sidebar_profile_pending": "Building up",
@@ -62,6 +62,15 @@ STRINGS = {
         "session_import_success": "Session loaded into a new private chat.",
         "session_import_error": "This session file could not be loaded.",
         "sidebar_crisis_note": "KODA noticed that this conversation may need urgent support. Use the crisis resources shown in the chat.",
+        "onboarding_pending_title": "Before we begin...",
+        "onboarding_pending_body": (
+            "KODA can start with a short, gentle onboarding chat so the guidance and "
+            "suggested questions fit your situation better."
+        ),
+        "onboarding_start_btn": "Start onboarding",
+        "onboarding_skip_btn": "Skip for now",
+        "onboarding_skip_hint": "You can jump straight into the chat if you prefer.",
+        "onboarding_input_placeholder": "Your answer...",
         "reset_chat": "↺  New chat",
         "reset_chat_tooltip": "Clear the conversation and start fresh",
         "footer": "KODA provides orientation, not legal or financial advice.\n\nNo data is stored. Your session is private and ephemeral.",
@@ -104,7 +113,7 @@ STRINGS = {
         "sidebar_note": "Diese Zusammenfassung existiert nur in der aktuellen Sitzung. Du kannst sie jederzeit zurücksetzen.",
         "sidebar_empty": "Starte ein Gespräch und KODA fasst hier deine Ziele, deinen Kontext und genutzte Quellen zusammen.",
         "sidebar_stat_profile": "Dein Profil",
-        "sidebar_stat_messages": "Nachrichten",
+        "sidebar_stat_messages": "Chatverlauf",
         "sidebar_stat_language": "Sprache",
         "sidebar_pending": "Hört zu",
         "sidebar_profile_pending": "Im Aufbau",
@@ -123,6 +132,15 @@ STRINGS = {
         "session_import_success": "Sitzung in einen neuen privaten Chat geladen.",
         "session_import_error": "Diese Sitzungsdatei konnte nicht geladen werden.",
         "sidebar_crisis_note": "KODA hat erkannt, dass dieses Gespräch möglicherweise sofortige Unterstützung braucht. Nutze die Hilfsangebote im Chat.",
+        "onboarding_pending_title": "Bevor wir starten...",
+        "onboarding_pending_body": (
+            "KODA kann mit einem kurzen, behutsamen Onboarding beginnen, damit die "
+            "Begleitung und die vorgeschlagenen Fragen besser zu deiner Situation passen."
+        ),
+        "onboarding_start_btn": "Onboarding starten",
+        "onboarding_skip_btn": "Vorerst überspringen",
+        "onboarding_skip_hint": "Wenn du möchtest, kannst du auch direkt in den Chat gehen.",
+        "onboarding_input_placeholder": "Deine Antwort...",
         "reset_chat": "↺  Neu starten",
         "reset_chat_tooltip": "Gespräch löschen und neu beginnen",
         "footer": "KODA bietet Orientierung, keine Rechts- oder Finanzberatung.\n\nEs werden keine Daten gespeichert. Deine Sitzung ist privat.",
@@ -143,6 +161,7 @@ AGENT_LABELS = {
         "STUDY_CHOICE": "Study Info",
         "ACADEMIC_BASICS": "Academic Coach",
         "ROLE_MODELS": "Role Models",
+        "ONBOARDING": "KODA Onboarding",
     },
     "de": {
         "COMPASS": "KODA Kompass",
@@ -151,6 +170,7 @@ AGENT_LABELS = {
         "STUDY_CHOICE": "Studieninfo",
         "ACADEMIC_BASICS": "Akademischer Coach",
         "ROLE_MODELS": "Vorbilder",
+        "ONBOARDING": "KODA Onboarding",
     },
 }
 

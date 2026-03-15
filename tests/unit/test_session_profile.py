@@ -1,4 +1,4 @@
-from src.core.conversation import SessionMemorySnapshot
+from src.core.conversation import SessionMemorySnapshot, SessionTextTurn
 from src.core.provenance import SourceAttribution
 from src.ui import build_session_profile_view
 
@@ -23,6 +23,10 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
             "Welche Stipendien passen zu mir?",
             "Was sollte ich zuerst beantragen?",
             "Wie plane ich das Semester finanziell?",
+        ),
+        profile_summary=(
+            "Du bist Erstakademikerin, arbeitest 20h/Woche und suchst gerade nach "
+            "einer guten Finanzierungsstrategie."
         ),
         cited_sources=(
             SourceAttribution(
@@ -61,6 +65,8 @@ def test_build_session_profile_view_localizes_and_limits_recent_items() -> None:
         "Was sollte ich zuerst beantragen?",
         "Welche Stipendien passen zu mir?",
     )
+    assert view.profile_summary_text is not None
+    assert "arbeitest 20h/Woche" in view.profile_summary_text
     assert view.recognized_facts == (
         "Erstakademikerin",
         "Arbeitet 20h/Woche",
@@ -142,3 +148,54 @@ def test_build_session_profile_view_infers_basic_student_context_from_goals() ->
         "Noch in der Schule",
         "Interesse am Studium",
     )
+
+
+def test_build_session_profile_view_formats_structured_onboarding_profile_text() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-onboarding-profile",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=0,
+        profile_summary=(
+            "situation: Du bist 17 und noch in der Schule.\n"
+            "main_concern: Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt.\n"
+            "context: Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen.\n"
+            "language: de"
+        ),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="de")
+
+    assert view.profile_summary_text == (
+        "Du bist 17 und noch in der Schule. "
+        "Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt. "
+        "Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen."
+    )
+    assert view.recognized_facts == (
+        "Du bist 17 und noch in der Schule",
+        "Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt",
+        "Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen",
+    )
+    assert view.conversation_summary_points == (
+        "Deine aktuelle Situation: Du bist 17 und noch in der Schule.",
+        "Gerade besonders wichtig für dich: Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt.",
+        "Relevanter Hintergrund aus dem Gespräch: Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen.",
+    )
+
+
+def test_build_session_profile_view_counts_onboarding_turns_in_messages() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-onboarding-count",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=0,
+        onboarding_messages=(
+            SessionTextTurn(role="assistant", content="Hallo!"),
+            SessionTextTurn(role="user", content="Ich bin noch in der Schule."),
+            SessionTextTurn(role="assistant", content="Was interessiert dich?"),
+        ),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="de")
+
+    assert view.message_count == 3
