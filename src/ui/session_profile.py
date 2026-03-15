@@ -238,7 +238,7 @@ def _format_topic_sentence(topic_labels: tuple[str, ...], *, ui_language: str) -
         return None
     preview = ", ".join(topic_labels[:3])
     if ui_language == "de":
-        return f"Im Gespräch geht es bisher vor allem um {preview}."
+        return f"Bisher tauchen vor allem diese Themen auf: {preview}."
     return f"So far, the conversation is mainly about {preview}."
 
 
@@ -247,7 +247,7 @@ def _format_identity_sentence(identity_labels: tuple[str, ...], *, ui_language: 
         return None
     preview = ", ".join(identity_labels[:3])
     if ui_language == "de":
-        return f"Wichtiger Kontext aus dem Gespräch: {preview}."
+        return f"Wichtiger Hintergrund aus dem Gespräch: {preview}."
     return f"Important context from the chat: {preview}."
 
 
@@ -258,8 +258,55 @@ def _format_goal_sentence(goals: tuple[str, ...], *, ui_language: str) -> str | 
     if not latest_goal:
         return None
     if ui_language == "de":
-        return f"Dein aktuelles Anliegen ist: {_ensure_terminal_punctuation(latest_goal)}"
+        return f"Als Nächstes suchst du vor allem Orientierung zu: {_ensure_terminal_punctuation(latest_goal)}"
     return f"Your current focus is: {_ensure_terminal_punctuation(latest_goal)}"
+
+
+def _build_onboarding_summary_points(
+    profile_summary: str | None,
+    *,
+    ui_language: str,
+) -> tuple[str, ...]:
+    fields = _parse_onboarding_profile_fields(profile_summary)
+    if not fields:
+        return ()
+
+    points: list[str] = []
+    situation = fields.get("situation")
+    concern = fields.get("main_concern")
+    context = fields.get("context")
+
+    if situation:
+        if ui_language == "de":
+            points.append(
+                f"Deine aktuelle Situation: {_ensure_terminal_punctuation(situation.strip())}"
+            )
+        else:
+            points.append(
+                f"Your current situation: {_ensure_terminal_punctuation(situation.strip())}"
+            )
+
+    if concern:
+        if ui_language == "de":
+            points.append(
+                f"Gerade besonders wichtig für dich: {_ensure_terminal_punctuation(concern.strip())}"
+            )
+        else:
+            points.append(
+                f"Especially important for you right now: {_ensure_terminal_punctuation(concern.strip())}"
+            )
+
+    if context:
+        if ui_language == "de":
+            points.append(
+                f"Relevanter Hintergrund aus dem Gespräch: {_ensure_terminal_punctuation(context.strip())}"
+            )
+        else:
+            points.append(
+                f"Relevant background from the conversation: {_ensure_terminal_punctuation(context.strip())}"
+            )
+
+    return tuple(points[:_MAX_SUMMARY_POINTS])
 
 
 def _build_contextual_facts(goals: tuple[str, ...], *, ui_language: str) -> tuple[str, ...]:
@@ -398,6 +445,7 @@ def _mentions_study_interest(text: str) -> bool:
 
 def _build_conversation_summary_points(
     *,
+    profile_summary: str | None,
     topic_labels: tuple[str, ...],
     goal_summaries: tuple[str, ...],
     recognized_facts: tuple[str, ...],
@@ -406,6 +454,17 @@ def _build_conversation_summary_points(
 ) -> tuple[str, ...]:
     if summary_points:
         return summary_points[:_MAX_SUMMARY_POINTS]
+
+    onboarding_points = _build_onboarding_summary_points(
+        profile_summary,
+        ui_language=ui_language,
+    )
+    if onboarding_points:
+        extra_points: list[str] = list(onboarding_points)
+        goal_sentence = _format_goal_sentence(goal_summaries, ui_language=ui_language)
+        if goal_sentence:
+            extra_points.append(goal_sentence)
+        return tuple(extra_points[:_MAX_SUMMARY_POINTS])
 
     candidates = (
         _format_identity_sentence(recognized_facts, ui_language=ui_language),
@@ -472,6 +531,7 @@ def build_session_profile_view(
         profile_summary_text=_format_profile_summary_text(snapshot.profile_summary),
         recognized_facts=recognized_facts,
         conversation_summary_points=_build_conversation_summary_points(
+            profile_summary=snapshot.profile_summary,
             topic_labels=topic_labels,
             goal_summaries=goal_summaries,
             recognized_facts=recognized_facts,

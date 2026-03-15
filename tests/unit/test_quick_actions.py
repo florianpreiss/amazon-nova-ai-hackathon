@@ -25,8 +25,9 @@ def test_build_quick_action_prompts_prioritizes_current_direction() -> None:
     prompts = build_quick_action_prompts(snapshot, ui_language="de")
 
     assert prompts
-    assert prompts[0].label == "Nächster Schritt"
-    assert any(prompt.label == "Finanzcheck" for prompt in prompts)
+    assert prompts[0].label == "Finanzierung verstehen"
+    assert any(prompt.label == "Passender Start" for prompt in prompts)
+    assert any(prompt.label == "Realistische Wege" for prompt in prompts)
     assert any(prompt.label == "Studium oder Ausbildung" for prompt in prompts)
 
 
@@ -44,9 +45,31 @@ def test_build_quick_action_prompts_supports_english_study_choice_prompts() -> N
     prompts = build_quick_action_prompts(snapshot, ui_language="en")
 
     labels = {prompt.label for prompt in prompts}
-    assert "Next step" in labels
+    assert "Best starting point" in labels
     assert "Compare paths" in labels
-    assert "Clarify interests" in labels
+    assert "What fits me?" in labels
+
+
+def test_build_quick_action_prompts_uses_profile_clues_for_more_specific_prompts() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-profile-clues",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=0,
+        profile_summary=(
+            "situation: noch in der schule und macht gerade das abitur\n"
+            "main_concern: finanzielle unsicherheit und unsicherheit darüber, was an der uni erwartet wird\n"
+            "context: interessiert sich für architektur und bauingenieurwesen, kennt bafög noch nicht\n"
+            "language: de"
+        ),
+    )
+
+    prompts = build_quick_action_prompts(snapshot, ui_language="de")
+
+    labels = {prompt.label for prompt in prompts}
+    assert "Architektur vs Bau" in labels
+    assert "Finanzierung verstehen" in labels
+    assert "Uni-Alltag verstehen" in labels
 
 
 def test_build_quick_action_prompts_returns_empty_without_snapshot() -> None:

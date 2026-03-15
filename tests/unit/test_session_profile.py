@@ -176,3 +176,8 @@ def test_build_session_profile_view_formats_structured_onboarding_profile_text()
         "Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt",
         "Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen",
     )
+    assert view.conversation_summary_points == (
+        "Deine aktuelle Situation: Du bist 17 und noch in der Schule.",
+        "Gerade besonders wichtig für dich: Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt.",
+        "Relevanter Hintergrund aus dem Gespräch: Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen.",
+    )

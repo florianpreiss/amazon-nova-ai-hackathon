@@ -1700,16 +1700,6 @@ def _get_onboarding_state(snapshot: SessionMemorySnapshot | None) -> str:
     return snapshot.onboarding_state
 
 
-def _profile_preview_from_summary(summary_text: str | None, current_lang: str) -> str:
-    if not summary_text:
-        return t("sidebar_profile_pending", current_lang)
-
-    compact = re.sub(r"\s+", " ", summary_text).strip()
-    if len(compact) <= 88:
-        return compact
-    return compact[:87].rstrip() + "..."
-
-
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
     snapshot = _get_session_snapshot()
@@ -1751,19 +1741,7 @@ def _render_profile_sidebar(current_lang: str) -> None:
                 "recognized_facts",
                 getattr(profile, "identity_labels", ()),
             )
-            profile_preview = t("sidebar_profile_pending", current_lang)
-            if recognized_facts:
-                preview_items = list(recognized_facts[:3])
-                if len(recognized_facts) > 3:
-                    preview_items.append(f"+{len(recognized_facts) - 3}")
-                profile_preview = " · ".join(preview_items)
-            elif profile.profile_summary_text:
-                profile_preview = _profile_preview_from_summary(
-                    profile.profile_summary_text,
-                    current_lang,
-                )
             stats = [
-                (t("sidebar_stat_profile", current_lang), profile_preview),
                 (
                     t("sidebar_stat_language", current_lang),
                     profile.response_language_label or current_lang.upper(),
@@ -1772,15 +1750,17 @@ def _render_profile_sidebar(current_lang: str) -> None:
             ]
             _render_sidebar_stats(stats)
 
-            if profile.profile_summary_text:
+            if profile.profile_summary_text or recognized_facts:
+                _render_sidebar_section_label(t("sidebar_stat_profile", current_lang))
                 st.markdown(
                     (
                         "<div class='sidebar-profile-summary'>"
-                        f"{html_lib.escape(profile.profile_summary_text)}"
+                        f"{html_lib.escape(profile.profile_summary_text or ' · '.join(recognized_facts[:3]))}"
                         "</div>"
                     ),
                     unsafe_allow_html=True,
                 )
+                st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
 
             if profile.crisis_detected:
                 st.markdown(
@@ -1886,6 +1866,7 @@ def _normalize_assistant_markdown(text: str) -> str:
     normalized = re.sub(r"[ \t]+\n", "\n", normalized)
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
     normalized = _normalize_markdown_tables(normalized)
+    normalized = _normalize_inline_numbered_lists(normalized)
     return normalized.strip()
 
 
@@ -1920,6 +1901,20 @@ def _normalize_markdown_tables(text: str) -> str:
             repaired.append("")
 
     normalized = "\n".join(repaired)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized
+
+
+def _normalize_inline_numbered_lists(text: str) -> str:
+    """Split numbered list items onto separate lines when the model compresses them."""
+
+    repaired_lines: list[str] = []
+    for line in text.split("\n"):
+        if len(re.findall(r"\b\d+\.\s", line)) >= 2:
+            line = re.sub(r"\s(?=\d+\.\s)", "\n", line)
+        repaired_lines.append(line)
+
+    normalized = "\n".join(repaired_lines)
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
     return normalized
 
@@ -2111,15 +2106,18 @@ def _build_onboarding_handoff_text(
 
     if current_lang == "de":
         return (
-            f"Ich habe jetzt ein erstes Bild von dir: {summary}\n\n"
-            "Die Buttons darunter sind passende nächste Fragen für deine aktuelle Situation. "
-            "Du kannst einen davon anklicken oder unten jederzeit deine ganz eigene Frage schreiben."
+            f"Ich habe jetzt ein klareres Bild von deiner Situation: {summary}\n\n"
+            "Die Fragen darunter sollen dir passende nächste Richtungen zeigen, zum Beispiel "
+            "zum Studienweg, zur Finanzierung oder dazu, was dich an der Uni wirklich erwartet. "
+            "Wenn dich etwas anderes gerade mehr interessiert, kannst du unten jederzeit auch "
+            "deine ganz eigene Frage schreiben."
         )
 
     return (
-        f"I have a first picture of your situation now: {summary}\n\n"
-        "The buttons below are suggested next questions for your current situation. "
-        "You can tap one of them or type your own question in the chat box at any time."
+        f"I have a clearer picture of your situation now: {summary}\n\n"
+        "The questions below are meant to open useful next directions for you, for example "
+        "around study choices, funding, or what university life might actually feel like. "
+        "If something else matters more to you, you can always type your own question in the chat box."
     )
 
 
