@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from typing import Protocol, cast
@@ -117,7 +118,10 @@ class NovaSessionSummarizer:
                 temperature=0.1,
                 top_p=0.3,
             )
-            text = self.client.extract_text(response)
+            text = self.client.extract_text(response).strip()
+            if not text:
+                logger.info("session_summary_empty_response")
+                return previous_summary or SessionSummary()
             payload = _extract_json_payload(text)
             summary = SessionSummary.model_validate(payload)
             if summary.has_content:
@@ -169,8 +173,43 @@ def _extract_json_payload(text: str) -> dict:
         payload = json.loads(cleaned)
         return cast(dict, payload)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
-        if not match:
+        candidate = _extract_json_candidate(cleaned)
+        if candidate is None:
             raise
-        payload = json.loads(match.group(0))
-        return cast(dict, payload)
+
+        try:
+            payload = json.loads(candidate)
+            return cast(dict, payload)
+        except json.JSONDecodeError:
+            repaired = _repair_json_candidate(candidate)
+            if repaired is not None:
+                payload = json.loads(repaired)
+                return cast(dict, payload)
+
+            literal_payload = ast.literal_eval(candidate)
+            if isinstance(literal_payload, dict):
+                return cast(dict, literal_payload)
+            raise
+
+
+def _extract_json_candidate(text: str) -> str | None:
+    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    if not match:
+        return None
+    return match.group(0)
+
+
+def _repair_json_candidate(candidate: str) -> str | None:
+    repaired = candidate
+    repaired = (
+        repaired.replace("\u201c", '"')
+        .replace("\u201d", '"')
+        .replace("\u2019", "'")
+        .replace("\u2018", "'")
+    )
+    repaired = re.sub(r",(\s*[}\]])", r"\1", repaired)
+    repaired = re.sub(r"\t", " ", repaired)
+
+    if repaired == candidate:
+        return None
+    return repaired

@@ -87,3 +87,42 @@ def test_nova_session_summarizer_preserves_previous_summary_on_invalid_output() 
     )
 
     assert result == previous
+
+
+def test_nova_session_summarizer_preserves_previous_summary_on_empty_output() -> None:
+    client = StubSummaryClient(text="   ")
+    summarizer = NovaSessionSummarizer(client=client)
+    previous = SessionSummary(
+        profile_facts=("Erstakademikerin",),
+        conversation_overview=("Du suchst nach Finanzierungsmöglichkeiten.",),
+    )
+
+    result = summarizer.summarize(
+        [{"role": "user", "content": [{"text": "Ich brauche Orientierung."}]}],
+        ui_language="de",
+        previous_summary=previous,
+    )
+
+    assert result == previous
+
+
+def test_nova_session_summarizer_repairs_trailing_commas() -> None:
+    client = StubSummaryClient(
+        text="""
+{
+  "profile_facts": ["Erstakademikerin",],
+  "conversation_overview": [
+    "Du vergleichst BAföG und Stipendien.",
+  ],
+}
+"""
+    )
+    summarizer = NovaSessionSummarizer(client=client)
+
+    result = summarizer.summarize(
+        [{"role": "user", "content": [{"text": "Ich brauche Hilfe bei BAföG."}]}],
+        ui_language="de",
+    )
+
+    assert result.profile_facts == ("Erstakademikerin",)
+    assert result.conversation_overview == ("Du vergleichst BAföG und Stipendien.",)
