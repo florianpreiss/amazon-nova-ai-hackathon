@@ -182,7 +182,7 @@ st.markdown(
         font-family: 'Source Serif 4', Georgia, serif;
         font-size: 4.6rem;
         font-weight: 700;
-        gap: 0.42rem;
+        gap: 0.52rem;
         grid-auto-columns: max-content;
         grid-auto-flow: column;
         justify-content: center;
@@ -1544,7 +1544,7 @@ st.markdown(
         }
         .koda-title {
             font-size: 3rem;
-            gap: 0.26rem;
+            gap: 0.34rem;
             justify-content: center;
             margin-top: 0.15rem;
             max-width: none;
@@ -1692,7 +1692,7 @@ st.markdown(
         }
         .koda-title {
             font-size: 2.2rem;
-            gap: 0.16rem;
+            gap: 0.24rem;
         }
         .koda-title-mark {
             height: 3.4rem;
