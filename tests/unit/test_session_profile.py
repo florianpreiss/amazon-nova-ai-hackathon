@@ -171,3 +171,8 @@ def test_build_session_profile_view_formats_structured_onboarding_profile_text()
         "Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt. "
         "Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen."
     )
+    assert view.recognized_facts == (
+        "Du bist 17 und noch in der Schule",
+        "Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt",
+        "Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen",
+    )

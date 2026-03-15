@@ -599,13 +599,18 @@ st.markdown(
         background: #ffffff;
         border: 1px solid #e8e4df;
         border-radius: 16px 16px 16px 4px;
-        padding: 0.8rem 1.1rem 1rem 1.1rem;
+        padding: 0.8rem 1.1rem;
         margin: 0.4rem 4rem 0.4rem 0;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         color: #2d3436;
         font-family: 'Nunito', sans-serif;
         font-size: 0.9rem;
         line-height: 1.6;
+    }
+    [data-testid="stChatMessage"]::after {
+        content: "";
+        display: block;
+        height: 0.18rem;
     }
     [data-testid="stChatMessage"] p,
     [data-testid="stChatMessage"] li,
@@ -624,7 +629,7 @@ st.markdown(
     [data-testid="stChatMessage"] ol:last-child,
     [data-testid="stChatMessage"] pre:last-child,
     [data-testid="stChatMessage"] blockquote:last-child {
-        margin-bottom: 0.12rem !important;
+        margin-bottom: 0 !important;
     }
     [data-testid="stChatMessage"] h1,
     [data-testid="stChatMessage"] h2,
@@ -673,6 +678,32 @@ st.markdown(
         margin: 0.35rem 0 0.85rem 0;
         overflow-x: auto;
         padding: 0.8rem 0.9rem !important;
+    }
+    [data-testid="stChatMessage"] table {
+        border-collapse: collapse;
+        display: block;
+        margin: 0.35rem 0 0.85rem 0;
+        max-width: 100%;
+        overflow-x: auto;
+        width: 100%;
+    }
+    [data-testid="stChatMessage"] thead tr {
+        background: rgba(125, 122, 201, 0.08);
+    }
+    [data-testid="stChatMessage"] th,
+    [data-testid="stChatMessage"] td {
+        border: 1px solid #ece5de;
+        font-family: 'Nunito', sans-serif !important;
+        font-size: 0.84rem !important;
+        line-height: 1.5;
+        min-width: 7rem;
+        padding: 0.55rem 0.65rem;
+        text-align: left;
+        vertical-align: top;
+        white-space: normal;
+    }
+    [data-testid="stChatMessage"] tbody tr:nth-child(even) {
+        background: rgba(246, 242, 236, 0.65);
     }
     /* Agent label badge */
     [data-testid="stChatMessage"] small {
@@ -1047,6 +1078,18 @@ st.markdown(
             background: rgba(125, 122, 201, 0.12) !important;
             border-color: rgba(125, 122, 201, 0.24) !important;
         }
+        [data-testid="stChatMessage"] thead tr {
+            background: rgba(125, 122, 201, 0.18) !important;
+        }
+        [data-testid="stChatMessage"] th,
+        [data-testid="stChatMessage"] td {
+            background: rgba(37, 43, 58, 0.82) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: #eef2f7 !important;
+        }
+        [data-testid="stChatMessage"] tbody tr:nth-child(even) {
+            background: rgba(31, 36, 49, 0.92) !important;
+        }
         [data-testid="stChatMessage"] strong {
             color: #ffffff !important;
         }
@@ -1241,7 +1284,7 @@ st.markdown(
         .msg-koda {
             font-size: 0.88rem;
             margin-right: 1.35rem;
-            padding: 0.78rem 0.95rem 0.92rem 0.95rem;
+            padding: 0.78rem 0.95rem;
         }
         [data-testid="stChatMessage"] h1 {
             font-size: 1.08rem !important;
@@ -1842,7 +1885,43 @@ def _normalize_assistant_markdown(text: str) -> str:
     normalized = "\n".join(repaired_lines)
     normalized = re.sub(r"[ \t]+\n", "\n", normalized)
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    normalized = _normalize_markdown_tables(normalized)
     return normalized.strip()
+
+
+def _normalize_markdown_tables(text: str) -> str:
+    """Ensure markdown tables are separated cleanly so Streamlit renders them."""
+
+    lines = text.split("\n")
+    repaired: list[str] = []
+
+    def _looks_like_table_row(candidate: str) -> bool:
+        stripped = candidate.strip()
+        if not stripped or stripped.startswith(("```", ">", "-", "*")):
+            return False
+        if stripped.count("|") < 2:
+            return False
+        return "|" in stripped
+
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        is_table_row = _looks_like_table_row(stripped)
+        previous = lines[index - 1].strip() if index > 0 else ""
+        previous_is_table = _looks_like_table_row(previous)
+
+        if is_table_row and repaired and repaired[-1] != "" and not previous_is_table:
+            repaired.append("")
+
+        repaired.append(line)
+
+        next_line = lines[index + 1].strip() if index + 1 < len(lines) else ""
+        next_is_table = _looks_like_table_row(next_line)
+        if is_table_row and next_line and not next_is_table:
+            repaired.append("")
+
+    normalized = "\n".join(repaired)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized
 
 
 def _stream_markdown_response(stream) -> tuple[str, ChatTurnResult | OnboardingTurnResult | None]:
@@ -2020,6 +2099,30 @@ def _render_onboarding_message(text: str, current_lang: str) -> None:
         st.markdown(_normalize_assistant_markdown(text))
 
 
+def _build_onboarding_handoff_text(
+    snapshot: SessionMemorySnapshot | None, current_lang: str
+) -> str:
+    profile = build_session_profile_view(snapshot, ui_language=current_lang)
+    summary = profile.profile_summary_text or (
+        t("sidebar_profile_pending", current_lang)
+        if current_lang == "de"
+        else "I have started building your profile."
+    )
+
+    if current_lang == "de":
+        return (
+            f"Ich habe jetzt ein erstes Bild von dir: {summary}\n\n"
+            "Die Buttons darunter sind passende nächste Fragen für deine aktuelle Situation. "
+            "Du kannst einen davon anklicken oder unten jederzeit deine ganz eigene Frage schreiben."
+        )
+
+    return (
+        f"I have a first picture of your situation now: {summary}\n\n"
+        "The buttons below are suggested next questions for your current situation. "
+        "You can tap one of them or type your own question in the chat box at any time."
+    )
+
+
 _render_profile_sidebar(lang)
 
 
@@ -2061,7 +2164,7 @@ if show_onboarding_landing:
         ),
         unsafe_allow_html=True,
     )
-    st.markdown("<div style='height: 0.65rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
     start_col, skip_col = st.columns([3, 2])
     with start_col:
@@ -2158,6 +2261,8 @@ elif show_onboarding_chat and session_snapshot is not None:
 else:
     if st.session_state.show_welcome and not st.session_state.messages:
         _render_welcome_screen(lang)
+    elif onboarding_state == "complete" and not st.session_state.messages:
+        _render_onboarding_message(_build_onboarding_handoff_text(session_snapshot, lang), lang)
 
     for msg in st.session_state.messages:
         if msg["role"] == "user":

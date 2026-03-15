@@ -78,6 +78,7 @@ _LANGUAGE_LABELS = {
 }
 _MAX_SUMMARY_POINTS = 5
 _MAX_GOAL_LENGTH = 180
+_MAX_PROFILE_FACT_LENGTH = 88
 _AGE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bich bin\s+(\d{1,2})\b"),
     re.compile(r"\bi am\s+(\d{1,2})\b"),
@@ -156,6 +157,13 @@ def _clean_profile_sentence(text: str) -> str:
     return _ensure_terminal_punctuation(cleaned) if cleaned else ""
 
 
+def _truncate_profile_fact(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip(" -:;,.")
+    if len(cleaned) <= _MAX_PROFILE_FACT_LENGTH:
+        return cleaned
+    return cleaned[: _MAX_PROFILE_FACT_LENGTH - 1].rstrip() + "..."
+
+
 def _ensure_terminal_punctuation(text: str) -> str:
     if text.endswith((".", "!", "?")):
         return text
@@ -192,11 +200,15 @@ def _build_identity_labels(
 def _merge_recognized_facts(
     *,
     summary_profile_facts: tuple[str, ...],
+    onboarding_profile_facts: tuple[str, ...],
     contextual_facts: tuple[str, ...],
     structured_facts: tuple[str, ...],
 ) -> tuple[str, ...]:
     if summary_profile_facts:
         return _dedupe_facts(summary_profile_facts)
+
+    if onboarding_profile_facts:
+        return _dedupe_facts((*onboarding_profile_facts, *contextual_facts, *structured_facts))
 
     return _dedupe_facts((*contextual_facts, *structured_facts))
 
@@ -331,6 +343,22 @@ def _format_profile_summary_text(profile_summary: str | None) -> str | None:
     return formatted or None
 
 
+def _build_onboarding_profile_facts(profile_summary: str | None) -> tuple[str, ...]:
+    fields = _parse_onboarding_profile_fields(profile_summary)
+    if not fields:
+        return ()
+
+    facts: list[str] = []
+    for key in ("situation", "main_concern", "context"):
+        value = fields.get(key)
+        if not value:
+            continue
+        fact = _truncate_profile_fact(value)
+        if fact:
+            facts.append(fact)
+    return tuple(facts)
+
+
 def _mentions_school_stage(text: str) -> bool:
     return any(
         token in text
@@ -419,8 +447,10 @@ def build_session_profile_view(
     summary_profile_facts = tuple(
         str(item).strip() for item in snapshot.profile_facts if str(item).strip()
     )
+    onboarding_profile_facts = _build_onboarding_profile_facts(snapshot.profile_summary)
     recognized_facts = _merge_recognized_facts(
         summary_profile_facts=summary_profile_facts,
+        onboarding_profile_facts=onboarding_profile_facts,
         contextual_facts=contextual_facts,
         structured_facts=structured_facts,
     )
