@@ -451,3 +451,31 @@ class TestChatService:
         assert snapshot.onboarding_messages[1].content == (
             "Ich bin 17, noch in der Schule und unsicher, ob ich studieren soll."
         )
+
+    def test_continue_onboarding_forces_completion_after_many_user_turns(self):
+        onboarding_agent = StubOnboardingAgent(text="Noch eine kurze Frage.")
+        service = ChatService(
+            router=StubRouter("COMPASS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(text="Antwort")},
+            onboarding_agent=onboarding_agent,
+        )
+
+        start = service.start_onboarding(ui_language="de")
+        session = service.sessions.get(start.session_id)
+        assert session is not None
+        session.add_onboarding_message("user", "Ich interessiere mich für Sprachen.")
+        session.add_onboarding_message("assistant", "Und was noch?")
+        session.add_onboarding_message("user", "Vielleicht Lehramt.")
+        session.add_onboarding_message("assistant", "Was ist dir wichtig?")
+        session.add_onboarding_message("user", "Ich möchte erst einmal Infos sammeln.")
+
+        service.continue_onboarding(
+            "Ich wohne in Hessen und möchte in der Nähe bleiben.",
+            session_id=start.session_id,
+            ui_language="de",
+        )
+
+        assert onboarding_agent.metadata_seen is not None
+        assert onboarding_agent.metadata_seen["onboarding_user_turn_count"] == 4
+        assert onboarding_agent.metadata_seen["force_onboarding_completion"] is True

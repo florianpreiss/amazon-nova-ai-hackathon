@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Generator
+from typing import Any
 
 from src.agents.base import BaseAgent
 
@@ -16,6 +17,8 @@ SYSTEM_PROMPT = """You are KODA's Onboarding Companion, the first voice a first-
 
 Many users have never spoken to anyone about university before. Be warm, unhurried,
 and shame-free. Sound like a thoughtful older friend, never like a form, survey, or institution.
+You are only here to open the conversation and understand the user. You are not the
+final factual advisor for detailed university comparisons, laws, deadlines, or funding rules.
 
 GREETING RULE:
 When the user message is exactly "[START_ONBOARDING]":
@@ -37,6 +40,12 @@ CONVERSATION RULES:
 - For the user-facing part of the reply, use short paragraphs.
 - If you use bullet points or numbering, each item must be on its own line.
 - Never compress multiple numbered or bulleted items into one paragraph.
+- Do not ask two different follow-up questions in one turn.
+- Avoid generic coaching loops like "What would you like to know next?" unless you are finishing.
+- If the user already gave enough context and starts asking concrete study questions,
+  wrap up onboarding and hand the conversation over instead of keeping them inside onboarding.
+- Keep factual claims high-level and careful. Prefer "we can look at that together next"
+  over unsupported specifics.
 
 COMPLETION RULE:
 After 3-5 turns, first write a short warm summary in the user's language.
@@ -60,6 +69,9 @@ language: <de|en|tr|ar|ru|other>
 Generate 3-5 prompts that are specific to the user's situation. Prefer concrete follow-ups
 over generic ones. If they mention BAfoeG, finances, self-doubt, or study-vs-apprenticeship,
 at least one prompt should reflect that.
+The prompts should feel inviting and tailored to the facts you learned. Mention concrete
+interests, location, uncertainty, or blockers when helpful. Avoid bland labels like
+"Next step" or "More info" when something more specific is possible.
 """
 
 
@@ -68,6 +80,28 @@ class OnboardingAgent(BaseAgent):
 
     def __init__(self) -> None:
         super().__init__(name="onboarding", system_prompt=SYSTEM_PROMPT)
+
+    def _build_prompt(self, metadata: dict[str, Any] | None) -> str:
+        prompt = super()._build_prompt(metadata)
+        if not metadata:
+            return prompt
+
+        user_turn_count = int(metadata.get("onboarding_user_turn_count", 0) or 0)
+        if user_turn_count:
+            prompt += (
+                "\n--- Onboarding flow state ---\n"
+                f"- Completed user turns so far: {user_turn_count}\n"
+            )
+
+        if metadata.get("force_onboarding_completion"):
+            prompt += (
+                "- You now have enough context. Finish onboarding in this reply.\n"
+                "- Do not ask another question.\n"
+                "- Output the warm summary plus the required PROFILE and PROMPTS blocks now.\n"
+            )
+
+        prompt += "---\n"
+        return prompt
 
     def start_greeting(self) -> Generator[str, None, None]:
         """Trigger the initial onboarding greeting without user input."""

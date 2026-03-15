@@ -1,4 +1,4 @@
-from src.core.conversation import SessionMemorySnapshot
+from src.core.conversation import SessionMemorySnapshot, SessionTextTurn
 from src.core.provenance import SourceAttribution
 from src.ui import build_session_profile_view
 
@@ -181,3 +181,21 @@ def test_build_session_profile_view_formats_structured_onboarding_profile_text()
         "Gerade besonders wichtig für dich: Du bist unsicher, ob Studium oder Ausbildung besser zu dir passt.",
         "Relevanter Hintergrund aus dem Gespräch: Du willst dich in Ruhe orientieren und verschiedene Wege vergleichen.",
     )
+
+
+def test_build_session_profile_view_counts_onboarding_turns_in_messages() -> None:
+    snapshot = SessionMemorySnapshot(
+        session_id="session-onboarding-count",
+        created_at=10.0,
+        last_activity=20.0,
+        message_count=0,
+        onboarding_messages=(
+            SessionTextTurn(role="assistant", content="Hallo!"),
+            SessionTextTurn(role="user", content="Ich bin noch in der Schule."),
+            SessionTextTurn(role="assistant", content="Was interessiert dich?"),
+        ),
+    )
+
+    view = build_session_profile_view(snapshot, ui_language="de")
+
+    assert view.message_count == 3

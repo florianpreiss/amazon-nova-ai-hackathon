@@ -489,6 +489,7 @@ def build_session_profile_view(
         return SessionProfileView()
 
     language = _normalize_language(ui_language)
+    total_message_count = snapshot.message_count + len(snapshot.onboarding_messages)
     response_language = snapshot.preferences.get("response_language")
     response_language_label = None
     if isinstance(response_language, str) and response_language:
@@ -523,7 +524,7 @@ def build_session_profile_view(
     )
 
     return SessionProfileView(
-        message_count=snapshot.message_count,
+        message_count=total_message_count,
         current_agent=snapshot.current_agent,
         response_language_label=response_language_label,
         topic_labels=topic_labels,
