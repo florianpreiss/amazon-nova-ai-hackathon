@@ -854,13 +854,16 @@ st.markdown(
         display: flex;
         justify-content: center;
     }
+    .st-key-composer_actions_container [data-testid="column"] > div {
+        width: 100%;
+    }
     .st-key-composer_actions_container [data-testid="stButton"] {
         width: 100%;
     }
     .st-key-composer_actions_container .st-key-composer_reset_chat_button {
         width: 100%;
     }
-    .st-key-composer_actions_container [data-testid="baseButton-secondary"] {
+    .st-key-composer_actions_container button {
         background: rgba(125, 122, 201, 0.12) !important;
         border: 1px solid rgba(125, 122, 201, 0.22) !important;
         border-radius: 14px !important;
@@ -872,7 +875,7 @@ st.markdown(
         padding: 0.45rem 1.05rem !important;
         width: 100% !important;
     }
-    .st-key-composer_actions_container [data-testid="baseButton-secondary"]:hover {
+    .st-key-composer_actions_container button:hover {
         background: rgba(125, 122, 201, 0.16) !important;
         border-color: rgba(125, 122, 201, 0.28) !important;
         color: #4f5562 !important;
@@ -1164,12 +1167,12 @@ st.markdown(
         .st-key-composer_actions_container {
             max-width: 42rem;
         }
-        .st-key-composer_actions_container [data-testid="baseButton-secondary"] {
+        .st-key-composer_actions_container button {
             background: rgba(244, 233, 250, 0.14) !important;
             border-color: rgba(212, 181, 235, 0.2) !important;
             color: #ead8f5 !important;
         }
-        .st-key-composer_actions_container [data-testid="baseButton-secondary"]:hover {
+        .st-key-composer_actions_container button:hover {
             background: rgba(244, 233, 250, 0.18) !important;
             border-color: rgba(212, 181, 235, 0.26) !important;
             color: #f2e2fb !important;
