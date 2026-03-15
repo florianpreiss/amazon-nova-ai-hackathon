@@ -1236,12 +1236,12 @@ st.markdown(
 # ── Language toggle ───────────
 
 
-def _lang_option_for_code(code: str) -> str:
+def _lang_label_for_code(code: str) -> str:
     return "🇩🇪 Deutsch" if code == "de" else "🇬🇧 English"
 
 
-def _lang_code_for_option(option: str | None) -> str:
-    return "de" if option == "🇩🇪 Deutsch" else "en"
+def _format_lang_option(code: str) -> str:
+    return _lang_label_for_code(code)
 
 
 def _reset_chat() -> None:
@@ -1267,17 +1267,19 @@ def _reset_chat() -> None:
 
 
 # ── Language toggle ─────────────────────────────────────
-if "_lang_pills" not in st.session_state:
-    st.session_state._lang_pills = _lang_option_for_code(lang)
+if "_lang_toggle" not in st.session_state:
+    st.session_state._lang_toggle = lang
 
-selected_lang_option = st.pills(
+selected_lang = st.segmented_control(
     label="Language",
-    options=["🇩🇪 Deutsch", "🇬🇧 English"],
-    key="_lang_pills",
+    options=["de", "en"],
+    key="_lang_toggle",
+    format_func=_format_lang_option,
     label_visibility="collapsed",
+    width="content",
 )
-selected_lang = _lang_code_for_option(selected_lang_option or st.session_state._lang_pills)
-if selected_lang != st.session_state.lang:
+
+if selected_lang and selected_lang != st.session_state.lang:
     st.session_state.lang = selected_lang
     st.rerun()
 
@@ -1476,7 +1478,7 @@ def _apply_imported_session(imported_session, current_lang: str) -> None:
     ]
     st.session_state.show_welcome = False
     st.session_state.lang = next_lang
-    st.session_state._lang_pills = _lang_option_for_code(next_lang)
+    st.session_state._lang_toggle = next_lang
     st.session_state.memory_import_revision += 1
 
 
