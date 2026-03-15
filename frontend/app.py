@@ -1240,15 +1240,8 @@ def _lang_option_for_code(code: str) -> str:
     return "🇩🇪 Deutsch" if code == "de" else "🇬🇧 English"
 
 
-def _set_lang(new_lang: str):
-    st.session_state.lang = new_lang
-    st.session_state._lang_pills = _lang_option_for_code(new_lang)
-
-
-def _handle_lang_pills_change() -> None:
-    new_lang = "de" if st.session_state._lang_pills == "🇩🇪 Deutsch" else "en"
-    if st.session_state.lang != new_lang:
-        st.session_state.lang = new_lang
+def _lang_code_for_option(option: str | None) -> str:
+    return "de" if option == "🇩🇪 Deutsch" else "en"
 
 
 def _reset_chat() -> None:
@@ -1279,14 +1272,16 @@ if "_lang_pills" not in st.session_state or st.session_state._lang_pills != _lan
 ):
     st.session_state._lang_pills = _lang_option_for_code(lang)
 
-st.pills(
+selected_lang_option = st.pills(
     label="Language",
     options=["🇩🇪 Deutsch", "🇬🇧 English"],
-    default=_lang_option_for_code(lang),
-    on_change=_handle_lang_pills_change,
     key="_lang_pills",
     label_visibility="collapsed",
 )
+selected_lang = _lang_code_for_option(selected_lang_option)
+if selected_lang != st.session_state.lang:
+    st.session_state.lang = selected_lang
+    st.rerun()
 
 
 # ── Shared chat service ────────────────────────────────
