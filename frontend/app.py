@@ -842,9 +842,13 @@ st.markdown(
         max-width: 38rem;
         text-align: center;
     }
+    .document-input-note strong {
+        color: #67527d;
+        font-weight: 700;
+    }
     .st-key-composer_actions_container {
         margin: 0 auto 0.8rem auto;
-        max-width: 34rem;
+        max-width: 42rem;
     }
     .st-key-composer_actions_container [data-testid="column"] {
         display: flex;
@@ -857,26 +861,44 @@ st.markdown(
         width: 100%;
     }
     .st-key-composer_actions_container [data-testid="baseButton-secondary"] {
-        background: rgba(125, 122, 201, 0.08) !important;
-        border: 1px solid rgba(125, 122, 201, 0.18) !important;
+        background: rgba(125, 122, 201, 0.12) !important;
+        border: 1px solid rgba(125, 122, 201, 0.22) !important;
         border-radius: 14px !important;
         color: #5f6470 !important;
         font-family: 'Nunito', sans-serif !important;
-        font-size: 0.8rem !important;
+        font-size: 0.84rem !important;
         font-weight: 700 !important;
-        min-height: 2.7rem !important;
-        padding: 0.3rem 0.95rem !important;
+        min-height: 3rem !important;
+        padding: 0.45rem 1.05rem !important;
         width: 100% !important;
     }
     .st-key-composer_actions_container [data-testid="baseButton-secondary"]:hover {
-        background: rgba(125, 122, 201, 0.12) !important;
-        border-color: rgba(125, 122, 201, 0.24) !important;
+        background: rgba(125, 122, 201, 0.16) !important;
+        border-color: rgba(125, 122, 201, 0.28) !important;
         color: #4f5562 !important;
-        box-shadow: 0 2px 8px rgba(125, 122, 201, 0.14) !important;
+        box-shadow: 0 3px 10px rgba(125, 122, 201, 0.16) !important;
     }
     .st-key-composer_reset_chat_button button {
-        min-height: 2.7rem !important;
+        font-size: 0.84rem !important;
+        min-height: 3rem !important;
+        padding: 0.45rem 1.05rem !important;
         width: 100% !important;
+    }
+    .st-key-quick_actions_panel [data-testid="stButton"] {
+        display: flex;
+        width: 100%;
+    }
+    .st-key-quick_actions_panel [data-testid="baseButton-secondary"] {
+        font-size: 0.79rem !important;
+        min-height: 4rem !important;
+        padding: 0.5rem 0.72rem !important;
+        width: 100% !important;
+    }
+    .st-key-quick_actions_panel [data-testid="baseButton-secondary"] p {
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        overflow: hidden !important;
     }
     /* Hide default Streamlit avatar — we use the title emoji instead */
     [data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
@@ -1136,17 +1158,20 @@ st.markdown(
         .document-input-note {
             color: #d7c4e6 !important;
         }
+        .document-input-note strong {
+            color: #f0ddff !important;
+        }
         .st-key-composer_actions_container {
-            max-width: 34rem;
+            max-width: 42rem;
         }
         .st-key-composer_actions_container [data-testid="baseButton-secondary"] {
-            background: rgba(244, 233, 250, 0.08) !important;
-            border-color: rgba(212, 181, 235, 0.16) !important;
+            background: rgba(244, 233, 250, 0.14) !important;
+            border-color: rgba(212, 181, 235, 0.2) !important;
             color: #ead8f5 !important;
         }
         .st-key-composer_actions_container [data-testid="baseButton-secondary"]:hover {
-            background: rgba(244, 233, 250, 0.12) !important;
-            border-color: rgba(212, 181, 235, 0.22) !important;
+            background: rgba(244, 233, 250, 0.18) !important;
+            border-color: rgba(212, 181, 235, 0.26) !important;
             color: #f2e2fb !important;
         }
 
@@ -1996,8 +2021,19 @@ def _render_user_message(text: str, *, documents: tuple[str, ...] = ()) -> None:
 
 
 def _render_document_input_hint(current_lang: str) -> None:
+    document_hint = t("document_hint", current_lang)
+    hint_prefix, hint_separator, hint_body = document_hint.partition(":")
+    if hint_separator:
+        note_html = (
+            "<div class='document-input-note'>"
+            f"<strong>{html_lib.escape(hint_prefix + hint_separator)}</strong> "
+            f"{html_lib.escape(hint_body.strip())}"
+            "</div>"
+        )
+    else:
+        note_html = f"<div class='document-input-note'>{html_lib.escape(document_hint)}</div>"
     st.markdown(
-        f"<div class='document-input-note'>{html_lib.escape(t('document_hint', current_lang))}</div>",
+        note_html,
         unsafe_allow_html=True,
     )
 
@@ -2173,73 +2209,77 @@ def _render_generic_quick_actions(current_lang: str) -> None:
     Args:
         current_lang: Active UI language code ("de" or "en").
     """
-    heading = t("quick_actions_heading", current_lang)
-    sub = t("quick_actions_sub", current_lang)
-    st.markdown(
-        f'<div class="qa-header">'
-        f'<div class="qa-header-title">{heading}</div>'
-        f'<div class="qa-header-sub">{sub}</div>'
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button(t("quick_bafoeg", current_lang), use_container_width=True, key="qa_bafoeg"):
-            _send("quick_bafoeg_msg")
-    with c2:
-        if st.button(t("quick_study", current_lang), use_container_width=True, key="qa_study"):
-            _send("quick_study_msg")
-    with c3:
-        if st.button(
-            t("quick_overwhelmed", current_lang), use_container_width=True, key="qa_overwhelmed"
-        ):
-            _send("quick_overwhelmed_msg")
+    with st.container(key="quick_actions_panel"):
+        heading = t("quick_actions_heading", current_lang)
+        sub = t("quick_actions_sub", current_lang)
+        st.markdown(
+            f'<div class="qa-header">'
+            f'<div class="qa-header-title">{heading}</div>'
+            f'<div class="qa-header-sub">{sub}</div>'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            if st.button(
+                t("quick_bafoeg", current_lang), use_container_width=True, key="qa_bafoeg"
+            ):
+                _send("quick_bafoeg_msg")
+        with c2:
+            if st.button(t("quick_study", current_lang), use_container_width=True, key="qa_study"):
+                _send("quick_study_msg")
+        with c3:
+            if st.button(
+                t("quick_overwhelmed", current_lang), use_container_width=True, key="qa_overwhelmed"
+            ):
+                _send("quick_overwhelmed_msg")
 
-    c4, c5, c6 = st.columns(3)
-    with c4:
-        if st.button(t("quick_ects", current_lang), use_container_width=True, key="qa_ects"):
-            _send("quick_ects_msg")
-    with c5:
-        if st.button(
-            t("quick_scholarships", current_lang),
-            use_container_width=True,
-            key="qa_scholarships",
-        ):
-            _send("quick_scholarships_msg")
-    with c6:
-        if st.button(
-            t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
-        ):
-            _send("quick_rolemodels_msg")
+        c4, c5, c6 = st.columns(3)
+        with c4:
+            if st.button(t("quick_ects", current_lang), use_container_width=True, key="qa_ects"):
+                _send("quick_ects_msg")
+        with c5:
+            if st.button(
+                t("quick_scholarships", current_lang),
+                use_container_width=True,
+                key="qa_scholarships",
+            ):
+                _send("quick_scholarships_msg")
+        with c6:
+            if st.button(
+                t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
+            ):
+                _send("quick_rolemodels_msg")
 
 
 def _render_personalized_quick_actions(current_lang: str, prompts) -> None:
-    heading = t("quick_actions_heading", current_lang)
-    sub = t("quick_actions_sub", current_lang)
-    st.markdown(
-        f'<div class="qa-header">'
-        f'<div class="qa-header-title">{heading}</div>'
-        f'<div class="qa-header-sub">{sub}</div>'
-        f"</div>",
-        unsafe_allow_html=True,
-    )
+    with st.container(key="quick_actions_panel"):
+        heading = t("quick_actions_heading", current_lang)
+        sub = t("quick_actions_sub", current_lang)
+        st.markdown(
+            f'<div class="qa-header">'
+            f'<div class="qa-header-title">{heading}</div>'
+            f'<div class="qa-header-sub">{sub}</div>'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
-    prompt_list = [
-        prompt
-        for prompt in prompts
-        if getattr(prompt, "label", "") and getattr(prompt, "message", "")
-    ]
-    for row_start in range(0, len(prompt_list), 3):
-        row = prompt_list[row_start : row_start + 3]
-        cols = st.columns(len(row))
-        for col, prompt in zip(cols, row, strict=False):
-            with col:
-                if st.button(
-                    str(prompt.label),
-                    use_container_width=True,
-                    key=f"qa_personalized_{row_start}_{prompt.label[:20]}",
-                ):
-                    _send_custom(str(prompt.message))
+        prompt_list = [
+            prompt
+            for prompt in prompts
+            if getattr(prompt, "label", "") and getattr(prompt, "message", "")
+        ]
+        for row_start in range(0, len(prompt_list), 3):
+            row = prompt_list[row_start : row_start + 3]
+            cols = st.columns(len(row))
+            for col, prompt in zip(cols, row, strict=False):
+                with col:
+                    if st.button(
+                        str(prompt.label),
+                        use_container_width=True,
+                        key=f"qa_personalized_{row_start}_{prompt.label[:20]}",
+                    ):
+                        _send_custom(str(prompt.message))
 
 
 def _render_quick_actions(current_lang: str, snapshot) -> None:
