@@ -1043,6 +1043,19 @@ def _normalize_assistant_markdown(text: str) -> str:
 
     normalized = text.replace("\r\n", "\n").replace("\r", "\n").replace("\\n", "\n")
 
+    def _sanitize_emphasis(match: re.Match[str]) -> str:
+        marker = match.group(1)
+        content = match.group(2)
+        stripped = content.strip()
+        # Long or multiline bold spans usually come from malformed model output
+        # and make whole sections look bold in Streamlit. Keep only short,
+        # deliberate emphasis.
+        if "\n" in content or len(stripped) > 80:
+            return stripped
+        return f"{marker}{stripped}{marker}"
+
+    normalized = re.sub(r"(\*\*|__)(.+?)\1", _sanitize_emphasis, normalized, flags=re.DOTALL)
+
     for marker in ("**", "__"):
         if normalized.count(marker) % 2 == 1:
             if normalized.startswith(marker):
