@@ -19,11 +19,11 @@ from config.settings import SESSION_TIMEOUT_MINUTES
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.provenance import ResponseProvenance, SourceAttribution
+from src.core.session_summary import SessionSummary
 
 MAX_SESSION_MESSAGES = 24
 MAX_ACTIVE_GOALS = 4
 MAX_TOPICS = 6
-MAX_CITED_SOURCES = 6
 MAX_GOAL_LENGTH = 140
 
 _AGENT_TOPIC_LABELS = {
@@ -90,6 +90,21 @@ _IDENTITY_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+_WORK_CONTEXT_KEYWORDS = (
+    "arbeite",
+    "arbeit",
+    "job",
+    "nebenjob",
+    "werkstudent",
+    "work",
+    "working",
+    "part-time",
+    "part time",
+)
+_WORK_HOURS_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\b(\d{1,2})\s*(?:h|std)\b"),
+    re.compile(r"\b(\d{1,2})\s*(?:stunden|hours?|hrs?)\b"),
+)
 
 
 def _normalize_text(text: str) -> str:
@@ -147,7 +162,7 @@ def _remember_source(sources: list[SourceAttribution], source: SourceAttribution
     deduped = [item for item in sources if item.url != source.url]
     deduped.append(source)
     del sources[:]
-    sources.extend(deduped[-MAX_CITED_SOURCES:])
+    sources.extend(deduped)
 
 
 class SessionMemorySnapshot(BaseModel):
@@ -166,6 +181,8 @@ class SessionMemorySnapshot(BaseModel):
     preferences: dict[str, str] = Field(default_factory=dict)
     active_goals: tuple[str, ...] = ()
     cited_sources: tuple[SourceAttribution, ...] = ()
+    profile_facts: tuple[str, ...] = ()
+    conversation_overview: tuple[str, ...] = ()
 
 
 class Conversation:
@@ -191,6 +208,8 @@ class Conversation:
         self.preferences: dict[str, str] = {}
         self.active_goals: list[str] = []
         self.cited_sources: list[SourceAttribution] = []
+        self.profile_facts: list[str] = []
+        self.conversation_overview: list[str] = []
         self.crisis_detected = False
 
     @property
@@ -205,6 +224,8 @@ class Conversation:
             "preferences": dict(snapshot.preferences),
             "active_goals": list(snapshot.active_goals),
             "crisis_detected": snapshot.crisis_detected,
+            "profile_facts": list(snapshot.profile_facts),
+            "conversation_overview": list(snapshot.conversation_overview),
             "session_memory": snapshot.model_dump(mode="python"),
         }
 
@@ -233,6 +254,8 @@ class Conversation:
             self.identity_context = {}
             self.active_goals = []
             self.cited_sources = []
+            self.profile_facts = []
+            self.conversation_overview = []
             self.crisis_detected = False
             self.preferences["response_language"] = ui_language
 
@@ -320,6 +343,8 @@ class Conversation:
                 preferences=dict(self.preferences),
                 active_goals=tuple(self.active_goals),
                 cited_sources=tuple(self.cited_sources),
+                profile_facts=tuple(self.profile_facts),
+                conversation_overview=tuple(self.conversation_overview),
             )
 
     def is_expired(self) -> bool:
@@ -349,11 +374,32 @@ class Conversation:
             if any(pattern in lowered for pattern in patterns):
                 self.identity_context[key] = True
 
+        has_work_context = any(keyword in lowered for keyword in _WORK_CONTEXT_KEYWORDS)
+        for pattern in _WORK_HOURS_PATTERNS:
+            match = pattern.search(lowered)
+            if not match:
+                continue
+            if has_work_context or "pro woche" in lowered or "per week" in lowered:
+                hours = match.group(1)
+                self.identity_context["working_student"] = True
+                self.identity_context["weekly_work_hours"] = f"{hours}h"
+                break
+
     def _remember_sources(self, provenance: ResponseProvenance | None) -> None:
         if provenance is None:
             return
         for source in provenance.sources:
             _remember_source(self.cited_sources, source)
+
+    def update_summary(self, summary: SessionSummary) -> None:
+        """Replace dynamic sidebar summary fields with the latest LLM summary."""
+
+        with self._lock:
+            self.profile_facts = [item.strip() for item in summary.profile_facts if item.strip()]
+            self.conversation_overview = [
+                item.strip() for item in summary.conversation_overview if item.strip()
+            ]
+            self._touch()
 
     def _trim_messages(self) -> None:
         if len(self.messages) > MAX_SESSION_MESSAGES:
@@ -438,8 +484,27 @@ def build_session_memory_addendum(
     crisis_detected = bool(raw_memory.get("crisis_detected", False))
     preferences = raw_memory.get("preferences", {})
     cited_sources = _coerce_sources(raw_memory.get("cited_sources", ()))
+    profile_facts = tuple(
+        str(item).strip() for item in raw_memory.get("profile_facts", ()) if str(item).strip()
+    )
+    conversation_overview = tuple(
+        str(item).strip()
+        for item in raw_memory.get("conversation_overview", ())
+        if str(item).strip()
+    )
 
-    if not any((topics, active_goals, current_agent, crisis_detected, preferences, cited_sources)):
+    if not any(
+        (
+            topics,
+            active_goals,
+            current_agent,
+            crisis_detected,
+            preferences,
+            cited_sources,
+            profile_facts,
+            conversation_overview,
+        )
+    ):
         return ""
 
     lines = [
@@ -464,6 +529,14 @@ def build_session_memory_addendum(
     if active_goals:
         lines.append("- Recent user requests:")
         lines.extend(f"  - {goal}" for goal in active_goals)
+
+    if profile_facts:
+        lines.append("- Dynamic context recognized in this session:")
+        lines.extend(f"  - {fact}" for fact in profile_facts[:6])
+
+    if conversation_overview:
+        lines.append("- Session summary so far:")
+        lines.extend(f"  - {point}" for point in conversation_overview[:4])
 
     if cited_sources:
         lines.append("- Sources already cited in this session:")
