@@ -1,5 +1,6 @@
 """Unit tests for the shared chat orchestration service."""
 
+import json
 from collections.abc import Generator
 
 import pytest
@@ -238,3 +239,60 @@ class TestChatService:
         service.end_session(result.session_id)
 
         assert service.get_session_snapshot(result.session_id) is None
+
+    def test_export_and_import_round_trip_restores_ephemeral_session(self):
+        service = ChatService(
+            router=StubRouter("FINANCING"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(), "FINANCING": StubAgent(text="Antwort")},
+            summarizer=StubSummarizer(),
+        )
+
+        first = service.respond(
+            "Ich bin Erstakademikerin und brauche Hilfe bei BAfoeG.",
+            ui_language="de",
+        )
+        service.respond(
+            "Und was ist mit Stipendien?",
+            session_id=first.session_id,
+            ui_language="de",
+        )
+
+        bundle = service.export_session_bundle(first.session_id)
+
+        assert bundle is not None
+
+        imported = service.import_session_bundle(bundle, ui_language="en")
+        snapshot = service.get_session_snapshot(imported.session_id)
+
+        assert imported.session_id != first.session_id
+        assert imported.ui_language == "de"
+        assert len(imported.messages) == 4
+        assert imported.messages[1]["agent"] == "FINANCING"
+        assert snapshot is not None
+        assert snapshot.message_count == 4
+        assert snapshot.preferences["response_language"] == "de"
+        assert snapshot.profile_facts == ("Erstakademikerin", "Arbeitet 20h/Woche")
+        assert snapshot.conversation_overview == (
+            "Du fragst nach Finanzierung und Studienalltag.",
+            "Die Arbeit mit 20h/Woche beeinflusst deine Optionen.",
+        )
+
+    def test_import_session_bundle_revalidates_checksum_for_models(self):
+        service = ChatService(
+            router=StubRouter("COMPASS"),
+            crisis_radar=StubCrisisRadar({"is_crisis": False, "resources": None}),
+            agents={"COMPASS": StubAgent(text="Antwort")},
+        )
+
+        result = service.respond("Ich brauche Orientierung.", ui_language="de")
+        bundle = service.export_session_bundle(result.session_id)
+
+        assert bundle is not None
+
+        tampered_payload = bundle.model_dump(mode="json")
+        tampered_payload["session"]["active_goals"] = ["Das wurde veraendert."]
+        tampered_bundle = bundle.model_validate(json.loads(json.dumps(tampered_payload)))
+
+        with pytest.raises(ValueError, match="Invalid session bundle checksum"):
+            service.import_session_bundle(tampered_bundle)

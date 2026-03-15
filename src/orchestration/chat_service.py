@@ -20,6 +20,12 @@ from src.agents.router import RouterAgent
 from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
 from src.core.conversation import Conversation, ConversationStore, SessionMemorySnapshot
 from src.core.provenance import ResponseProvenance, build_provenance_context
+from src.core.session_bundle import (
+    SessionBundle,
+    build_session_bundle,
+    parse_session_bundle,
+    portable_messages_to_history,
+)
 from src.core.session_summary import NovaSessionSummarizer, SessionSummarizer, SessionSummary
 from src.i18n import t
 
@@ -48,6 +54,16 @@ class PreparedChatTurn:
     agent: BaseAgent
     metadata: dict[str, Any]
     crisis_prefix: str
+
+
+@dataclass(frozen=True)
+class ImportedSession:
+    """Result of loading a user-owned session bundle into a fresh session."""
+
+    session_id: str
+    ui_language: str
+    messages: tuple[dict[str, Any], ...]
+    snapshot: SessionMemorySnapshot
 
 
 class ChatService:
@@ -304,6 +320,48 @@ class ChatService:
         """Return the current in-memory summary for a session, if it exists."""
 
         return self.sessions.snapshot(session_id)
+
+    def export_session_bundle(self, session_id: str) -> SessionBundle | None:
+        """Build a validated user-owned export bundle for the active session."""
+
+        session = self.sessions.get(session_id)
+        if session is None:
+            return None
+        return build_session_bundle(
+            snapshot=session.snapshot(),
+            messages=session.get_messages(),
+        )
+
+    def import_session_bundle(
+        self,
+        payload: bytes | str | dict[str, Any] | SessionBundle,
+        *,
+        ui_language: str | None = None,
+    ) -> ImportedSession:
+        """Load a user-owned bundle into a new ephemeral session."""
+
+        bundle = (
+            parse_session_bundle(payload.model_dump(mode="python"))
+            if isinstance(payload, SessionBundle)
+            else parse_session_bundle(payload)
+        )
+        imported_language = (
+            bundle.session.preferences.get("response_language") or ui_language or "en"
+        )
+        session = self.sessions.get_or_create(None, ui_language=imported_language)
+        history = portable_messages_to_history(bundle.session.messages)
+        session.restore_portable_state(
+            messages=history,
+            session_memory=bundle.session.model_dump(mode="python"),
+            ui_language=imported_language,
+        )
+        snapshot = session.snapshot()
+        return ImportedSession(
+            session_id=session.session_id,
+            ui_language=imported_language,
+            messages=tuple(history),
+            snapshot=snapshot,
+        )
 
     @property
     def session_count(self) -> int:
