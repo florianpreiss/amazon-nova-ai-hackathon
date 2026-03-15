@@ -1472,9 +1472,10 @@ def _render_profile_sidebar(current_lang: str) -> None:
             _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
             _render_sidebar_chip_list(profile.topic_labels)
 
-        if profile.conversation_summary_points:
+        conversation_summary_points = getattr(profile, "conversation_summary_points", ())
+        if conversation_summary_points:
             _render_sidebar_section_label(t("sidebar_section_summary", current_lang))
-            _render_sidebar_list(profile.conversation_summary_points, compact=True)
+            _render_sidebar_list(conversation_summary_points, compact=True)
 
         if profile.goal_summaries:
             with st.expander(
@@ -1484,9 +1485,14 @@ def _render_profile_sidebar(current_lang: str) -> None:
             ):
                 _render_sidebar_list(profile.goal_summaries)
 
-        if profile.recognized_facts:
+        recognized_facts = getattr(
+            profile,
+            "recognized_facts",
+            getattr(profile, "identity_labels", ()),
+        )
+        if recognized_facts:
             _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
-            _render_sidebar_list(profile.recognized_facts, compact=True)
+            _render_sidebar_list(recognized_facts, compact=True)
 
         if profile.cited_sources:
             with st.expander(

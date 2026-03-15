@@ -95,6 +95,12 @@ class SessionProfileView:
     crisis_detected: bool = False
 
     @property
+    def identity_labels(self) -> tuple[str, ...]:
+        """Backward-compatible alias for older sidebar code paths."""
+
+        return self.recognized_facts
+
+    @property
     def has_content(self) -> bool:
         return any(
             (
