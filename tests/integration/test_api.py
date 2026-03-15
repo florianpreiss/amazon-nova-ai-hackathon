@@ -140,6 +140,53 @@ class TestChatEndpoint:
 
 
 # ---------------------------------------------------------------------------
+# Onboarding endpoints
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+class TestOnboardingEndpoints:
+    def test_start_onboarding_creates_session(self, client: "TestClient") -> None:
+        """The onboarding start endpoint should create a session and first reply."""
+        response = client.post("/api/onboarding/start", json={"language": "de"})
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["session_id"]
+        assert body["response"]
+        assert body["onboarding_state"] == "in_progress"
+        assert body["completed"] is False
+
+    def test_continue_onboarding_reuses_session(self, client: "TestClient") -> None:
+        """A continued onboarding turn should reuse the same session."""
+        first = client.post("/api/onboarding/start", json={"language": "de"})
+        session_id = first.json()["session_id"]
+
+        response = client.post(
+            "/api/onboarding/continue",
+            json={
+                "session_id": session_id,
+                "language": "de",
+                "message": "Ich bin 17 und noch in der Schule.",
+            },
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["session_id"] == session_id
+        assert body["onboarding_state"] == "in_progress"
+
+    def test_skip_onboarding_marks_session_skipped(self, client: "TestClient") -> None:
+        """Skipping onboarding should mark the session accordingly."""
+        response = client.post("/api/onboarding/skip", json={"language": "en"})
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["session_id"]
+        assert body["onboarding_state"] == "skipped"
+
+
+# ---------------------------------------------------------------------------
 # Session management
 # ---------------------------------------------------------------------------
 
