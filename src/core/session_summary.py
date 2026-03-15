@@ -105,6 +105,7 @@ class NovaSessionSummarizer:
             return previous_summary or SessionSummary()
 
         trimmed_messages = messages[-_MAX_SUMMARY_MESSAGES:]
+        summary_messages = _build_summary_messages(trimmed_messages, ui_language=ui_language)
         system_prompt = _build_system_prompt(
             ui_language=ui_language,
             previous_summary=previous_summary,
@@ -112,7 +113,7 @@ class NovaSessionSummarizer:
 
         try:
             response = self.client.converse(
-                trimmed_messages,
+                summary_messages,
                 system_prompt=system_prompt,
                 max_tokens=650,
                 temperature=0.1,
@@ -161,6 +162,47 @@ def _build_system_prompt(
             lines.extend(f"- {item}" for item in previous_summary.conversation_overview)
 
     return "\n".join(lines)
+
+
+def _build_summary_messages(messages: list[dict], *, ui_language: str) -> list[dict]:
+    transcript = _render_transcript(messages)
+    prompt_language = "German" if ui_language == "de" else "English"
+    request = (
+        "Summarize the following chat transcript into ephemeral session memory.\n"
+        f"Write every JSON string in {prompt_language}.\n"
+        "Capture both the user's context and the guidance that has already been given.\n"
+        "Return strict JSON only.\n\n"
+        "Transcript:\n"
+        f"{transcript}"
+    )
+    return [{"role": "user", "content": [{"text": request}]}]
+
+
+def _render_transcript(messages: list[dict]) -> str:
+    lines: list[str] = []
+    for message in messages:
+        role = str(message.get("role", "user")).strip().lower()
+        label = "Assistant" if role == "assistant" else "User"
+        text = _extract_message_text(message.get("content", ""))
+        if not text:
+            continue
+        lines.append(f"{label}: {text}")
+    return "\n".join(lines) or "User: (no transcript available)"
+
+
+def _extract_message_text(content: object) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            text = str(item.get("text", "")).strip()
+            if text:
+                parts.append(text)
+        return " ".join(parts).strip()
+    return ""
 
 
 def _extract_json_payload(text: str) -> dict:

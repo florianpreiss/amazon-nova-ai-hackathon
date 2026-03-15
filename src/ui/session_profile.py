@@ -188,9 +188,16 @@ def _merge_recognized_facts(
     contextual_facts: tuple[str, ...],
     structured_facts: tuple[str, ...],
 ) -> tuple[str, ...]:
+    if summary_profile_facts:
+        return _dedupe_facts(summary_profile_facts)
+
+    return _dedupe_facts((*contextual_facts, *structured_facts))
+
+
+def _dedupe_facts(facts: tuple[str, ...] | list[str]) -> tuple[str, ...]:
     deduped: list[str] = []
     seen: set[str] = set()
-    for fact in (*summary_profile_facts, *contextual_facts, *structured_facts):
+    for fact in facts:
         normalized = _normalize_fact_for_dedupe(fact)
         if not normalized or normalized in seen:
             continue

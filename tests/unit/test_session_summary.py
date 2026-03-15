@@ -55,7 +55,15 @@ def test_nova_session_summarizer_parses_json_and_uses_previous_summary_context()
     )
 
     result = summarizer.summarize(
-        [{"role": "user", "content": [{"text": "Ich arbeite 20h pro Woche und brauche BAföG."}]}],
+        [
+            {"role": "user", "content": [{"text": "Ich arbeite 20h pro Woche und brauche BAföG."}]},
+            {
+                "role": "assistant",
+                "content": [
+                    {"text": "Ich habe dir BAföG und erste Finanzierungsschritte erklärt."}
+                ],
+            },
+        ],
         ui_language="de",
         previous_summary=previous,
     )
@@ -70,6 +78,22 @@ def test_nova_session_summarizer_parses_json_and_uses_previous_summary_context()
     assert "Use German for every string in the JSON output." in client.last_system_prompt
     assert "Existing profile_facts:" in client.last_system_prompt
     assert "Du suchst nach Finanzierungsmöglichkeiten." in client.last_system_prompt
+    assert client.last_messages == [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "text": "Summarize the following chat transcript into ephemeral session memory.\n"
+                    "Write every JSON string in German.\n"
+                    "Capture both the user's context and the guidance that has already been given.\n"
+                    "Return strict JSON only.\n\n"
+                    "Transcript:\n"
+                    "User: Ich arbeite 20h pro Woche und brauche BAföG.\n"
+                    "Assistant: Ich habe dir BAföG und erste Finanzierungsschritte erklärt."
+                }
+            ],
+        }
+    ]
 
 
 def test_nova_session_summarizer_preserves_previous_summary_on_invalid_output() -> None:
