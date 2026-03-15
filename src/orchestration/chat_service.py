@@ -18,6 +18,7 @@ from src.agents.financing.student_aid import StudentAidAgent
 from src.agents.role_models.anti_impostor import AntiImpostorAgent
 from src.agents.router import RouterAgent
 from src.agents.study_choice.degree_explorer import DegreeExplorerAgent
+from src.core.conversation import Conversation, ConversationStore, SessionMemorySnapshot
 from src.core.provenance import ResponseProvenance, build_provenance_context
 from src.i18n import t
 
@@ -27,6 +28,7 @@ class ChatTurnResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    session_id: str
     response: str
     agent: str
     crisis: bool
@@ -38,6 +40,7 @@ class ChatTurnResult(BaseModel):
 class PreparedChatTurn:
     """The shared context computed before generating a reply."""
 
+    session: Conversation
     bedrock_messages: list[dict[str, Any]]
     crisis: dict[str, Any]
     agent_key: str
@@ -55,10 +58,12 @@ class ChatService:
         router: RouterAgent,
         crisis_radar: CrisisRadar,
         agents: dict[str, BaseAgent],
+        sessions: ConversationStore | None = None,
     ) -> None:
         self.router = router
         self.crisis_radar = crisis_radar
         self.agents = agents
+        self.sessions = sessions or ConversationStore()
 
     @property
     def agent_keys(self) -> tuple[str, ...]:
@@ -71,6 +76,7 @@ class ChatService:
         user_message: str,
         history: list[dict[str, Any]] | None = None,
         *,
+        session_id: str | None = None,
         ui_language: str = "en",
         conversation_metadata: dict[str, Any] | None = None,
     ) -> ChatTurnResult:
@@ -79,11 +85,22 @@ class ChatService:
         turn = self._prepare_turn(
             user_message,
             history=history or [],
+            session_id=session_id,
             ui_language=ui_language,
             conversation_metadata=conversation_metadata,
         )
         reply = turn.agent.respond_with_details(turn.bedrock_messages, turn.metadata)
+        self._store_completed_turn(
+            turn.session,
+            user_message=user_message,
+            response=turn.crisis_prefix + reply.text,
+            agent_key=turn.agent_key,
+            ui_language=ui_language,
+            crisis=turn.crisis["is_crisis"],
+            provenance=reply.provenance,
+        )
         return ChatTurnResult(
+            session_id=turn.session.session_id,
             response=turn.crisis_prefix + reply.text,
             agent=turn.agent_key,
             crisis=turn.crisis["is_crisis"],
@@ -96,6 +113,7 @@ class ChatService:
         user_message: str,
         history: list[dict[str, Any]] | None = None,
         *,
+        session_id: str | None = None,
         ui_language: str = "en",
         conversation_metadata: dict[str, Any] | None = None,
     ) -> Generator[str | ChatTurnResult, None, None]:
@@ -104,6 +122,7 @@ class ChatService:
         turn = self._prepare_turn(
             user_message,
             history=history or [],
+            session_id=session_id,
             ui_language=ui_language,
             conversation_metadata=conversation_metadata,
         )
@@ -130,8 +149,18 @@ class ChatService:
                 yield chunk
 
         full_response = replace_text if replace_text is not None else "".join(collected)
+        self._store_completed_turn(
+            turn.session,
+            user_message=user_message,
+            response=full_response,
+            agent_key=turn.agent_key,
+            ui_language=ui_language,
+            crisis=turn.crisis["is_crisis"],
+            provenance=provenance,
+        )
 
         yield ChatTurnResult(
+            session_id=turn.session.session_id,
             response=full_response,
             agent=turn.agent_key,
             crisis=turn.crisis["is_crisis"],
@@ -144,15 +173,20 @@ class ChatService:
         user_message: str,
         *,
         history: list[dict[str, Any]],
+        session_id: str | None,
         ui_language: str,
         conversation_metadata: dict[str, Any] | None,
     ) -> PreparedChatTurn:
-        bedrock_messages = self._build_bedrock_messages(history, user_message)
+        session = self.sessions.get_or_create(session_id, ui_language=ui_language)
+        if history:
+            session.sync_history(history, ui_language=ui_language)
+
+        metadata = self._merge_conversation_metadata(session.metadata, conversation_metadata)
+        bedrock_messages = self._build_bedrock_messages(session.get_messages(), user_message)
         crisis = self.crisis_radar.scan(user_message)
         agent_key = self.router.route(user_message)
         agent = self.agents.get(agent_key, self.agents["COMPASS"])
 
-        metadata = dict(conversation_metadata or {})
         metadata.update(
             build_provenance_context(
                 agent_key=agent_key,
@@ -163,6 +197,7 @@ class ChatService:
         )
 
         return PreparedChatTurn(
+            session=session,
             bedrock_messages=bedrock_messages,
             crisis=crisis,
             agent_key=agent_key,
@@ -195,6 +230,28 @@ class ChatService:
         return normalized
 
     @staticmethod
+    def _merge_conversation_metadata(
+        base_metadata: dict[str, Any],
+        extra_metadata: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        merged = dict(base_metadata)
+        if not extra_metadata:
+            return merged
+
+        for key, value in extra_metadata.items():
+            if (
+                key in {"identity_context", "preferences"}
+                and isinstance(merged.get(key), dict)
+                and isinstance(value, dict)
+            ):
+                nested = dict(merged[key])
+                nested.update(value)
+                merged[key] = nested
+                continue
+            merged[key] = value
+        return merged
+
+    @staticmethod
     def _format_crisis_prefix(crisis: dict[str, Any], ui_language: str) -> str:
         if not crisis["is_crisis"] or not crisis["resources"]:
             return ""
@@ -204,6 +261,41 @@ class ChatService:
             lines.append(f"• {value}")
         lines.append("")
         return "\n".join(lines) + "\n"
+
+    @staticmethod
+    def _store_completed_turn(
+        session: Conversation,
+        *,
+        user_message: str,
+        response: str,
+        agent_key: str,
+        ui_language: str,
+        crisis: bool,
+        provenance: ResponseProvenance,
+    ) -> None:
+        session.add_user_message(user_message, ui_language=ui_language)
+        session.add_assistant_message(
+            response,
+            agent_key=agent_key,
+            crisis=crisis,
+            provenance=provenance,
+        )
+
+    def end_session(self, session_id: str) -> None:
+        """Delete a session explicitly."""
+
+        self.sessions.delete(session_id)
+
+    def get_session_snapshot(self, session_id: str) -> SessionMemorySnapshot | None:
+        """Return the current in-memory summary for a session, if it exists."""
+
+        return self.sessions.snapshot(session_id)
+
+    @property
+    def session_count(self) -> int:
+        """Expose the number of active in-memory sessions."""
+
+        return self.sessions.count
 
 
 def build_default_chat_service() -> ChatService:

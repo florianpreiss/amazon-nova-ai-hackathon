@@ -4,7 +4,6 @@ KODA — Streamlit Chat Interface.
 
 import html as html_lib
 import sys
-import uuid
 from pathlib import Path
 
 import streamlit as st
@@ -29,7 +28,7 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.session_id = None
 if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
 if "lang" not in st.session_state:
@@ -874,16 +873,16 @@ def _reset_chat() -> None:
     """
     Clear all conversation state and return to the welcome screen.
 
-    Resets messages, session ID, and welcome flag.  A new session ID is
-    generated so any server-side session store would treat this as a fresh
-    session.  The language preference is intentionally preserved — the user
-    should not have to re-select it after resetting.
+    Resets messages, session ID, and welcome flag.  The next chat turn will
+    receive a fresh ephemeral server-side session.  The language preference is
+    intentionally preserved — the user should not have to re-select it after
+    resetting.
 
     Privacy note: no persistent storage exists, so "reset" is purely
     in-memory.  Compliant with the ephemeral-session guarantee in the footer.
     """
     st.session_state.messages = []
-    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.session_id = None
     st.session_state.show_welcome = True
     # Clear any pending quick-action message
     st.session_state.pop("_pending_msg", None)
@@ -1003,14 +1002,23 @@ def _render_provenance_block(
         _render_provenance_contents(normalized, current_lang)
 
 
-def get_response_stream(user_message: str, history: list, ui_lang: str = "de"):
+def get_response_stream(
+    user_message: str,
+    *,
+    session_id: str | None,
+    ui_lang: str = "de",
+):
     """
     Streaming wrapper around the shared chat service.
 
     Yields text chunks first and finishes with a ``ChatTurnResult`` so the
     caller can render progressively and still capture the structured metadata.
     """
-    yield from load_chat_service().respond_stream(user_message, history, ui_language=ui_lang)
+    yield from load_chat_service().respond_stream(
+        user_message,
+        session_id=session_id,
+        ui_language=ui_lang,
+    )
 
 
 def _safe_user(text: str) -> str:
@@ -1226,7 +1234,11 @@ if user_input:
     # Route + scan crisis first (fast, non-streaming), then stream agent tokens.
     # st.write_stream() renders each yielded chunk as it arrives.
     # The final yielded item is a structured turn result — we pop it before display.
-    stream = get_response_stream(user_input, st.session_state.messages[:-1], ui_lang=lang)
+    stream = get_response_stream(
+        user_input,
+        session_id=st.session_state.session_id,
+        ui_lang=lang,
+    )
 
     label_placeholder = None
     result_box: list[ChatTurnResult | None] = [None]
@@ -1247,6 +1259,7 @@ if user_input:
     result = result_box[0]
     if result is None:
         result = ChatTurnResult(
+            session_id=st.session_state.session_id or "",
             response=full_text,
             agent="COMPASS",
             crisis=False,
@@ -1258,6 +1271,7 @@ if user_input:
             ),
         )
 
+    st.session_state.session_id = result.session_id or st.session_state.session_id
     agent_label = get_agent_label(result.agent, lang)
     if label_placeholder:
         label_placeholder.caption(agent_label)
