@@ -1053,9 +1053,8 @@ def _normalize_assistant_markdown(text: str) -> str:
                 normalized = normalized.replace(marker, "")
 
     normalized = re.sub(r"\s*---\s*", "\n\n---\n\n", normalized)
-    normalized = re.sub(r"(?<!\n)(#{1,6}\s+)", r"\n\n\1", normalized)
-    normalized = re.sub(r"(?<!\n)(?<!\d)(\d+\.\s+)", r"\n\1", normalized)
-    normalized = re.sub(r"(?<!\n)-\s+", r"\n- ", normalized)
+    normalized = re.sub(r"([:.;!?])\s+(#{1,6}\s+)", r"\1\n\n\2", normalized)
+    normalized = re.sub(r"---\s+(#{1,6}\s+)", r"---\n\n\1", normalized)
     normalized = re.sub(r"[ \t]+\n", "\n", normalized)
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
     return normalized.strip()
