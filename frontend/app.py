@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -85,13 +86,39 @@ st.markdown(
         fill: currentColor !important;
     }
 
+    /* ── Sidebar language toggle — green selected pill ── */
+    [data-testid="stSidebar"] [aria-checked="true"],
+    [data-testid="stSidebar"] [data-baseweb="segmented-control"] [aria-selected="true"],
+    [data-testid="stSidebar"] [role="radio"][aria-checked="true"],
+    [data-testid="stSidebar"] [role="tab"][aria-selected="true"],
+    [data-testid="stSidebar"] button[kind="segmentedControlActive"],
+    [data-testid="stSidebar"] .st-emotion-cache-segmented button[aria-pressed="true"] {
+        background-color: #00b894 !important;
+        background: #00b894 !important;
+        color: #fff !important;
+        border-color: #00b894 !important;
+    }
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stSidebar"] [aria-checked="true"],
+        [data-testid="stSidebar"] [data-baseweb="segmented-control"] [aria-selected="true"],
+        [data-testid="stSidebar"] [role="radio"][aria-checked="true"],
+        [data-testid="stSidebar"] [role="tab"][aria-selected="true"],
+        [data-testid="stSidebar"] button[kind="segmentedControlActive"],
+        [data-testid="stSidebar"] .st-emotion-cache-segmented button[aria-pressed="true"] {
+            background-color: rgba(0, 184, 148, 0.85) !important;
+            background: rgba(0, 184, 148, 0.85) !important;
+            color: #fff !important;
+            border-color: rgba(0, 184, 148, 0.85) !important;
+        }
+    }
+
     /* ── Background images on edges ───────────── */
     .stApp::before, .stApp::after {
         content: '';
         position: fixed;
         top: 0;
         bottom: 0;
-        width: 280px;
+        width: 180px;
         background-size: cover;
         background-repeat: no-repeat;
         pointer-events: none;
@@ -102,15 +129,16 @@ st.markdown(
         left: 0;
         background-image: url('app/static/left-bg.jpeg');
         background-position: right center;
-        -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
-        mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
     }
     .stApp::after {
         right: 0;
+        width: 180px;
         background-image: url('app/static/right-bg.jpeg');
         background-position: left center;
-        -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
-        mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
+        -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
     }
     @media (max-width: 1024px) {
         .stApp::before, .stApp::after { display: none; }
@@ -1232,6 +1260,37 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ── Scroll to top + sidebar green pill injection ───────
+components.html(
+    """
+    <script>
+        // Scroll to top
+        window.parent.document.querySelector('section.main').scrollTop = 0;
+
+        // Inject green-pill CSS into parent doc for sidebar segmented control
+        const STYLE_ID = 'koda-lang-toggle-green';
+        const doc = window.parent.document;
+        if (!doc.getElementById(STYLE_ID)) {
+            const style = doc.createElement('style');
+            style.id = STYLE_ID;
+            style.textContent = `
+                [data-testid="stSidebar"] [data-baseweb="segmented-control"] button[aria-checked="true"],
+                [data-testid="stSidebar"] [data-testid="stSegmentedControlOption"][aria-checked="true"],
+                [data-testid="stSidebar"] [role="radio"][aria-checked="true"],
+                [data-testid="stSidebar"] [role="tab"][aria-selected="true"] {
+                    background-color: #00b894 !important;
+                    background: #00b894 !important;
+                    color: #fff !important;
+                    border-color: #00b894 !important;
+                }
+            `;
+            doc.head.appendChild(style);
+        }
+    </script>
+    """,
+    height=0,
+)
+
 
 # ── Language toggle ───────────
 
@@ -1264,24 +1323,6 @@ def _reset_chat() -> None:
     st.session_state.show_welcome = True
     # Clear any pending quick-action message
     st.session_state.pop("_pending_msg", None)
-
-
-# ── Language toggle ─────────────────────────────────────
-if "_lang_toggle" not in st.session_state:
-    st.session_state._lang_toggle = lang
-
-selected_lang = st.segmented_control(
-    label="Language",
-    options=["de", "en"],
-    key="_lang_toggle",
-    format_func=_format_lang_option,
-    label_visibility="collapsed",
-    width="content",
-)
-
-if selected_lang and selected_lang != st.session_state.lang:
-    st.session_state.lang = selected_lang
-    st.rerun()
 
 
 # ── Shared chat service ────────────────────────────────
@@ -1532,12 +1573,31 @@ def _render_session_portability(current_lang: str, session_id: str | None) -> No
             st.rerun()
 
 
+def _on_lang_change():
+    st.session_state.lang = st.session_state._lang_toggle
+
+
 def _render_profile_sidebar(current_lang: str) -> None:
     session_id = st.session_state.session_id
     snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
     profile = build_session_profile_view(snapshot, ui_language=current_lang)
 
     with st.sidebar:
+        # ── Language toggle (top of sidebar) ────────────
+        if "_lang_toggle" not in st.session_state:
+            st.session_state._lang_toggle = current_lang
+
+        st.segmented_control(
+            label="Language",
+            options=["de", "en"],
+            key="_lang_toggle",
+            format_func=_format_lang_option,
+            label_visibility="collapsed",
+            on_change=_on_lang_change,
+        )
+
+        st.markdown("<div class='sidebar-gap'></div>", unsafe_allow_html=True)
+
         st.markdown(
             "<div class='sidebar-shell'>"
             f"<div class='sidebar-kicker'>{html_lib.escape(t('sidebar_kicker', current_lang))}</div>"
