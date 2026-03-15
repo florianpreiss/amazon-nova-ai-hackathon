@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.core.provenance import ResponseProvenance
 from src.i18n import DEFAULT_LANGUAGE, get_agent_label, t
 from src.orchestration import ChatTurnResult, build_default_chat_service
+from src.ui import build_session_profile_view
 
 # ── Page config ────────────────────────────────────────
 
@@ -21,7 +22,7 @@ st.set_page_config(
     page_title="KODA — Dein Studienbegleiter | Your Study Companion",
     page_icon="🧭",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ── Session state ──────────────────────────────────────
@@ -146,6 +147,172 @@ st.markdown(
     .welcome-copy p:first-child,
     .footer-copy p:first-child {
         margin-top: 0;
+    }
+
+    /* ── Sidebar session profile ────────────── */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, rgba(249, 246, 241, 0.98) 0%, rgba(243, 237, 230, 0.98) 100%);
+        border-right: 1px solid rgba(125, 122, 201, 0.14);
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        padding-top: 1rem;
+    }
+    .sidebar-shell {
+        font-family: 'Nunito', sans-serif;
+        padding-top: 0.2rem;
+    }
+    .sidebar-kicker {
+        color: rgba(125, 122, 201, 0.82);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+    .sidebar-title {
+        color: #2d3436;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin: 0 0 0.55rem 0;
+    }
+    .sidebar-note,
+    .sidebar-empty,
+    .sidebar-alert {
+        border-radius: 16px;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        padding: 0.85rem 0.9rem;
+    }
+    .sidebar-note {
+        background: rgba(125, 122, 201, 0.08);
+        border: 1px solid rgba(125, 122, 201, 0.16);
+        color: #5f6470;
+        margin-bottom: 0.9rem;
+    }
+    .sidebar-empty {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px dashed rgba(125, 122, 201, 0.22);
+        color: #636e72;
+        margin-top: 0.2rem;
+    }
+    .sidebar-alert {
+        background: rgba(214, 48, 49, 0.08);
+        border: 1px solid rgba(214, 48, 49, 0.16);
+        color: #8b2d2d;
+        margin-top: 0.4rem;
+    }
+    .sidebar-stats {
+        display: grid;
+        gap: 0.55rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0.95rem 0 1rem 0;
+    }
+    .sidebar-stat {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(125, 122, 201, 0.12);
+        border-radius: 14px;
+        padding: 0.75rem 0.8rem;
+    }
+    .sidebar-stat-label {
+        color: #7a8388;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.2rem;
+        text-transform: uppercase;
+    }
+    .sidebar-stat-value {
+        color: #2d3436;
+        font-family: 'Source Serif 4', Georgia, serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+    .sidebar-section {
+        margin-top: 1rem;
+    }
+    .sidebar-section-label {
+        color: #636e72;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.45rem;
+        text-transform: uppercase;
+    }
+    .sidebar-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.38rem;
+    }
+    .sidebar-chip {
+        background: rgba(125, 122, 201, 0.08);
+        border: 1px solid rgba(125, 122, 201, 0.16);
+        border-radius: 999px;
+        color: rgba(96, 88, 185, 1);
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.74rem;
+        font-weight: 700;
+        line-height: 1.25;
+        padding: 0.28rem 0.62rem;
+    }
+    .sidebar-list,
+    .sidebar-source-list {
+        margin: 0;
+        padding-left: 1rem;
+    }
+    .sidebar-list li,
+    .sidebar-source-list li {
+        color: #2d3436;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.84rem;
+        line-height: 1.55;
+        margin-bottom: 0.4rem;
+    }
+    .sidebar-source-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    .sidebar-source-list li {
+        margin-bottom: 0.55rem;
+    }
+    .sidebar-source-tag {
+        border-radius: 999px;
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.64rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        margin-right: 0.35rem;
+        padding: 0.14rem 0.42rem;
+        text-transform: uppercase;
+    }
+    .sidebar-source-tag.registry {
+        background: rgba(0, 184, 148, 0.12);
+        color: #0b7d68;
+    }
+    .sidebar-source-tag.web {
+        background: rgba(9, 132, 227, 0.12);
+        color: #0c6fbe;
+    }
+    .sidebar-source-link {
+        color: rgba(96, 88, 185, 1);
+        text-decoration: none;
+    }
+    .sidebar-source-link:hover {
+        text-decoration: underline;
+    }
+    .sidebar-source-domain {
+        color: #7a8388;
+        display: block;
+        font-size: 0.74rem;
+        margin-top: 0.08rem;
+        overflow-wrap: anywhere;
     }
 
     /* ── Stat boxes ───────────────────────────── */
@@ -570,6 +737,62 @@ st.markdown(
         .footer-copy {
             color: #aeb6c8 !important;
         }
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #1d1d34 0%, #18182b 100%) !important;
+            border-right-color: rgba(125, 122, 201, 0.2) !important;
+        }
+        .sidebar-title {
+            color: #f1edf8 !important;
+        }
+        .sidebar-note {
+            background: rgba(125, 122, 201, 0.16) !important;
+            border-color: rgba(125, 122, 201, 0.24) !important;
+            color: #b7bec8 !important;
+        }
+        .sidebar-empty {
+            background: rgba(37, 37, 64, 0.9) !important;
+            border-color: rgba(125, 122, 201, 0.28) !important;
+            color: #c8c4e8 !important;
+        }
+        .sidebar-alert {
+            background: rgba(214, 48, 49, 0.14) !important;
+            border-color: rgba(214, 48, 49, 0.24) !important;
+            color: #ffb3b0 !important;
+        }
+        .sidebar-stat {
+            background: rgba(37, 37, 64, 0.92) !important;
+            border-color: rgba(125, 122, 201, 0.24) !important;
+        }
+        .sidebar-stat-label {
+            color: #9ea8b4 !important;
+        }
+        .sidebar-stat-value,
+        .sidebar-list li,
+        .sidebar-source-list li {
+            color: #f1edf8 !important;
+        }
+        .sidebar-section-label {
+            color: #c8c4e8 !important;
+        }
+        .sidebar-chip {
+            background: rgba(125, 122, 201, 0.18) !important;
+            border-color: rgba(125, 122, 201, 0.26) !important;
+            color: #d8d3ff !important;
+        }
+        .sidebar-source-tag.registry {
+            background: rgba(0, 184, 148, 0.2) !important;
+            color: #7ce3cb !important;
+        }
+        .sidebar-source-tag.web {
+            background: rgba(9, 132, 227, 0.2) !important;
+            color: #88c7ff !important;
+        }
+        .sidebar-source-link {
+            color: #d8d3ff !important;
+        }
+        .sidebar-source-domain {
+            color: #9ea8b4 !important;
+        }
 
         /* ── Stat boxes ───────────────────────── */
         .stat-box {
@@ -764,6 +987,21 @@ st.markdown(
             margin-bottom: 0.85rem;
             padding: 0.7rem 0.8rem;
         }
+        .sidebar-title {
+            font-size: 1.45rem;
+        }
+        .sidebar-note,
+        .sidebar-empty,
+        .sidebar-alert {
+            font-size: 0.8rem;
+            padding: 0.8rem 0.82rem;
+        }
+        .sidebar-stats {
+            gap: 0.45rem;
+        }
+        .sidebar-stat {
+            padding: 0.7rem 0.75rem;
+        }
         .welcome-copy {
             font-size: 0.89rem;
         }
@@ -828,6 +1066,12 @@ st.markdown(
         .block-container {
             padding-left: 0.65rem !important;
             padding-right: 0.65rem !important;
+        }
+        .sidebar-title {
+            font-size: 1.32rem;
+        }
+        .sidebar-stat-value {
+            font-size: 0.96rem;
         }
         .koda-title {
             font-size: 2.35rem;
@@ -1006,6 +1250,134 @@ def _render_provenance_block(
         _render_provenance_contents(normalized, current_lang)
 
 
+def _render_sidebar_section_label(label: str) -> None:
+    st.markdown(
+        f"<div class='sidebar-section'><div class='sidebar-section-label'>{html_lib.escape(label)}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_sidebar_stats(stats: list[tuple[str, str]]) -> None:
+    cards = "".join(
+        "<div class='sidebar-stat'>"
+        f"<div class='sidebar-stat-label'>{html_lib.escape(label)}</div>"
+        f"<div class='sidebar-stat-value'>{html_lib.escape(value)}</div>"
+        "</div>"
+        for label, value in stats
+    )
+    st.markdown(f"<div class='sidebar-stats'>{cards}</div>", unsafe_allow_html=True)
+
+
+def _render_sidebar_chip_list(items: tuple[str, ...]) -> None:
+    chips = "".join(f"<span class='sidebar-chip'>{html_lib.escape(item)}</span>" for item in items)
+    st.markdown(f"<div class='sidebar-chip-row'>{chips}</div>", unsafe_allow_html=True)
+
+
+def _render_sidebar_list(items: tuple[str, ...]) -> None:
+    rendered = "".join(f"<li>{html_lib.escape(item)}</li>" for item in items)
+    st.markdown(f"<ul class='sidebar-list'>{rendered}</ul>", unsafe_allow_html=True)
+
+
+def _render_sidebar_sources(sources: tuple, current_lang: str) -> None:
+    items: list[str] = []
+    for source in sources:
+        tag_key = (
+            "source_tag_registry"
+            if source.origin == "source_registry"
+            else "source_tag_web_grounding"
+        )
+        tag_label = html_lib.escape(t(tag_key, current_lang))
+        tag_class = "registry" if source.origin == "source_registry" else "web"
+        title = html_lib.escape(source.title)
+        url = html_lib.escape(source.url, quote=True)
+        domain = html_lib.escape(source.domain)
+        items.append(
+            "<li>"
+            f"<span class='sidebar-source-tag {tag_class}'>{tag_label}</span>"
+            f"<a class='sidebar-source-link' href='{url}' target='_blank' rel='noopener noreferrer'>{title}</a>"
+            f"<span class='sidebar-source-domain'>{domain}</span>"
+            "</li>"
+        )
+
+    st.markdown(
+        f"<ul class='sidebar-source-list'>{''.join(items)}</ul>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_profile_sidebar(current_lang: str) -> None:
+    session_id = st.session_state.session_id
+    snapshot = load_chat_service().get_session_snapshot(session_id) if session_id else None
+    profile = build_session_profile_view(snapshot, ui_language=current_lang)
+
+    with st.sidebar:
+        st.markdown(
+            "<div class='sidebar-shell'>"
+            f"<div class='sidebar-kicker'>{html_lib.escape(t('sidebar_kicker', current_lang))}</div>"
+            f"<div class='sidebar-title'>{html_lib.escape(t('sidebar_title', current_lang))}</div>"
+            f"<div class='sidebar-note'>{html_lib.escape(t('sidebar_note', current_lang))}</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        if not profile.has_content:
+            st.markdown(
+                f"<div class='sidebar-empty'>{html_lib.escape(t('sidebar_empty', current_lang))}</div>",
+                unsafe_allow_html=True,
+            )
+            return
+
+        agent_value = (
+            get_agent_label(profile.current_agent, current_lang)
+            if profile.current_agent
+            else t("sidebar_pending", current_lang)
+        )
+        stats = [
+            (t("sidebar_stat_agent", current_lang), agent_value),
+            (t("sidebar_stat_messages", current_lang), str(profile.message_count)),
+            (
+                t("sidebar_stat_language", current_lang),
+                profile.response_language_label or current_lang.upper(),
+            ),
+            (t("sidebar_stat_sources", current_lang), str(len(profile.cited_sources))),
+        ]
+        _render_sidebar_stats(stats)
+
+        if profile.crisis_detected:
+            st.markdown(
+                f"<div class='sidebar-alert'>{html_lib.escape(t('sidebar_crisis_note', current_lang))}</div>",
+                unsafe_allow_html=True,
+            )
+
+        if profile.topic_labels:
+            _render_sidebar_section_label(t("sidebar_section_focus", current_lang))
+            _render_sidebar_chip_list(profile.topic_labels)
+
+        if profile.goal_summaries:
+            _render_sidebar_section_label(t("sidebar_section_goals", current_lang))
+            _render_sidebar_list(profile.goal_summaries)
+
+        if profile.identity_labels:
+            _render_sidebar_section_label(t("sidebar_section_identity", current_lang))
+            st.caption(t("sidebar_identity_hint", current_lang))
+            _render_sidebar_list(profile.identity_labels)
+
+        if profile.cited_sources:
+            _render_sidebar_section_label(t("sidebar_section_sources", current_lang))
+            _render_sidebar_sources(profile.cited_sources, current_lang)
+
+        st.divider()
+        if st.button(
+            t("reset_chat", current_lang),
+            help=t("reset_chat_tooltip", current_lang),
+            key="_sidebar_reset_btn",
+            type="primary",
+            use_container_width=True,
+        ):
+            _reset_chat()
+            st.rerun()
+
+
 def get_response_stream(
     user_message: str,
     *,
@@ -1149,6 +1521,9 @@ def _render_quick_actions(current_lang: str) -> None:
             t("quick_rolemodels", current_lang), use_container_width=True, key="qa_rolemodels"
         ):
             _send("quick_rolemodels_msg")
+
+
+_render_profile_sidebar(lang)
 
 
 # ── Title: KODA ──────────────────────────────
