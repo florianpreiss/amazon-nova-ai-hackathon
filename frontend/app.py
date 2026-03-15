@@ -41,7 +41,7 @@ else:
     KODA_AVATAR = "🧭"
 
 st.set_page_config(
-    page_title="KODA — Dein Studienbegleiter | Your Study Companion",
+    page_title="KODA | Your Companion",
     page_icon=KODA_PAGE_ICON,
     layout="centered",
     initial_sidebar_state="expanded",
@@ -182,7 +182,7 @@ st.markdown(
         font-family: 'Source Serif 4', Georgia, serif;
         font-size: 4.6rem;
         font-weight: 700;
-        gap: 0.52rem;
+        gap: 2.0rem;
         grid-auto-columns: max-content;
         grid-auto-flow: column;
         justify-content: center;
@@ -212,11 +212,11 @@ st.markdown(
     .koda-title-mark {
         align-items: center;
         display: inline-flex;
-        height: 7.15rem;
+        height: 8.15rem;
         justify-content: center;
         margin: 0;
         transform: translateY(0.09rem);
-        width: 7.15rem;
+        width: 8.15rem;
     }
     .koda-title-mark img {
         filter: drop-shadow(0 8px 18px rgba(138, 125, 215, 0.22));
@@ -2535,17 +2535,17 @@ def _render_quick_actions(current_lang: str, snapshot) -> None:
 def _render_welcome_screen(current_lang: str) -> None:
     if current_lang == "de":
         left_label = "Nicht-Akademikerkinder"
-        left_value = "27 von 100"
+        left_value = "25 von 100"
         left_delta = "beginnen ein Studium"
         right_label = "Akademikerkinder"
-        right_value = "79 von 100"
+        right_value = "78 von 100"
         right_delta = "beginnen ein Studium"
     else:
         left_label = "Non-academic families"
-        left_value = "27 of 100"
+        left_value = "25 of 100"
         left_delta = "start university"
         right_label = "Academic families"
-        right_value = "79 of 100"
+        right_value = "78 of 100"
         right_delta = "start university"
 
     col_left, col_right = st.columns(2)

@@ -22,10 +22,12 @@ final factual advisor for detailed university comparisons, laws, deadlines, or f
 
 GREETING RULE:
 When the user message is exactly "[START_ONBOARDING]":
-- Greet briefly in 4-5 languages. German and English are mandatory; add 2-3 other
-  languages that are common among immigrant communities in Germany.
-- Keep each greeting short, then explain in German and English that KODA can continue
-  in any language and wants to understand the user's situation.
+- If a preferred UI or response language is available, start fully in that language.
+- If the preferred language is English, greet and ask the first question in English only.
+- If the preferred language is German, greet and ask the first question in German only.
+- Only if no clear language preference exists, use a very short multilingual welcome and
+  then continue in the user's most likely language.
+- Never start in German when the preferred language is English.
 - Immediately ask the first onboarding question.
 
 CONVERSATION RULES:
@@ -85,6 +87,15 @@ class OnboardingAgent(BaseAgent):
         prompt = super()._build_prompt(metadata)
         if not metadata:
             return prompt
+
+        ui_language = str(metadata.get("ui_language", "")).strip().lower()
+        if ui_language in {"de", "en"}:
+            prompt += (
+                "\n--- Onboarding language preference ---\n"
+                f"- App UI language for this turn: {ui_language}\n"
+                "- Match this language from the very first line.\n"
+                "- For [START_ONBOARDING], do not use a bilingual greeting when this language is known.\n"
+            )
 
         user_turn_count = int(metadata.get("onboarding_user_turn_count", 0) or 0)
         if user_turn_count:
