@@ -1,4 +1,4 @@
-# KODA — AI Companion for First-Generation Academics
+# KODA: Agentic AI Companion for First-Generation Academics
 
 > *Japanese: "here, at this point" · Dakota Sioux: "friend, ally"*
 
@@ -8,7 +8,7 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-**Category:** Agentic AI &nbsp;|&nbsp; **Model:** Amazon Nova 2 Lite &nbsp;|&nbsp; **Features:** Extended Thinking · Code Interpreter · Web Grounding
+**Category:** Agentic AI &nbsp;|&nbsp; **Model:** Amazon Nova 2 &nbsp;|&nbsp; **Features:** Ext. Thinking · Code Interpreter · Web Grounding
 
 ---
 
@@ -329,7 +329,7 @@ docker compose up --build
 # Opens at http://localhost:8501
 ```
 
-The container runs as a non-root user with a read-only filesystem, all capabilities dropped, and no privilege escalation — [OWASP Container Security Verification Standard](https://owasp.org/www-project-web-security-testing-guide/) compliant.
+The container runs as a non-root user with a read-only filesystem, all capabilities dropped, and no privilege escalation (compliant with [OWASP Container Security Verification Standard](https://owasp.org/www-project-web-security-testing-guide/))
 
 ---
 
@@ -454,9 +454,6 @@ terraform apply tfplan
 | CDN | CloudFront | Edge caching, TLS termination |
 | Security | AWS WAF | Rate limiting, bot control, IP reputation, SQLi/XSS rules |
 | Container Registry | Amazon ECR | Images tagged by commit SHA for reproducibility |
-| Secrets | AWS Secrets Manager | Bedrock credentials injected at runtime (never in image) |
-| Monitoring | CloudWatch | Container Insights, structured logging via `structlog` |
-| CI/CD | GitHub Actions | OIDC authentication (no long-lived keys), auto-deploy on push to `main` |
 
 See [terraform/README.md](terraform/README.md) for IAM requirements, Secrets Manager setup, and the OIDC deploy pipeline.
 

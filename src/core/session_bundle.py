@@ -119,8 +119,14 @@ def build_session_bundle(
         "exported_at": exported_at_value,
         "session": session.model_dump(mode="json"),
     }
-    checksum = _compute_checksum(payload)
-    return SessionBundle.model_validate({**payload, "checksum": checksum})
+    # Validate through SessionBundle first so that the checksum covers
+    # the *exact* dict that serialize_session_bundle will later emit.
+    placeholder = "0" * 64
+    validated = SessionBundle.model_validate({**payload, "checksum": placeholder})
+    body = validated.model_dump(mode="json")
+    body.pop("checksum")
+    checksum = _compute_checksum(body)
+    return validated.model_copy(update={"checksum": checksum})
 
 
 def serialize_session_bundle(bundle: SessionBundle) -> bytes:
@@ -140,7 +146,13 @@ def parse_session_bundle(payload: bytes | str | dict[str, Any]) -> SessionBundle
 
     data = _coerce_payload_to_dict(payload)
     bundle = SessionBundle.model_validate(data)
-    expected_checksum = _compute_checksum(_bundle_body_without_checksum(bundle))
+
+    # Verify the checksum against the raw parsed data — not the
+    # Pydantic-processed data — so the check matches what was
+    # originally serialised (field validators may normalise values).
+    raw_body = dict(data)
+    raw_body.pop("checksum", None)
+    expected_checksum = _compute_checksum(raw_body)
     if bundle.checksum != expected_checksum:
         raise ValueError("Invalid session bundle checksum.")
     return bundle
