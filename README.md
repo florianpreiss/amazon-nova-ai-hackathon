@@ -257,8 +257,7 @@ Every answer includes attribution metadata documenting its source:
 
 ## Demo
 
-<!-- 🎥 Demo Video: Replace with your YouTube/Vimeo link -->
-**▶ [Watch the Demo Video (≈3 min)](https://youtu.be/REPLACE_WITH_VIDEO_ID)** — #AmazonNova
+**▶ [Watch the Demo Video](https://youtu.be/Xp3pj-zAjOQ)** — #AmazonNova
 
 The demo showcases:
 1. Onboarding conversation that builds a personalized profile
