@@ -24,7 +24,7 @@ resource "aws_wafv2_web_acl" "koda" {
 
     statement {
       rate_based_statement {
-        limit              = 100
+        limit              = 2000
         aggregate_key_type = "IP"
       }
     }
@@ -60,98 +60,10 @@ resource "aws_wafv2_web_acl" "koda" {
     }
   }
 
-  # ── Rule 3: Allow Streamlit file uploads ─────────
-  # Streamlit's internal upload mechanism (st.file_uploader, st.chat_input
-  # with accept_file) sends multipart PUT requests to the path
-  # /_stcore/upload_file/{session_id}/{widget_id}.
-  #
-  # Managed rule-group body-inspection rules (SizeRestrictions_BODY,
-  # CrossSiteScripting_BODY, SQLi_BODY) produce false positives on valid
-  # binary and multipart payloads that exceed the 8 KB inspection limit.
-  #
-  # Security posture retained for upload requests:
-  #   • Rate limiting  (rule 1) — evaluated before this rule.
-  #   • IP reputation  (rule 2) — evaluated before this rule.
-  #   • Application-level validation in src/core/documents.py:
-  #       – Extension allowlist (pdf, docx, txt, md, csv, xlsx)
-  #       – Per-type size caps (4.5 MB text, 25 MB media)
-  #       – Non-empty content check & safe-filename sanitisation
-  #       – Encrypted-file detection (OOXML markers)
-  #   • Streamlit server rejects unknown paths with 404.
-  #
-  # Ref: OWASP File Upload Cheat Sheet — validate at the application layer;
-  #      WAF body-inspection bypass for upload endpoints is accepted practice.
-  rule {
-    name     = "allow-streamlit-uploads"
-    priority = 3
-
-    action {
-      allow {}
-    }
-
-    statement {
-      and_statement {
-        statement {
-          byte_match_statement {
-            search_string         = "/_stcore/upload_file"
-            positional_constraint = "STARTS_WITH"
-            field_to_match {
-              uri_path {}
-            }
-            text_transformation {
-              priority = 0
-              type     = "URL_DECODE"
-            }
-            text_transformation {
-              priority = 1
-              type     = "LOWERCASE"
-            }
-          }
-        }
-        statement {
-          or_statement {
-            statement {
-              byte_match_statement {
-                search_string         = "PUT"
-                positional_constraint = "EXACTLY"
-                field_to_match {
-                  method {}
-                }
-                text_transformation {
-                  priority = 0
-                  type     = "NONE"
-                }
-              }
-            }
-            statement {
-              byte_match_statement {
-                search_string         = "POST"
-                positional_constraint = "EXACTLY"
-                field_to_match {
-                  method {}
-                }
-                text_transformation {
-                  priority = 0
-                  type     = "NONE"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      sampled_requests_enabled   = true
-      cloudwatch_metrics_enabled = true
-      metric_name                = "${local.prefix}-allow-streamlit-uploads"
-    }
-  }
-
-  # ── Rule 4: Bot Control ──────────────────────────
+  # ── Rule 3: Bot Control ──────────────────────────
   rule {
     name     = "bot-control"
-    priority = 4
+    priority = 3
 
     override_action {
       none {}
@@ -171,10 +83,27 @@ resource "aws_wafv2_web_acl" "koda" {
     }
   }
 
-  # ── Rule 5: Common attacks (SQLi, XSS) ──────────
+  # ── Rule 4: Common attacks (SQLi, XSS) ──────────
+  # Streamlit's /_stcore/upload_file endpoint handles multipart file
+  # uploads (st.file_uploader, st.chat_input with accept_file).
+  # The SizeRestrictions_BODY rule false-positives on valid payloads
+  # that exceed the 8 KB WAF inspection window.
+  #
+  # Security posture retained for upload requests:
+  #   • Rate limiting  (rule 1) — blocks excessive request rates.
+  #   • IP reputation  (rule 2) — blocks known-bad IPs.
+  #   • Bot control    (rule 3) — blocks automated tools.
+  #   • Application-level validation in src/core/documents.py:
+  #       – Extension allowlist (pdf, docx, txt, md, csv, xlsx)
+  #       – Per-type size caps (4.5 MB text, 25 MB media)
+  #       – Non-empty content check & safe-filename sanitisation
+  #       – Encrypted-file detection (OOXML markers)
+  #   • Streamlit server rejects unknown paths with 404.
+  #
+  # Ref: OWASP File Upload Cheat Sheet — validate at the application layer.
   rule {
     name     = "common-attacks"
-    priority = 5
+    priority = 4
 
     override_action {
       none {}
@@ -184,6 +113,30 @@ resource "aws_wafv2_web_acl" "koda" {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesCommonRuleSet"
+
+        # Exclude upload paths from body-inspection rules that
+        # false-positive on multipart payloads > 8 KB.
+        scope_down_statement {
+          not_statement {
+            statement {
+              byte_match_statement {
+                search_string         = "/_stcore/upload_file"
+                positional_constraint = "STARTS_WITH"
+                field_to_match {
+                  uri_path {}
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "URL_DECODE"
+                }
+                text_transformation {
+                  priority = 1
+                  type     = "LOWERCASE"
+                }
+              }
+            }
+          }
+        }
       }
     }
 
