@@ -2390,7 +2390,10 @@ def _normalize_assistant_markdown(text: str) -> str:
     # cause large sections to render bold. Keep the text, drop the markers.
     normalized = normalized.replace("**", "").replace("__", "")
 
-    normalized = re.sub(r"\s*---\s*", "\n\n---\n\n", normalized)
+    # Normalize standalone "---" horizontal rules to have surrounding blank
+    # lines, but only when the dashes sit on their own line — never inside a
+    # table separator row like |---|---|.
+    normalized = re.sub(r"(?m)^[ \t]*---[ \t]*$", "\n\n---\n\n", normalized)
     normalized = re.sub(r"([:.;!?])\s+(#{1,6}\s+)", r"\1\n\n\2", normalized)
     normalized = re.sub(r"---\s+(#{1,6}\s+)", r"---\n\n\1", normalized)
 
@@ -2420,6 +2423,35 @@ def _normalize_assistant_markdown(text: str) -> str:
 
 def _normalize_markdown_tables(text: str) -> str:
     """Ensure markdown tables are separated cleanly so Streamlit renders them."""
+
+    # Step 0: split collapsed table rows.  The model sometimes emits
+    # multiple rows on a single line: "| A | B | | C | D |".  Detect
+    # lines with many pipes and split on the "| |" row boundary.
+    pre_lines = text.split("\n")
+    expanded: list[str] = []
+    for _ln in pre_lines:
+        _s = _ln.strip()
+        if (
+            _s.startswith("|")
+            and _s.endswith("|")
+            and _s.count("|") >= 6
+            and re.search(r"\|\s+\|", _s)
+        ):
+            parts = re.split(r"\|\s+\|", _s)
+            if len(parts) >= 2:
+                for _i, _p in enumerate(parts):
+                    _p = _p.strip()
+                    if _i == 0:
+                        expanded.append(_p + " |")
+                    elif _i == len(parts) - 1:
+                        expanded.append("| " + _p)
+                    else:
+                        expanded.append("| " + _p + " |")
+            else:
+                expanded.append(_ln)
+        else:
+            expanded.append(_ln)
+    text = "\n".join(expanded)
 
     lines = text.split("\n")
     repaired: list[str] = []
