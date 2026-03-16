@@ -62,7 +62,7 @@ resource "aws_wafv2_web_acl" "koda" {
 
   # ── Rule 3: Allow Streamlit file uploads ─────────
   # Streamlit's internal upload mechanism (st.file_uploader, st.chat_input
-  # with accept_file) sends multipart POST requests to the path
+  # with accept_file) sends multipart PUT requests to the path
   # /_stcore/upload_file/{session_id}/{widget_id}.
   #
   # Managed rule-group body-inspection rules (SizeRestrictions_BODY,
@@ -109,15 +109,32 @@ resource "aws_wafv2_web_acl" "koda" {
           }
         }
         statement {
-          byte_match_statement {
-            search_string         = "POST"
-            positional_constraint = "EXACTLY"
-            field_to_match {
-              method {}
+          or_statement {
+            statement {
+              byte_match_statement {
+                search_string         = "PUT"
+                positional_constraint = "EXACTLY"
+                field_to_match {
+                  method {}
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
             }
-            text_transformation {
-              priority = 0
-              type     = "NONE"
+            statement {
+              byte_match_statement {
+                search_string         = "POST"
+                positional_constraint = "EXACTLY"
+                field_to_match {
+                  method {}
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
             }
           }
         }
