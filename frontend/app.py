@@ -963,6 +963,20 @@ st.markdown(
         color: #096c5d !important;
         box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
     }
+    .st-key-onboarding_start button {
+        background: rgba(0, 184, 148, 0.12) !important;
+        border: 1px solid rgba(0, 184, 148, 0.28) !important;
+        border-radius: 20px !important;
+        color: #0b7d68 !important;
+        min-height: 2.9rem !important;
+        box-shadow: none !important;
+    }
+    .st-key-onboarding_start button:hover {
+        background: rgba(0, 184, 148, 0.18) !important;
+        border-color: rgba(0, 184, 148, 0.38) !important;
+        color: #096c5d !important;
+        box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
+    }
     .st-key-quick_actions_panel [data-testid="stButton"] {
         display: flex;
         width: 100%;
@@ -999,17 +1013,17 @@ st.markdown(
         align-items: center;
         background: rgba(255, 255, 255, 0.76);
         border: 1px solid rgba(154, 129, 186, 0.18);
-        border-radius: 18px;
+        border-radius: 16px;
         display: grid;
-        gap: 0.95rem;
+        gap: 0.72rem;
         grid-template-columns: auto 1fr;
         margin: 0.15rem 0 0;
-        padding: 0.95rem 1rem;
+        padding: 0.72rem 0.88rem;
     }
     .thinking-mark {
-        height: 3.7rem;
+        height: 2.7rem;
         position: relative;
-        width: 3.7rem;
+        width: 2.7rem;
     }
     .thinking-mark::before,
     .thinking-mark::after {
@@ -1039,16 +1053,9 @@ st.markdown(
     .thinking-title {
         color: #625b86;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 1rem;
+        font-size: 0.96rem;
         font-weight: 700;
         line-height: 1.25;
-        margin: 0 0 0.2rem;
-    }
-    .thinking-body {
-        color: #636e72;
-        font-family: 'Nunito', sans-serif;
-        font-size: 0.85rem;
-        line-height: 1.55;
         margin: 0;
     }
     .thinking-dots {
@@ -1365,6 +1372,16 @@ st.markdown(
             color: #b8fff0 !important;
             box-shadow: 0 3px 10px rgba(0, 184, 148, 0.18) !important;
         }
+        .st-key-onboarding_start button {
+            background: rgba(0, 184, 148, 0.18) !important;
+            border-color: rgba(0, 184, 148, 0.34) !important;
+            color: #98f0dd !important;
+        }
+        .st-key-onboarding_start button:hover {
+            background: rgba(0, 184, 148, 0.24) !important;
+            border-color: rgba(0, 184, 148, 0.46) !important;
+            color: #b0f7e8 !important;
+        }
 
         /* ── KODA assistant bubble ────────────── */
         [data-testid="stChatMessage"] {
@@ -1572,13 +1589,15 @@ st.markdown(
             padding: 0.7rem 0.8rem;
         }
         .thinking-shell {
-            gap: 0.8rem;
+            gap: 0.66rem;
             grid-template-columns: 1fr;
-            padding: 0.9rem;
+            padding: 0.72rem 0.8rem;
             text-align: center;
         }
         .thinking-mark {
             margin: 0 auto;
+            height: 2.45rem;
+            width: 2.45rem;
         }
         [data-testid="stChatMessage"] > div:first-child {
             flex-basis: 3.8rem !important;
@@ -2303,7 +2322,6 @@ def _render_thinking_state(target, current_lang: str) -> None:
         f"<div class='thinking-title'>{html_lib.escape(t('thinking_title', current_lang))}"
         "<span class='thinking-dots'><span></span><span></span><span></span></span>"
         "</div>"
-        f"<p class='thinking-body'>{html_lib.escape(t('thinking_body', current_lang))}</p>"
         "</div>"
         "</div>"
     )
