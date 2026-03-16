@@ -7,6 +7,7 @@ Includes retry logic with exponential backoff for transient errors.
 Reference: Nova 2 Developer Guide — "Core inference" and "Troubleshooting" chapters.
 """
 
+import re
 import time
 from collections.abc import Generator
 from typing import Any
@@ -32,6 +33,15 @@ logger = structlog.get_logger()
 # Retry configuration
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 1.0  # seconds
+
+_HIDDEN_RE = re.compile(r"\[HIDDEN\]")
+
+
+def strip_hidden_markers(text: str) -> str:
+    """Remove all ``[HIDDEN]`` reasoning markers leaked by the model."""
+    if "[HIDDEN]" not in text:
+        return text
+    return _HIDDEN_RE.sub("", text).strip()
 
 
 class NovaClientError(Exception):
@@ -111,13 +121,16 @@ class NovaClient:
         Yield text delta chunks from a converse_stream() response.
 
         Skips reasoning/thinking blocks — only yields the visible assistant text.
+        Strips leaked ``[HIDDEN]`` markers from each chunk.
         Suitable for passing directly to ``st.write_stream()``.
         """
         stream = stream_response.get("stream", stream_response)
         for event in stream:
             delta = event.get("contentBlockDelta", {}).get("delta", {})
             if "text" in delta:
-                yield delta["text"]
+                cleaned = strip_hidden_markers(delta["text"])
+                if cleaned:
+                    yield cleaned
 
     def with_code_interpreter(self, messages, system_prompt=None, reasoning_effort=None):
         """Converse using the built-in Code Interpreter system tool."""
@@ -146,8 +159,8 @@ class NovaClient:
                         parts.append(item["text"])
         text = "\n".join(parts) if parts else ""
         # Strip stray reasoning markers that leak into the visible text.
-        if text.startswith("[HIDDEN]"):
-            text = text[len("[HIDDEN]") :].lstrip()
+        # The model may emit one or many [HIDDEN] tags anywhere in the output.
+        text = strip_hidden_markers(text)
         # Web-grounding tool responses sometimes contain literal two-character
         # sequences "\n" instead of real newline characters.  Unescape them so
         # Streamlit (and st.markdown) render line breaks correctly.

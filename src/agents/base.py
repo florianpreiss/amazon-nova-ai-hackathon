@@ -177,6 +177,14 @@ class BaseAgent:
                 yield chunk
 
             full_text = "".join(collected)
+            # Safety-net: strip any [HIDDEN] markers that survived
+            # chunk-level filtering (e.g. split across two chunks).
+            from src.core.client import strip_hidden_markers
+
+            cleaned_text = strip_hidden_markers(full_text)
+            if cleaned_text != full_text:
+                full_text = cleaned_text
+
             if not full_text.strip():
                 logger.warning("empty_stream_response", agent=self.name)
                 yield self._fallback_message(messages)
@@ -186,7 +194,7 @@ class BaseAgent:
             # If the filter changes the text, re-yield the corrected version
             # as a single replacement chunk.
             filtered = apply_anti_shame_filter(full_text)
-            if filtered != full_text:
+            if filtered != full_text or full_text != "".join(collected):
                 # Signal to the caller that the streamed text should be
                 # replaced (Streamlit will overwrite the container).
                 yield "\x00REPLACE\x00" + filtered
