@@ -2028,7 +2028,7 @@ def _apply_imported_session(imported_session, current_lang: str) -> None:
         and not bool(imported_session.messages)
     )
     st.session_state.lang = next_lang
-    st.session_state._lang_toggle = next_lang
+    st.session_state._pending_lang = next_lang
     st.session_state.memory_import_revision += 1
 
 
@@ -2117,7 +2117,9 @@ def _render_profile_sidebar(current_lang: str) -> None:
 
     with st.sidebar:
         # ── Language toggle (top of sidebar) ────────────
-        if "_lang_toggle" not in st.session_state:
+        if "_pending_lang" in st.session_state:
+            st.session_state._lang_toggle = st.session_state.pop("_pending_lang")
+        elif "_lang_toggle" not in st.session_state:
             st.session_state._lang_toggle = current_lang
 
         st.segmented_control(
