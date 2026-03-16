@@ -963,19 +963,40 @@ st.markdown(
         color: #096c5d !important;
         box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
     }
+    .st-key-onboarding_start button,
+    .st-key-onboarding_skip_pending button {
+        border-radius: 22px !important;
+        font-family: 'Nunito', sans-serif !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        min-height: 3.1rem !important;
+        padding: 0.42rem 0.75rem !important;
+        width: 100% !important;
+    }
     .st-key-onboarding_start button {
-        background: rgba(0, 184, 148, 0.12) !important;
-        border: 1px solid rgba(0, 184, 148, 0.28) !important;
-        border-radius: 20px !important;
+        background: rgba(0, 184, 148, 0.1) !important;
+        border: 1.5px solid rgba(0, 184, 148, 0.32) !important;
         color: #0b7d68 !important;
-        min-height: 2.9rem !important;
         box-shadow: none !important;
     }
     .st-key-onboarding_start button:hover {
         background: rgba(0, 184, 148, 0.18) !important;
-        border-color: rgba(0, 184, 148, 0.38) !important;
+        border-color: rgba(0, 184, 148, 0.52) !important;
         color: #096c5d !important;
-        box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
+        box-shadow: 0 4px 12px rgba(0, 184, 148, 0.18) !important;
+        transform: translateY(-2px) !important;
+    }
+    .st-key-onboarding_skip_pending button {
+        background: rgba(125, 122, 201, 0.05) !important;
+        border: 1.5px solid rgba(125, 122, 201, 0.32) !important;
+        color: #2d3436 !important;
+    }
+    .st-key-onboarding_skip_pending button:hover {
+        background: rgba(125, 122, 201, 0.13) !important;
+        border-color: rgba(125, 122, 201, 0.72) !important;
+        color: #4f5562 !important;
+        box-shadow: 0 4px 12px rgba(125, 122, 201, 0.22) !important;
+        transform: translateY(-2px) !important;
     }
     .st-key-quick_actions_panel [data-testid="stButton"] {
         display: flex;
@@ -1375,12 +1396,24 @@ st.markdown(
         .st-key-onboarding_start button {
             background: rgba(0, 184, 148, 0.18) !important;
             border-color: rgba(0, 184, 148, 0.34) !important;
-            color: #98f0dd !important;
+            color: #9af0d9 !important;
         }
         .st-key-onboarding_start button:hover {
             background: rgba(0, 184, 148, 0.24) !important;
             border-color: rgba(0, 184, 148, 0.46) !important;
             color: #b0f7e8 !important;
+            box-shadow: 0 4px 12px rgba(0, 184, 148, 0.22) !important;
+        }
+        .st-key-onboarding_skip_pending button {
+            background: rgba(125, 122, 201, 0.07) !important;
+            border-color: rgba(125, 122, 201, 0.4) !important;
+            color: #c8c4e8 !important;
+        }
+        .st-key-onboarding_skip_pending button:hover {
+            background: rgba(125, 122, 201, 0.18) !important;
+            border-color: rgba(160, 155, 220, 0.8) !important;
+            color: #e0daf5 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.28) !important;
         }
 
         /* ── KODA assistant bubble ────────────── */
@@ -2702,7 +2735,7 @@ if show_onboarding_landing:
         start_onboarding = st.button(
             t("onboarding_start_btn", lang),
             use_container_width=True,
-            type="primary",
+            type="secondary",
             key="onboarding_start",
         )
     with skip_col:
