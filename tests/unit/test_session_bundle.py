@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -145,3 +146,76 @@ def test_session_bundle_rejects_oversized_payloads() -> None:
 def test_session_bundle_requires_json_object_root() -> None:
     with pytest.raises(ValueError, match="root must be a JSON object"):
         parse_session_bundle("[]")
+
+
+def test_session_bundle_round_trips_with_multiline_onboarding_content() -> None:
+    """Bundles whose onboarding_messages contain newlines must survive export→import."""
+
+    multiline_content = (
+        "Welcome!\n\nHere are your options:\n"
+        "- **Option A**: Do this\n"
+        "- **Option B**: Do that\n\n"
+        "Let me know what you think."
+    )
+    snapshot = _build_snapshot()
+    # Replace the onboarding messages with ones containing newlines.
+    # SessionTextTurn normalises whitespace, so build the snapshot via
+    # a dict round-trip that preserves the raw content for realism.
+    raw = snapshot.model_dump(mode="json")
+    raw["onboarding_messages"] = [
+        {"role": "assistant", "content": multiline_content},
+        {"role": "user", "content": "I pick option A"},
+    ]
+    patched_snapshot = SessionMemorySnapshot.model_validate({**raw})
+
+    bundle = build_session_bundle(
+        snapshot=patched_snapshot,
+        messages=_build_messages(),
+        exported_at=datetime(2026, 3, 15, tzinfo=UTC),
+    )
+    payload = serialize_session_bundle(bundle)
+    parsed = parse_session_bundle(payload)
+
+    assert parsed.bundle_type == "koda_session_memory"
+    assert len(parsed.session.onboarding_messages) == 2
+
+
+def test_session_bundle_import_with_raw_multiline_content() -> None:
+    """A hand-crafted bundle with multiline content whose checksum was
+    computed from *raw* JSON (not Pydantic-processed) must import
+    successfully even though SessionTextTurn normalises whitespace."""
+
+    import hashlib
+
+    multiline = "Hello\n\n- item 1\n- item 2\nEnd."
+    session_dict: dict[str, object] = {
+        "current_agent": None,
+        "crisis_detected": False,
+        "topics": [],
+        "identity_context": {},
+        "preferences": {},
+        "active_goals": [],
+        "cited_sources": [],
+        "profile_facts": [],
+        "conversation_overview": [],
+        "onboarding_state": "pending",
+        "onboarding_messages": [
+            {"role": "assistant", "content": multiline},
+        ],
+        "profile_summary": None,
+        "personalized_prompts": [],
+        "document_memories": [],
+        "messages": [],
+    }
+    body = {
+        "bundle_type": "koda_session_memory",
+        "schema_version": "1.0",
+        "exported_at": "2026-01-01T00:00:00+00:00",
+        "session": session_dict,
+    }
+    normalized = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    checksum = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+    raw_bundle = json.dumps({**body, "checksum": checksum}, ensure_ascii=False, indent=2)
+    parsed = parse_session_bundle(raw_bundle)
+    assert parsed.session.onboarding_messages[0].content == "Hello - item 1 - item 2 End."
