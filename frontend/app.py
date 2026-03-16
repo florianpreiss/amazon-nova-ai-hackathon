@@ -41,7 +41,7 @@ else:
     KODA_AVATAR = "🧭"
 
 st.set_page_config(
-    page_title="KODA | Your Companion",
+    page_title="KODA | Decoding Education",
     page_icon=KODA_PAGE_ICON,
     layout="centered",
     initial_sidebar_state="expanded",
@@ -963,6 +963,20 @@ st.markdown(
         color: #096c5d !important;
         box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
     }
+    .st-key-onboarding_start button {
+        background: rgba(0, 184, 148, 0.12) !important;
+        border: 1px solid rgba(0, 184, 148, 0.28) !important;
+        border-radius: 20px !important;
+        color: #0b7d68 !important;
+        min-height: 2.9rem !important;
+        box-shadow: none !important;
+    }
+    .st-key-onboarding_start button:hover {
+        background: rgba(0, 184, 148, 0.18) !important;
+        border-color: rgba(0, 184, 148, 0.38) !important;
+        color: #096c5d !important;
+        box-shadow: 0 3px 10px rgba(0, 184, 148, 0.16) !important;
+    }
     .st-key-quick_actions_panel [data-testid="stButton"] {
         display: flex;
         width: 100%;
@@ -999,17 +1013,17 @@ st.markdown(
         align-items: center;
         background: rgba(255, 255, 255, 0.76);
         border: 1px solid rgba(154, 129, 186, 0.18);
-        border-radius: 18px;
+        border-radius: 16px;
         display: grid;
-        gap: 0.95rem;
+        gap: 0.5rem;
         grid-template-columns: auto 1fr;
         margin: 0.15rem 0 0;
-        padding: 0.95rem 1rem;
+        padding: 0.45rem 0.65rem;
     }
     .thinking-mark {
-        height: 3.7rem;
+        height: 1.9rem;
         position: relative;
-        width: 3.7rem;
+        width: 1.9rem;
     }
     .thinking-mark::before,
     .thinking-mark::after {
@@ -1039,16 +1053,9 @@ st.markdown(
     .thinking-title {
         color: #625b86;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 1rem;
+        font-size: 0.78rem;
         font-weight: 700;
         line-height: 1.25;
-        margin: 0 0 0.2rem;
-    }
-    .thinking-body {
-        color: #636e72;
-        font-family: 'Nunito', sans-serif;
-        font-size: 0.85rem;
-        line-height: 1.55;
         margin: 0;
     }
     .thinking-dots {
@@ -1062,8 +1069,8 @@ st.markdown(
         background: rgba(125, 122, 201, 0.72);
         border-radius: 999px;
         display: inline-block;
-        height: 0.34rem;
-        width: 0.34rem;
+        height: 0.26rem;
+        width: 0.26rem;
     }
     .thinking-dots span:nth-child(2) { animation-delay: 0.14s; }
     .thinking-dots span:nth-child(3) { animation-delay: 0.28s; }
@@ -1365,6 +1372,16 @@ st.markdown(
             color: #b8fff0 !important;
             box-shadow: 0 3px 10px rgba(0, 184, 148, 0.18) !important;
         }
+        .st-key-onboarding_start button {
+            background: rgba(0, 184, 148, 0.18) !important;
+            border-color: rgba(0, 184, 148, 0.34) !important;
+            color: #98f0dd !important;
+        }
+        .st-key-onboarding_start button:hover {
+            background: rgba(0, 184, 148, 0.24) !important;
+            border-color: rgba(0, 184, 148, 0.46) !important;
+            color: #b0f7e8 !important;
+        }
 
         /* ── KODA assistant bubble ────────────── */
         [data-testid="stChatMessage"] {
@@ -1572,21 +1589,23 @@ st.markdown(
             padding: 0.7rem 0.8rem;
         }
         .thinking-shell {
-            gap: 0.8rem;
+            gap: 0.66rem;
             grid-template-columns: 1fr;
-            padding: 0.9rem;
+            padding: 0.72rem 0.8rem;
             text-align: center;
         }
         .thinking-mark {
             margin: 0 auto;
+            height: 2.45rem;
+            width: 2.45rem;
         }
         [data-testid="stChatMessage"] > div:first-child {
             flex-basis: 3.8rem !important;
             width: 3.8rem !important;
         }
         [data-testid="stChatMessage"] > div:first-child img {
-            height: 3.55rem !important;
-            width: 3.55rem !important;
+            height: 5.75rem !important;
+            width: 5.75rem !important;
         }
         .sidebar-title {
             font-size: 1.45rem;
@@ -2040,18 +2059,29 @@ def _render_session_portability(current_lang: str, session_id: str | None) -> No
             key=upload_key,
             help=t("session_import_help", current_lang),
         )
+        pasted_bundle = st.text_area(
+            t("session_import_paste_label", current_lang),
+            value="",
+            height=140,
+            placeholder=t("session_import_paste_placeholder", current_lang),
+        )
         if st.button(
             t("session_import_button", current_lang),
             key=f"session_import_button_{st.session_state.memory_import_revision}",
             use_container_width=True,
         ):
-            if uploaded is None:
+            import_payload = (
+                uploaded.getvalue()
+                if uploaded is not None
+                else pasted_bundle.strip().encode("utf-8")
+            )
+            if not import_payload:
                 st.warning(t("session_import_missing", current_lang))
                 return
 
             try:
                 imported = load_chat_service().import_session_bundle(
-                    uploaded.getvalue(),
+                    import_payload,
                     ui_language=current_lang,
                 )
             except ValueError as exc:
@@ -2303,7 +2333,6 @@ def _render_thinking_state(target, current_lang: str) -> None:
         f"<div class='thinking-title'>{html_lib.escape(t('thinking_title', current_lang))}"
         "<span class='thinking-dots'><span></span><span></span><span></span></span>"
         "</div>"
-        f"<p class='thinking-body'>{html_lib.escape(t('thinking_body', current_lang))}</p>"
         "</div>"
         "</div>"
     )
