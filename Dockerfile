@@ -71,12 +71,18 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 # Streamlit configuration via CLI flags
 # Run from frontend/ so that Streamlit's static file serving resolves
 # frontend/static/ correctly at the URL path app/static/
+# CloudFront terminates TLS before the request reaches Streamlit.
+# Streamlit's upload endpoint builds strict XSRF upload origins from its own
+# direct server URL, which can mismatch the public HTTPS CloudFront URL and
+# lead to 403 upload failures for file_uploader/chat attachments in production.
+# For this public, unauthenticated hackathon app we disable Streamlit's XSRF
+# layer at the app server and rely on the controlled CloudFront/ALB surface.
 ENTRYPOINT ["streamlit", "run", "frontend/app.py", \
     "--server.port=8501", \
     "--server.address=0.0.0.0", \
     "--server.headless=true", \
     "--browser.gatherUsageStats=false", \
     "--server.enableCORS=false", \
-    "--server.enableXsrfProtection=true", \
+    "--server.enableXsrfProtection=false", \
     "--server.maxUploadSize=1", \
     "--server.enableStaticServing=true"]
