@@ -55,10 +55,6 @@ jobs:
           echo "Pushing to ECR..."
           docker push $IMAGE_URI
 
-          # Also tag as latest
-          docker tag $IMAGE_URI $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
           echo "image-uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
           echo "✅ Image pushed: $IMAGE_URI" >> $GITHUB_STEP_SUMMARY
 
