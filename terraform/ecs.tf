@@ -47,6 +47,8 @@ resource "aws_ecs_task_definition" "koda" {
       { name = "AWS_REGION", value = var.aws_region },
       { name = "NOVA_MODEL_ID", value = "us.amazon.nova-2-lite-v1:0" },
       { name = "SESSION_TIMEOUT_MINUTES", value = tostring(var.session_ttl_seconds / 60) },
+      { name = "STREAMLIT_BROWSER_SERVER_ADDRESS", value = aws_cloudfront_distribution.koda.domain_name },
+      { name = "STREAMLIT_BROWSER_SERVER_PORT", value = "443" },
     ]
 
     logConfiguration = {

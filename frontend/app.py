@@ -2059,18 +2059,29 @@ def _render_session_portability(current_lang: str, session_id: str | None) -> No
             key=upload_key,
             help=t("session_import_help", current_lang),
         )
+        pasted_bundle = st.text_area(
+            t("session_import_paste_label", current_lang),
+            value="",
+            height=140,
+            placeholder=t("session_import_paste_placeholder", current_lang),
+        )
         if st.button(
             t("session_import_button", current_lang),
             key=f"session_import_button_{st.session_state.memory_import_revision}",
             use_container_width=True,
         ):
-            if uploaded is None:
+            import_payload = (
+                uploaded.getvalue()
+                if uploaded is not None
+                else pasted_bundle.strip().encode("utf-8")
+            )
+            if not import_payload:
                 st.warning(t("session_import_missing", current_lang))
                 return
 
             try:
                 imported = load_chat_service().import_session_bundle(
-                    uploaded.getvalue(),
+                    import_payload,
                     ui_language=current_lang,
                 )
             except ValueError as exc:
