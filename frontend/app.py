@@ -41,7 +41,7 @@ else:
     KODA_AVATAR = "🧭"
 
 st.set_page_config(
-    page_title="KODA | Your Companion",
+    page_title="KODA | Decoding Education",
     page_icon=KODA_PAGE_ICON,
     layout="centered",
     initial_sidebar_state="expanded",
@@ -1015,15 +1015,15 @@ st.markdown(
         border: 1px solid rgba(154, 129, 186, 0.18);
         border-radius: 16px;
         display: grid;
-        gap: 0.72rem;
+        gap: 0.5rem;
         grid-template-columns: auto 1fr;
         margin: 0.15rem 0 0;
-        padding: 0.72rem 0.88rem;
+        padding: 0.45rem 0.65rem;
     }
     .thinking-mark {
-        height: 2.7rem;
+        height: 1.9rem;
         position: relative;
-        width: 2.7rem;
+        width: 1.9rem;
     }
     .thinking-mark::before,
     .thinking-mark::after {
@@ -1053,7 +1053,7 @@ st.markdown(
     .thinking-title {
         color: #625b86;
         font-family: 'Source Serif 4', Georgia, serif;
-        font-size: 0.96rem;
+        font-size: 0.78rem;
         font-weight: 700;
         line-height: 1.25;
         margin: 0;
@@ -1069,8 +1069,8 @@ st.markdown(
         background: rgba(125, 122, 201, 0.72);
         border-radius: 999px;
         display: inline-block;
-        height: 0.34rem;
-        width: 0.34rem;
+        height: 0.26rem;
+        width: 0.26rem;
     }
     .thinking-dots span:nth-child(2) { animation-delay: 0.14s; }
     .thinking-dots span:nth-child(3) { animation-delay: 0.28s; }
@@ -1604,8 +1604,8 @@ st.markdown(
             width: 3.8rem !important;
         }
         [data-testid="stChatMessage"] > div:first-child img {
-            height: 3.55rem !important;
-            width: 3.55rem !important;
+            height: 5.75rem !important;
+            width: 5.75rem !important;
         }
         .sidebar-title {
             font-size: 1.45rem;
