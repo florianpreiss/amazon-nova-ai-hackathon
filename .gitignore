@@ -16,6 +16,7 @@ build/
 *.tfstate
 *.tfstate.backup
 *.tfplan
+tfplan
 .terraform.lock.hcl
 
 # Frontend — this project uses Streamlit (Python), not React.
