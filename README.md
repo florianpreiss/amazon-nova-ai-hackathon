@@ -7,9 +7,8 @@
 [![Hackathon](https://img.shields.io/badge/Amazon%20Nova-AI%20Hackathon-232F3E?style=flat-square)](https://amazon-nova.devpost.com/)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![CI](https://img.shields.io/badge/CI-Passing-brightgreen?style=flat-square&logo=github-actions&logoColor=white)](.github/workflows/ci.yml)
 
-**Category:** Agentic AI &nbsp;|&nbsp; **Model:** Amazon Nova 2 Lite &nbsp;|&nbsp; **Nova Features:** Extended Thinking · Code Interpreter · Web Grounding · Streaming
+**Category:** Agentic AI &nbsp;|&nbsp; **Model:** Amazon Nova 2 Lite &nbsp;|&nbsp; **Features:** Extended Thinking · Code Interpreter · Web Grounding
 
 ---
 
@@ -58,7 +57,7 @@ A user writes a question in German or English. KODA routes it to the right speci
 
 ### How It Works
 
-1. **User sends a message** — in German or English, about BAföG, degree programs, impostor feelings, or anything related to university life
+1. **User sends a message** — in German or English, about financial support, degree programs, impostor feelings, or anything related to university life
 2. **Router Agent** classifies the message in <1 second using Extended Thinking (LOW)
 3. **Crisis Radar** scans for safety signals **in parallel** on every message
 4. **Specialist Agent** responds with deep reasoning (Extended Thinking HIGH), optional Code Interpreter for calculations, or Web Grounding for live data
@@ -77,11 +76,6 @@ Amazon Nova 2 Lite is the core foundation model powering every agent in KODA. He
 | **Extended Thinking (HIGH)** | All 10 domain agents | Deep, multi-step reasoning for complex topics. The Hidden Curriculum agent explains university jargon with 5-point contextual breakdowns. The Anti-Impostor agent applies academic psychology (Jo Phelan's "impostorization" framework, 2024) to structurally reframe self-doubt. |
 | **Code Interpreter** | Student Aid Agent, Cost-of-Living Agent | Personalized financial calculations. Students enter their family income, and Code Interpreter computes BAföG eligibility (up to €934/month) with breakdown tables. Cost-of-Living compares monthly expenses across German cities with itemized budgets. |
 | **Web Grounding** | Scholarship Agent, Degree Explorer, University Finder, Application Guide | Real-time information retrieval. Scholarship deadlines, Numerus Clausus cut-offs, and application procedures change every semester. Web Grounding ensures answers are current, not stale. |
-| **Streaming** | Streamlit frontend (`st.write_stream()`) | Token-by-token display for responsive UX. Students see answers forming in real time rather than waiting for complete responses — critical for trust in a support context. |
-| **Cross-Region Inference** | Default model configuration | Automatic capacity failover via the `us.amazon.nova-2-lite-v1:0` cross-region profile. Code Interpreter availability is routed through the global CRIS endpoint. |
-
-**Model ID:** `us.amazon.nova-2-lite-v1:0` (cross-region inference profile)
-**Embeddings (configured):** `amazon.nova-2-multimodal-embeddings-v1:0` (reserved for future RAG)
 
 ---
 
@@ -268,7 +262,7 @@ Every answer includes attribution metadata documenting its source:
 
 The demo showcases:
 1. Onboarding conversation that builds a personalized profile
-2. BAföG calculation via Code Interpreter with itemized breakdown
+2. Financial calculation via Code Interpreter with itemized breakdown
 3. Real-time scholarship search via Web Grounding
 4. Hidden Curriculum decoder explaining "ECTS" with anti-shame framing
 5. Crisis detection triggering resource banner
